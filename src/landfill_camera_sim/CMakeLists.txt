@@ -15,6 +15,7 @@ install(
     scripts/calibration_publisher.py
     scripts/sensor_fusion_node.py
     scripts/registration_merge_node.py
+    scripts/fusion_web_streamer.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

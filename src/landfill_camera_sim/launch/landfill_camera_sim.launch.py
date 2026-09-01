@@ -231,6 +231,12 @@ def _setup(context):
     ros_lidar_points_topic = _normalize_topic(
         output_topics.get('lidar_points', '/landfill/livox/points')
     )
+    # Default topic names sensor_fusion.launch.py's fused_points_topic /
+    # merged_points_topic arguments point at for this scenario's namespace,
+    # only used here to preselect them in the generated RViz config.
+    topic_namespace = ros_lidar_points_topic.rsplit('/', 2)[0] or ''
+    ros_fusion_points_topic = f'{topic_namespace}/fusion/points_rgbt'
+    ros_merged_points_topic = f'{topic_namespace}/fusion/points_merged'
     ros_clock_topic = _normalize_topic(output_topics.get('clock', '/clock'))
     platform_ros_cmd_topic = _normalize_topic(
         motion_cfg.get('ros_cmd_topic', '/landfill/platform/cmd_vel')
@@ -386,6 +392,8 @@ def _setup(context):
             'ROS_THERMAL_IMAGE_TOPIC': ros_thermal_image_topic,
             'ROS_LIDAR_SCAN_TOPIC': ros_lidar_scan_topic,
             'ROS_LIDAR_POINTS_TOPIC': ros_lidar_points_topic,
+            'ROS_FUSION_POINTS_TOPIC': ros_fusion_points_topic,
+            'ROS_MERGED_POINTS_TOPIC': ros_merged_points_topic,
             'FIXED_FRAME': fixed_frame,
         },
     )
