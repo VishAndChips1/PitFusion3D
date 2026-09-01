@@ -34,7 +34,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'output_voxel_size',
-            default_value='0.0',
+            default_value='0.01',
             description='Voxel size to decimate the merged cloud by; 0 keeps every point from every scan.',
         ),
 
