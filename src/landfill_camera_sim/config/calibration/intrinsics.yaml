@@ -1,0 +1,42 @@
+# Intrinsic calibration for the RGB and thermal cameras, in the standard
+# sensor_msgs/CameraInfo layout (camera_matrix = K, distortion_coefficients
+# = D, rectification_matrix = R, projection_matrix = P).
+#
+# Edit and relaunch to change them -- read at startup by
+# scripts/calibration_publisher.py, which republishes CameraInfo on the
+# rgb/thermal camera_info topics from these values (instead of Gazebo's
+# own camera_info bridge), and used by scripts/sensor_fusion_node.py to
+# project lidar points into each image.
+#
+# The shipped values are the ideal pinhole intrinsics for a simulated
+# camera with zero distortion: fx = fy = (width/2) / tan(horizontal_fov/2),
+# cx = width/2, cy = height/2, computed from sensors.horizontal_fov /
+# sensors.rgb.image / sensors.thermal.image in config/sensors_sim.yaml and
+# config/scan_test_sim.yaml (both use the default 1280x720 @ 60 deg hfov).
+# If you change resolution or FOV there, recompute fx/fy/cx/cy here to
+# match -- these two files are not auto-linked.
+rgb_camera:
+  frame_id: camera_platform/rgb_optical_frame
+  image_width: 1280
+  image_height: 720
+  distortion_model: plumb_bob
+  distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+  camera_matrix:
+    fx: 1108.765426
+    fy: 1108.765426
+    cx: 640.0
+    cy: 360.0
+  rectification_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+thermal_camera:
+  frame_id: camera_platform/thermal_optical_frame
+  image_width: 1280
+  image_height: 720
+  distortion_model: plumb_bob
+  distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+  camera_matrix:
+    fx: 1108.765426
+    fy: 1108.765426
+    cx: 640.0
+    cy: 360.0
+  rectification_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]

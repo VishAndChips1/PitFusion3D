@@ -1,0 +1,97 @@
+# Stationary 360-degree scan scenario: the same RGB + thermal + Livox Avia
+# sensor rig as sensors_sim.yaml, mounted on a mast that does not translate,
+# slowly yawing in place so it sweeps the colorful scatter of shapes placed
+# all around it. Used by launch/scan_test_sim.launch.py and
+# worlds/scan_test_world.sdf.in; sensors_sim.yaml and
+# landfill_camera_sim.launch.py are untouched.
+world:
+  name: scan_test_world
+  atmosphere:
+    temperature: 300.0
+    temperature_gradient: 0.1
+
+sensors:
+  frame_id: camera_platform/camera_link
+  pose:
+    # Rig sits at the center of the scatter ring.
+    xyz: [0.0, 0.0, 1.8]
+    # Gentle downward tilt so the ring (ground level to ~1.5m) stays in
+    # view at all yaw angles; roll/yaw start at 0 since the rig spins.
+    rpy: [0.0, 0.12, 0.0]
+  horizontal_fov: 1.047
+  update_rate: 30.0
+  visualize: true
+  clip:
+    near: 0.05
+    far: 120.0
+  rgb:
+    name: scan_test_rgb_camera
+    image:
+      width: 1280
+      height: 720
+      format: R8G8B8
+  thermal:
+    name: scan_test_thermal_camera
+    image:
+      width: 1280
+      height: 720
+      format: L16
+    temperature:
+      min: 253.15
+      max: 673.15
+      resolution: 0.01
+  lidar:
+    name: scan_test_livox_avia_lidar
+    model: livox_avia
+    pattern: avia
+    update_rate: 10.0
+    visualize: true
+    horizontal_fov_deg: 70.4
+    vertical_fov_deg: 77.2
+    horizontal_samples: 200
+    vertical_samples: 120
+    points_per_scan: 24000
+    downsample: 1
+    pattern_node:
+      enabled: true
+      scan_pattern_csv: ""
+    range:
+      min: 0.1
+      max: 200.0
+      resolution: 0.01
+
+platform:
+  motion:
+    enabled: true
+    ros_cmd_topic: /scan_test/platform/cmd_vel
+    gz_cmd_topic: /model/camera_platform/cmd_vel
+    axis: [0.0, 1.0, 0.0]
+    # travel_distance: 0 keeps platform_motion_controller.py from ever
+    # commanding linear motion (see its _publish_command) -- only the
+    # constant angular_speed yaw command is sent, so the rig spins in
+    # place instead of driving back and forth.
+    travel_distance: 0.0
+    linear_speed: 0.0
+    # rad/s: ~42s per full revolution.
+    angular_speed: 0.15
+    update_rate: 20.0
+
+topics:
+  input:
+    rgb_image: /scan_test/rgb/image_raw
+    rgb_camera_info: ""
+    thermal_image: /scan_test/thermal/image_raw
+    thermal_camera_info: ""
+    lidar_scan: /scan_test/livox/raw_scan
+    clock: ""
+  output:
+    rgb_image: /scan_test/rgb/image_raw
+    rgb_camera_info: /scan_test/rgb/camera_info
+    thermal_image: /scan_test/thermal/image_raw
+    thermal_camera_info: /scan_test/thermal/camera_info
+    lidar_scan: /scan_test/livox/raw_scan
+    lidar_points: /scan_test/livox/points
+    clock: /clock
+
+rviz:
+  fixed_frame: camera_platform/camera_link
