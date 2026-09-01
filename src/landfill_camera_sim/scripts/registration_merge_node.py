@@ -7,6 +7,8 @@ point ICP to compensate for platform motion between scans, and publishes
 one denser merged point cloud per window.
 """
 
+import time
+
 import numpy as np
 from scipy.spatial import cKDTree
 
@@ -101,6 +103,7 @@ class RegistrationMergeNode(Node):
         self._buffer = []  # list of (stamp_sec, xyz(N,3) float32, rest(N,3) float32 [intensity, rgb, thermal])
         self._window_start = None
         self._frame_id = None
+        self._last_publish_wall_time = None
 
         self._publisher = self.create_publisher(PointCloud2, output_topic, 10)
         self._subscription = self.create_subscription(PointCloud2, input_topic, self._on_cloud, 10)
@@ -191,10 +194,17 @@ class RegistrationMergeNode(Node):
         out_msg = pc2.create_cloud(ros_header, fields, cloud_out)
         self._publisher.publish(out_msg)
 
+        now_wall = time.monotonic()
+        if self._last_publish_wall_time is not None:
+            publish_hz = 1.0 / max(1e-6, now_wall - self._last_publish_wall_time)
+        else:
+            publish_hz = 0.0
+        self._last_publish_wall_time = now_wall
+
         self.get_logger().info(
-            'Merged %d scans (%d raw pts) into %d pts over %.2fs window'
-            % (len(self._buffer), all_xyz.shape[0], out_xyz.shape[0],
-               self._buffer[-1][0] - first_stamp)
+            'Published merged cloud: %d pts (%d scans, %d raw pts, %.2fs window) @ %.2f Hz'
+            % (out_xyz.shape[0], len(self._buffer), all_xyz.shape[0],
+               self._buffer[-1][0] - first_stamp, publish_hz)
         )
 
 
