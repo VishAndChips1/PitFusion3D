@@ -1,0 +1,106 @@
+# Main world name. If you change this, leave topics.input.clock empty so launch
+# can derive the matching Gazebo clock topic.
+world:
+  name: landfill_camera_world
+  atmosphere:
+    temperature: 300.0
+    temperature_gradient: 0.1
+
+# All onboard sensors are configured here. The RGB camera, thermal camera, and
+# Livox-style lidar share the same frame and pose so their data is aligned in
+# Gazebo and all sensors look through the same front enclosure opening.
+sensors:
+  frame_id: camera_platform/camera_link
+  pose:
+    # Sensor link position in the world, meters.
+    xyz: [-8.0, -6.0, 3.2]
+    # Roll, pitch, yaw in radians. Positive pitch points the Gazebo cameras down.
+    rpy: [0.0, 0.28, 0.64]
+  horizontal_fov: 1.047
+  update_rate: 30.0
+  visualize: true
+  clip:
+    near: 0.05
+    far: 120.0
+  rgb:
+    name: landfill_rgb_camera
+    image:
+      width: 1280
+      height: 720
+      format: R8G8B8
+  thermal:
+    name: landfill_thermal_camera
+    image:
+      width: 1280
+      height: 720
+      format: L16
+    temperature:
+      min: 253.15
+      max: 673.15
+      resolution: 0.01
+  lidar:
+    name: landfill_livox_avia_lidar
+    # Gazebo Sim approximates the Livox Avia scan envelope from
+    # Livox-SDK/livox_laser_simulation. The original plugin is ROS 1/Gazebo
+    # Classic, so these values reproduce its configurable FOV/sample pattern
+    # using a native Gazebo Sim gpu_lidar sensor.
+    model: livox_avia
+    pattern: avia
+    update_rate: 10.0
+    visualize: true
+    horizontal_fov_deg: 70.4
+    vertical_fov_deg: 77.2
+    horizontal_samples: 200
+    vertical_samples: 120
+    points_per_scan: 24000
+    downsample: 1
+    pattern_node:
+      enabled: true
+      # The pattern node samples the real, non-repetitive Avia scan table
+      # from Livox-SDK/livox_laser_simulation (see
+      # config/scan_patterns/README.md) instead of a synthetic curve.
+      # Leave empty to use the table packaged at config/scan_patterns/avia.csv.
+      scan_pattern_csv: ""
+    range:
+      min: 0.1
+      max: 200.0
+      resolution: 0.01
+
+platform:
+  motion:
+    enabled: true
+    # ROS topic published by the motion controller.
+    ros_cmd_topic: /landfill/platform/cmd_vel
+    # Gazebo topic consumed by the platform VelocityControl plugin.
+    gz_cmd_topic: /model/camera_platform/cmd_vel
+    # Unit vector for travel direction. [0, 1, 0] moves across the roadway.
+    axis: [0.0, 1.0, 0.0]
+    travel_distance: 8.0
+    linear_speed: 0.35
+    angular_speed: 0.18
+    update_rate: 20.0
+
+# Input topics are Gazebo Transport topics consumed by ros_gz_bridge.
+# Output topics are ROS 2 topics published by ros_gz_bridge for RViz and nodes.
+topics:
+  input:
+    rgb_image: /landfill/rgb/image_raw
+    # Empty means derive from rgb_image as /landfill/rgb/camera_info.
+    rgb_camera_info: ""
+    thermal_image: /landfill/thermal/image_raw
+    # Empty means derive from thermal_image as /landfill/thermal/camera_info.
+    thermal_camera_info: ""
+    lidar_scan: /landfill/livox/raw_scan
+    # Empty means derive from the world name as /world/<world.name>/clock.
+    clock: ""
+  output:
+    rgb_image: /landfill/rgb/image_raw
+    rgb_camera_info: /landfill/rgb/camera_info
+    thermal_image: /landfill/thermal/image_raw
+    thermal_camera_info: /landfill/thermal/camera_info
+    lidar_scan: /landfill/livox/raw_scan
+    lidar_points: /landfill/livox/points
+    clock: /clock
+
+rviz:
+  fixed_frame: camera_platform/camera_link

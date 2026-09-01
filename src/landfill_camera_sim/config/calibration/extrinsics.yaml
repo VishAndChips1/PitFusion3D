@@ -1,0 +1,30 @@
+# Extrinsic calibration: static rigid transforms from the rig reference
+# frame to each sensor's optical/measurement frame.
+#
+# Edit the numbers below and relaunch to change them -- they are read at
+# startup by scripts/calibration_publisher.py, which publishes them as
+# tf2 static transforms and uses the lidar->camera entries to project
+# lidar points into the camera images in scripts/sensor_fusion_node.py.
+#
+# translation is in meters, rotation_rpy is roll/pitch/yaw in radians,
+# both expressed as "reference_frame -> child_frame" (matches tf2's
+# static_transform convention: this is the pose of child_frame as seen
+# from reference_frame).
+#
+# All three sensors are mounted in the same enclosure at the same pose
+# in worlds/landfill_camera_world.sdf.in and worlds/scan_test_world.sdf.in
+# (see the "camera_platform/camera_link" sensor block), so the shipped
+# defaults are all zero. If you change the rig -- e.g. move the lidar to
+# a different point on the enclosure -- update the corresponding entry
+# here to match, no code changes required.
+reference_frame: camera_platform/camera_link
+transforms:
+  camera_platform/rgb_optical_frame:
+    translation: {x: 0.0, y: 0.0, z: 0.0}
+    rotation_rpy: {roll: 0.0, pitch: 0.0, yaw: 0.0}
+  camera_platform/thermal_optical_frame:
+    translation: {x: 0.0, y: 0.0, z: 0.0}
+    rotation_rpy: {roll: 0.0, pitch: 0.0, yaw: 0.0}
+  camera_platform/lidar_frame:
+    translation: {x: 0.0, y: 0.0, z: 0.0}
+    rotation_rpy: {roll: 0.0, pitch: 0.0, yaw: 0.0}

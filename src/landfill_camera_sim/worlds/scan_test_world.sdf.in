@@ -1,0 +1,1071 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <world name="__WORLD_NAME__">
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <scene>
+      <ambient>0.55 0.55 0.52 1</ambient>
+      <background>0.70 0.76 0.82 1</background>
+      <grid>true</grid>
+      <shadows>true</shadows>
+    </scene>
+
+    <atmosphere type="adiabatic">
+      <temperature>__ATMOSPHERE_TEMPERATURE__</temperature>
+      <temperature_gradient>__ATMOSPHERE_TEMPERATURE_GRADIENT__</temperature_gradient>
+    </atmosphere>
+
+    <gui fullscreen="false">
+      <plugin filename="MinimalScene" name="3D View">
+        <gz-gui>
+          <title>3D View</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>0.55 0.55 0.52</ambient_light>
+        <background_color>0.70 0.76 0.82</background_color>
+        <camera_pose>-18 -14 12 0 0.55 0.72</camera_pose>
+      </plugin>
+      <plugin filename="EntityContextMenuPlugin" name="Entity context menu">
+        <gz-gui>
+          <property type="string" key="state">floating</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="bool" key="showTitleBar">false</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="GzSceneManager" name="Scene Manager">
+        <gz-gui>
+          <property type="bool" key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+          <property type="bool" key="showTitleBar">false</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="InteractiveViewControl" name="Interactive view control">
+        <gz-gui>
+          <property type="bool" key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+          <property type="bool" key="showTitleBar">false</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="CameraTracking" name="Camera tracking">
+        <gz-gui>
+          <property type="bool" key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+          <property type="bool" key="showTitleBar">false</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="WorldControl" name="World control">
+        <gz-gui>
+          <title>World control</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="bool" key="resizable">false</property>
+          <property type="double" key="height">72</property>
+          <property type="double" key="width">121</property>
+          <property type="double" key="z">1</property>
+          <property type="string" key="state">floating</property>
+          <anchors target="3D View">
+            <line own="left" target="left"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>false</start_paused>
+      </plugin>
+      <plugin filename="WorldStats" name="World stats">
+        <gz-gui>
+          <title>World stats</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="bool" key="resizable">false</property>
+          <property type="double" key="height">110</property>
+          <property type="double" key="width">290</property>
+          <property type="double" key="z">1</property>
+          <property type="string" key="state">floating</property>
+          <anchors target="3D View">
+            <line own="right" target="right"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+        <sim_time>true</sim_time>
+        <real_time>true</real_time>
+        <real_time_factor>true</real_time_factor>
+        <iterations>true</iterations>
+      </plugin>
+    </gui>
+
+    <light type="directional" name="sun">
+      <pose>0 0 30 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>1.1</intensity>
+      <direction>-0.45 0.20 -0.87</direction>
+      <diffuse>0.95 0.92 0.84 1</diffuse>
+      <specular>0.25 0.25 0.22 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+
+
+    <model name="scan_area_ground">
+      <static>true</static>
+      <link name="ground_link">
+        <collision name="ground_collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>40 40</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="ground_surface">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>40 40</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.32 0.32 0.34 1</ambient>
+            <diffuse>0.45 0.45 0.47 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="scatter_field">
+      <static>true</static>
+      <link name="scatter_link">
+        <visual name="red_box_00_visual">
+          <pose>3.686 0.108 0.358 0 0 -1.414</pose>
+          <geometry>
+            <box><size>0.517 0.506 0.716</size></box>
+          </geometry>
+          <material>
+            <ambient>0.70 0.05 0.05 1</ambient>
+            <diffuse>0.90 0.10 0.10 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="red_box_00_collision">
+          <pose>3.686 0.108 0.358 0 0 -1.414</pose>
+          <geometry>
+            <box><size>0.517 0.506 0.716</size></box>
+          </geometry>
+        </collision>
+        <visual name="orange_sphere_01_visual">
+          <pose>6.562 1.162 0.316 0 0 -2.954</pose>
+          <geometry>
+            <sphere><radius>0.316</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.75 0.35 0.02 1</ambient>
+            <diffuse>0.95 0.45 0.05 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="orange_sphere_01_collision">
+          <pose>6.562 1.162 0.316 0 0 -2.954</pose>
+          <geometry>
+            <sphere><radius>0.316</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="yellow_box_02_visual">
+          <pose>3.201 1.853 0.450 0 0 -1.892</pose>
+          <geometry>
+            <box><size>0.720 0.628 0.899</size></box>
+          </geometry>
+          <material>
+            <ambient>0.75 0.65 0.02 1</ambient>
+            <diffuse>0.95 0.85 0.05 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="yellow_box_02_collision">
+          <pose>3.201 1.853 0.450 0 0 -1.892</pose>
+          <geometry>
+            <box><size>0.720 0.628 0.899</size></box>
+          </geometry>
+        </collision>
+        <visual name="lime_sphere_03_visual">
+          <pose>2.342 2.667 0.459 0 0 1.922</pose>
+          <geometry>
+            <sphere><radius>0.459</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.35 0.70 0.05 1</ambient>
+            <diffuse>0.45 0.90 0.08 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="lime_sphere_03_collision">
+          <pose>2.342 2.667 0.459 0 0 1.922</pose>
+          <geometry>
+            <sphere><radius>0.459</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="green_cylinder_04_visual">
+          <pose>2.467 3.961 0.287 0 0 2.873</pose>
+          <geometry>
+            <cylinder><radius>0.267</radius><length>0.574</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.04 0.45 0.10 1</ambient>
+            <diffuse>0.06 0.65 0.15 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="green_cylinder_04_collision">
+          <pose>2.467 3.961 0.287 0 0 2.873</pose>
+          <geometry>
+            <cylinder><radius>0.267</radius><length>0.574</length></cylinder>
+          </geometry>
+        </collision>
+        <visual name="teal_box_05_visual">
+          <pose>3.345 9.271 0.627 0 0 0.652</pose>
+          <geometry>
+            <box><size>0.867 0.805 1.253</size></box>
+          </geometry>
+          <material>
+            <ambient>0.02 0.45 0.42 1</ambient>
+            <diffuse>0.04 0.65 0.60 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="teal_box_05_collision">
+          <pose>3.345 9.271 0.627 0 0 0.652</pose>
+          <geometry>
+            <box><size>0.867 0.805 1.253</size></box>
+          </geometry>
+        </collision>
+        <visual name="cyan_sphere_06_visual">
+          <pose>0.194 7.638 0.436 0 0 2.070</pose>
+          <geometry>
+            <sphere><radius>0.436</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.02 0.55 0.60 1</ambient>
+            <diffuse>0.05 0.80 0.85 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="cyan_sphere_06_collision">
+          <pose>0.194 7.638 0.436 0 0 2.070</pose>
+          <geometry>
+            <sphere><radius>0.436</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="blue_box_07_visual">
+          <pose>-2.593 7.388 0.162 0 0 1.285</pose>
+          <geometry>
+            <box><size>0.334 0.344 0.324</size></box>
+          </geometry>
+          <material>
+            <ambient>0.05 0.15 0.65 1</ambient>
+            <diffuse>0.08 0.22 0.90 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="blue_box_07_collision">
+          <pose>-2.593 7.388 0.162 0 0 1.285</pose>
+          <geometry>
+            <box><size>0.334 0.344 0.324</size></box>
+          </geometry>
+        </collision>
+        <visual name="indigo_sphere_08_visual">
+          <pose>-1.919 3.800 0.441 0 0 -1.395</pose>
+          <geometry>
+            <sphere><radius>0.441</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.20 0.05 0.55 1</ambient>
+            <diffuse>0.30 0.08 0.78 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="indigo_sphere_08_collision">
+          <pose>-1.919 3.800 0.441 0 0 -1.395</pose>
+          <geometry>
+            <sphere><radius>0.441</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="purple_box_09_visual">
+          <pose>-4.311 4.562 0.320 0 0 -1.825</pose>
+          <geometry>
+            <box><size>0.584 0.526 0.640</size></box>
+          </geometry>
+          <material>
+            <ambient>0.42 0.05 0.55 1</ambient>
+            <diffuse>0.60 0.08 0.75 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="purple_box_09_collision">
+          <pose>-4.311 4.562 0.320 0 0 -1.825</pose>
+          <geometry>
+            <box><size>0.584 0.526 0.640</size></box>
+          </geometry>
+        </collision>
+        <visual name="magenta_sphere_10_visual">
+          <pose>-7.440 5.008 0.364 0 0 -2.115</pose>
+          <geometry>
+            <sphere><radius>0.364</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.60 0.03 0.45 1</ambient>
+            <diffuse>0.85 0.05 0.65 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="magenta_sphere_10_collision">
+          <pose>-7.440 5.008 0.364 0 0 -2.115</pose>
+          <geometry>
+            <sphere><radius>0.364</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="pink_cylinder_11_visual">
+          <pose>-8.195 1.316 0.587 0 0 0.358</pose>
+          <geometry>
+            <cylinder><radius>0.337</radius><length>1.174</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.75 0.20 0.42 1</ambient>
+            <diffuse>0.95 0.35 0.60 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="pink_cylinder_11_collision">
+          <pose>-8.195 1.316 0.587 0 0 0.358</pose>
+          <geometry>
+            <cylinder><radius>0.337</radius><length>1.174</length></cylinder>
+          </geometry>
+        </collision>
+        <visual name="brown_box_12_visual">
+          <pose>-5.209 -0.301 0.407 0 0 -2.940</pose>
+          <geometry>
+            <box><size>0.475 0.463 0.814</size></box>
+          </geometry>
+          <material>
+            <ambient>0.30 0.18 0.08 1</ambient>
+            <diffuse>0.45 0.28 0.12 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="brown_box_12_collision">
+          <pose>-5.209 -0.301 0.407 0 0 -2.940</pose>
+          <geometry>
+            <box><size>0.475 0.463 0.814</size></box>
+          </geometry>
+        </collision>
+        <visual name="white_sphere_13_visual">
+          <pose>-5.523 -1.958 0.369 0 0 0.977</pose>
+          <geometry>
+            <sphere><radius>0.369</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.70 0.70 0.68 1</ambient>
+            <diffuse>0.92 0.92 0.90 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="white_sphere_13_collision">
+          <pose>-5.523 -1.958 0.369 0 0 0.977</pose>
+          <geometry>
+            <sphere><radius>0.369</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="red_box_14_visual">
+          <pose>-5.688 -3.979 0.308 0 0 -1.477</pose>
+          <geometry>
+            <box><size>0.498 0.440 0.616</size></box>
+          </geometry>
+          <material>
+            <ambient>0.70 0.05 0.05 1</ambient>
+            <diffuse>0.90 0.10 0.10 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="red_box_14_collision">
+          <pose>-5.688 -3.979 0.308 0 0 -1.477</pose>
+          <geometry>
+            <box><size>0.498 0.440 0.616</size></box>
+          </geometry>
+        </collision>
+        <visual name="orange_sphere_15_visual">
+          <pose>-4.195 -4.959 0.549 0 0 -1.764</pose>
+          <geometry>
+            <sphere><radius>0.549</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.75 0.35 0.02 1</ambient>
+            <diffuse>0.95 0.45 0.05 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="orange_sphere_15_collision">
+          <pose>-4.195 -4.959 0.549 0 0 -1.764</pose>
+          <geometry>
+            <sphere><radius>0.549</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="yellow_box_16_visual">
+          <pose>-2.084 -3.626 0.233 0 0 -2.846</pose>
+          <geometry>
+            <box><size>0.431 0.458 0.467</size></box>
+          </geometry>
+          <material>
+            <ambient>0.75 0.65 0.02 1</ambient>
+            <diffuse>0.95 0.85 0.05 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="yellow_box_16_collision">
+          <pose>-2.084 -3.626 0.233 0 0 -2.846</pose>
+          <geometry>
+            <box><size>0.431 0.458 0.467</size></box>
+          </geometry>
+        </collision>
+        <visual name="lime_sphere_17_visual">
+          <pose>-2.201 -5.969 0.409 0 0 3.117</pose>
+          <geometry>
+            <sphere><radius>0.409</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.35 0.70 0.05 1</ambient>
+            <diffuse>0.45 0.90 0.08 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="lime_sphere_17_collision">
+          <pose>-2.201 -5.969 0.409 0 0 3.117</pose>
+          <geometry>
+            <sphere><radius>0.409</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="green_cylinder_18_visual">
+          <pose>0.981 -9.907 0.523 0 0 -3.069</pose>
+          <geometry>
+            <cylinder><radius>0.344</radius><length>1.045</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.04 0.45 0.10 1</ambient>
+            <diffuse>0.06 0.65 0.15 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="green_cylinder_18_collision">
+          <pose>0.981 -9.907 0.523 0 0 -3.069</pose>
+          <geometry>
+            <cylinder><radius>0.344</radius><length>1.045</length></cylinder>
+          </geometry>
+        </collision>
+        <visual name="teal_box_19_visual">
+          <pose>1.465 -5.303 0.321 0 0 0.886</pose>
+          <geometry>
+            <box><size>0.401 0.404 0.643</size></box>
+          </geometry>
+          <material>
+            <ambient>0.02 0.45 0.42 1</ambient>
+            <diffuse>0.04 0.65 0.60 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="teal_box_19_collision">
+          <pose>1.465 -5.303 0.321 0 0 0.886</pose>
+          <geometry>
+            <box><size>0.401 0.404 0.643</size></box>
+          </geometry>
+        </collision>
+        <visual name="cyan_sphere_20_visual">
+          <pose>3.102 -4.512 0.304 0 0 0.004</pose>
+          <geometry>
+            <sphere><radius>0.304</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.02 0.55 0.60 1</ambient>
+            <diffuse>0.05 0.80 0.85 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="cyan_sphere_20_collision">
+          <pose>3.102 -4.512 0.304 0 0 0.004</pose>
+          <geometry>
+            <sphere><radius>0.304</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="blue_box_21_visual">
+          <pose>7.677 -6.453 0.495 0 0 -1.266</pose>
+          <geometry>
+            <box><size>0.732 0.604 0.989</size></box>
+          </geometry>
+          <material>
+            <ambient>0.05 0.15 0.65 1</ambient>
+            <diffuse>0.08 0.22 0.90 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="blue_box_21_collision">
+          <pose>7.677 -6.453 0.495 0 0 -1.266</pose>
+          <geometry>
+            <box><size>0.732 0.604 0.989</size></box>
+          </geometry>
+        </collision>
+        <visual name="indigo_sphere_22_visual">
+          <pose>8.127 -4.603 0.250 0 0 0.191</pose>
+          <geometry>
+            <sphere><radius>0.250</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.20 0.05 0.55 1</ambient>
+            <diffuse>0.30 0.08 0.78 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="indigo_sphere_22_collision">
+          <pose>8.127 -4.603 0.250 0 0 0.191</pose>
+          <geometry>
+            <sphere><radius>0.250</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="purple_box_23_visual">
+          <pose>3.485 -1.073 0.353 0 0 2.696</pose>
+          <geometry>
+            <box><size>0.944 0.769 0.705</size></box>
+          </geometry>
+          <material>
+            <ambient>0.42 0.05 0.55 1</ambient>
+            <diffuse>0.60 0.08 0.75 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <collision name="purple_box_23_collision">
+          <pose>3.485 -1.073 0.353 0 0 2.696</pose>
+          <geometry>
+            <box><size>0.944 0.769 0.705</size></box>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+
+    <model name="camera_platform">
+      <static>false</static>
+      <pose>__PLATFORM_X__ __PLATFORM_Y__ 0 0 0 0</pose>
+      <link name="structure_link">
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
+        <inertial>
+          <mass>30.0</mass>
+          <inertia>
+            <ixx>8.0</ixx>
+            <ixy>0.0</ixy>
+            <ixz>0.0</ixz>
+            <iyy>8.0</iyy>
+            <iyz>0.0</iyz>
+            <izz>10.0</izz>
+          </inertia>
+        </inertial>
+        <visual name="concrete_pad">
+          <pose>0 0 0.05 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.8 2.0 0.10</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.43 0.43 0.40 1</ambient>
+            <diffuse>0.58 0.58 0.54 1</diffuse>
+          </material>
+        </visual>
+        <visual name="steel_deck">
+          <pose>0 0 __DECK_HEIGHT__ 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.2 1.5 0.12</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.17 0.18 0.18 1</ambient>
+            <diffuse>0.25 0.26 0.26 1</diffuse>
+          </material>
+        </visual>
+        <visual name="leg_front_left">
+          <pose>0.85 0.55 __LEG_HALF_HEIGHT__ 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.055</radius>
+              <length>__LEG_HEIGHT__</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.12 0.13 0.13 1</ambient>
+            <diffuse>0.20 0.21 0.21 1</diffuse>
+          </material>
+        </visual>
+        <visual name="leg_front_right">
+          <pose>0.85 -0.55 __LEG_HALF_HEIGHT__ 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.055</radius>
+              <length>__LEG_HEIGHT__</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.12 0.13 0.13 1</ambient>
+            <diffuse>0.20 0.21 0.21 1</diffuse>
+          </material>
+        </visual>
+        <visual name="leg_back_left">
+          <pose>-0.85 0.55 __LEG_HALF_HEIGHT__ 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.055</radius>
+              <length>__LEG_HEIGHT__</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.12 0.13 0.13 1</ambient>
+            <diffuse>0.20 0.21 0.21 1</diffuse>
+          </material>
+        </visual>
+        <visual name="leg_back_right">
+          <pose>-0.85 -0.55 __LEG_HALF_HEIGHT__ 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.055</radius>
+              <length>__LEG_HEIGHT__</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.12 0.13 0.13 1</ambient>
+            <diffuse>0.20 0.21 0.21 1</diffuse>
+          </material>
+        </visual>
+        <visual name="front_guard_rail">
+          <pose>0.0 0.78 __RAIL_HEIGHT__ 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.035</radius>
+              <length>2.2</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.85 0.72 0.08 1</ambient>
+            <diffuse>0.97 0.83 0.12 1</diffuse>
+          </material>
+        </visual>
+        <visual name="back_guard_rail">
+          <pose>0.0 -0.78 __RAIL_HEIGHT__ 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.035</radius>
+              <length>2.2</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.85 0.72 0.08 1</ambient>
+            <diffuse>0.97 0.83 0.12 1</diffuse>
+          </material>
+        </visual>
+        <visual name="camera_mast">
+          <pose>0 0 __MAST_HALF_HEIGHT__ 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.06</radius>
+              <length>__MAST_HEIGHT__</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.11 0.12 0.12 1</ambient>
+            <diffuse>0.18 0.19 0.19 1</diffuse>
+          </material>
+        </visual>
+        <collision name="deck_collision">
+          <pose>0 0 __DECK_HEIGHT__ 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.2 1.5 0.12</size>
+            </box>
+          </geometry>
+        </collision>
+      </link>
+      <link name="camera_link">
+        <gravity>false</gravity>
+        <kinematic>true</kinematic>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.02</ixx>
+            <ixy>0.0</ixy>
+            <ixz>0.0</ixz>
+            <iyy>0.02</iyy>
+            <iyz>0.0</iyz>
+            <izz>0.02</izz>
+          </inertia>
+        </inertial>
+        <pose>0 0 __CAMERA_Z__ __CAMERA_ROLL__ __CAMERA_PITCH__ __CAMERA_YAW__</pose>
+        <visual name="sensor_pod_back_wall">
+          <pose>-0.36 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.04 0.90 0.38</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.02 0.025 0.030 1</ambient>
+            <diffuse>0.08 0.09 0.10 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_pod_top_wall">
+          <pose>0 0 0.19 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.76 0.90 0.04</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.02 0.025 0.030 1</ambient>
+            <diffuse>0.08 0.09 0.10 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_pod_bottom_wall">
+          <pose>0 0 -0.19 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.76 0.90 0.04</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.02 0.025 0.030 1</ambient>
+            <diffuse>0.08 0.09 0.10 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_pod_left_wall">
+          <pose>0 0.45 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.76 0.04 0.38</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.02 0.025 0.030 1</ambient>
+            <diffuse>0.08 0.09 0.10 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_pod_right_wall">
+          <pose>0 -0.45 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.76 0.04 0.38</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.02 0.025 0.030 1</ambient>
+            <diffuse>0.08 0.09 0.10 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_pod_front_top_lip">
+          <pose>0.36 0 0.19 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.08 0.90 0.04</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.015 0.018 0.022 1</ambient>
+            <diffuse>0.05 0.055 0.06 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_pod_front_bottom_lip">
+          <pose>0.36 0 -0.19 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.08 0.90 0.04</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.015 0.018 0.022 1</ambient>
+            <diffuse>0.05 0.055 0.06 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_pod_front_left_lip">
+          <pose>0.36 0.45 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.08 0.04 0.38</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.015 0.018 0.022 1</ambient>
+            <diffuse>0.05 0.055 0.06 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_pod_front_right_lip">
+          <pose>0.36 -0.45 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.08 0.04 0.38</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.015 0.018 0.022 1</ambient>
+            <diffuse>0.05 0.055 0.06 1</diffuse>
+          </material>
+        </visual>
+        <visual name="rgb_camera_body">
+          <pose>0.06 -0.22 0.08 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.24 0.18 0.16</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.03 0.035 0.040 1</ambient>
+            <diffuse>0.11 0.12 0.13 1</diffuse>
+          </material>
+        </visual>
+        <visual name="rgb_lens">
+          <pose>0.23 -0.22 0.08 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.075</radius>
+              <length>0.10</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.01 0.015 0.018 1</ambient>
+            <diffuse>0.02 0.025 0.03 1</diffuse>
+            <specular>0.50 0.50 0.55 1</specular>
+          </material>
+        </visual>
+        <visual name="thermal_camera_body">
+          <pose>0.06 0.22 0.08 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.24 0.18 0.16</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.035 0.028 0.022 1</ambient>
+            <diffuse>0.14 0.10 0.07 1</diffuse>
+          </material>
+        </visual>
+        <visual name="thermal_lens">
+          <pose>0.23 0.22 0.08 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.070</radius>
+              <length>0.10</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.025 0.010 0.004 1</ambient>
+            <diffuse>0.08 0.035 0.015 1</diffuse>
+            <specular>0.45 0.28 0.16 1</specular>
+          </material>
+        </visual>
+        <visual name="livox_lidar_body">
+          <pose>0.04 0 -0.10 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.28 0.24 0.16</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.045 0.045 0.038 1</ambient>
+            <diffuse>0.16 0.16 0.13 1</diffuse>
+          </material>
+        </visual>
+        <visual name="livox_lidar_window">
+          <pose>0.23 0 -0.10 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.095</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.004 0.010 0.012 1</ambient>
+            <diffuse>0.015 0.050 0.055 1</diffuse>
+            <specular>0.25 0.65 0.70 1</specular>
+          </material>
+        </visual>
+        <collision name="sensor_pod_back_wall_collision">
+          <pose>-0.36 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.04 0.90 0.38</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="sensor_pod_top_wall_collision">
+          <pose>0 0 0.19 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.76 0.90 0.04</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="sensor_pod_bottom_wall_collision">
+          <pose>0 0 -0.19 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.76 0.90 0.04</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="sensor_pod_left_wall_collision">
+          <pose>0 0.45 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.76 0.04 0.38</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="sensor_pod_right_wall_collision">
+          <pose>0 -0.45 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.76 0.04 0.38</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="sensor_pod_front_top_lip_collision">
+          <pose>0.36 0 0.19 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.08 0.90 0.04</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="sensor_pod_front_bottom_lip_collision">
+          <pose>0.36 0 -0.19 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.08 0.90 0.04</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="sensor_pod_front_left_lip_collision">
+          <pose>0.36 0.45 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.08 0.04 0.38</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="sensor_pod_front_right_lip_collision">
+          <pose>0.36 -0.45 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.08 0.04 0.38</size>
+            </box>
+          </geometry>
+        </collision>
+        <sensor name="__RGB_CAMERA_NAME__" type="camera">
+          <pose>0.36 0 0 0 0 0</pose>
+          <camera name="__RGB_CAMERA_NAME__">
+            <horizontal_fov>__CAMERA_HORIZONTAL_FOV__</horizontal_fov>
+            <image>
+              <width>__RGB_IMAGE_WIDTH__</width>
+              <height>__RGB_IMAGE_HEIGHT__</height>
+              <format>__RGB_IMAGE_FORMAT__</format>
+            </image>
+            <clip>
+              <near>__CAMERA_NEAR_CLIP__</near>
+              <far>__CAMERA_FAR_CLIP__</far>
+            </clip>
+          </camera>
+          <always_on>true</always_on>
+          <update_rate>__CAMERA_UPDATE_RATE__</update_rate>
+          <visualize>__CAMERA_VISUALIZE__</visualize>
+          <topic>__GZ_RGB_IMAGE_TOPIC__</topic>
+        </sensor>
+        <sensor name="__THERMAL_CAMERA_NAME__" type="thermal">
+          <pose>0.36 0 0 0 0 0</pose>
+          <camera name="__THERMAL_CAMERA_NAME__">
+            <horizontal_fov>__CAMERA_HORIZONTAL_FOV__</horizontal_fov>
+            <image>
+              <width>__THERMAL_IMAGE_WIDTH__</width>
+              <height>__THERMAL_IMAGE_HEIGHT__</height>
+              <format>__THERMAL_IMAGE_FORMAT__</format>
+            </image>
+            <clip>
+              <near>__CAMERA_NEAR_CLIP__</near>
+              <far>__CAMERA_FAR_CLIP__</far>
+            </clip>
+          </camera>
+          <always_on>true</always_on>
+          <update_rate>__CAMERA_UPDATE_RATE__</update_rate>
+          <visualize>__CAMERA_VISUALIZE__</visualize>
+          <topic>__GZ_THERMAL_IMAGE_TOPIC__</topic>
+          <plugin
+            filename="gz-sim-thermal-sensor-system"
+            name="gz::sim::systems::ThermalSensor">
+            <min_temp>__THERMAL_MIN_TEMP__</min_temp>
+            <max_temp>__THERMAL_MAX_TEMP__</max_temp>
+            <resolution>__THERMAL_RESOLUTION__</resolution>
+          </plugin>
+        </sensor>
+        <sensor name="__LIDAR_NAME__" type="gpu_lidar">
+          <pose>0.36 0 0 0 0 0</pose>
+          <topic>__GZ_LIDAR_SCAN_TOPIC__</topic>
+          <update_rate>__LIDAR_UPDATE_RATE__</update_rate>
+          <lidar>
+            <scan>
+              <horizontal>
+                <samples>__LIDAR_HORIZONTAL_SAMPLES__</samples>
+                <resolution>__LIDAR_DOWNSAMPLE__</resolution>
+                <min_angle>__LIDAR_HORIZONTAL_MIN_ANGLE__</min_angle>
+                <max_angle>__LIDAR_HORIZONTAL_MAX_ANGLE__</max_angle>
+              </horizontal>
+              <vertical>
+                <samples>__LIDAR_VERTICAL_SAMPLES__</samples>
+                <resolution>__LIDAR_DOWNSAMPLE__</resolution>
+                <min_angle>__LIDAR_VERTICAL_MIN_ANGLE__</min_angle>
+                <max_angle>__LIDAR_VERTICAL_MAX_ANGLE__</max_angle>
+              </vertical>
+            </scan>
+            <range>
+              <min>__LIDAR_MIN_RANGE__</min>
+              <max>__LIDAR_MAX_RANGE__</max>
+              <resolution>__LIDAR_RANGE_RESOLUTION__</resolution>
+            </range>
+          </lidar>
+          <always_on>true</always_on>
+          <visualize>__LIDAR_VISUALIZE__</visualize>
+        </sensor>
+      </link>
+      <joint name="camera_mount" type="fixed">
+        <parent>structure_link</parent>
+        <child>camera_link</child>
+      </joint>
+      <plugin
+        filename="gz-sim-velocity-control-system"
+        name="gz::sim::systems::VelocityControl">
+        <topic>__PLATFORM_GZ_CMD_TOPIC__</topic>
+      </plugin>
+    </model>
+  </world>
+</sdf>
