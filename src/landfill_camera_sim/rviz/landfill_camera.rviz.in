@@ -35,12 +35,32 @@ Visualization Manager:
       Unreliable: false
       Value: true
     - Class: rviz_default_plugins/PointCloud2
-      Enabled: true
-      Name: Livox Lidar
+      Enabled: false
+      Name: Livox Lidar (raw)
       Queue Size: 10
       Size (Pixels): 3
       Style: Points
       Topic: __ROS_LIDAR_POINTS_TOPIC__
+      Unreliable: false
+      Value: false
+    - Class: rviz_default_plugins/PointCloud2
+      Enabled: true
+      Name: Fused (RGB+thermal, 1 scan)
+      Color Transformer: RGB8
+      Queue Size: 10
+      Size (Pixels): 3
+      Style: Points
+      Topic: __ROS_FUSION_POINTS_TOPIC__
+      Unreliable: false
+      Value: true
+    - Class: rviz_default_plugins/PointCloud2
+      Enabled: true
+      Name: Merged (1s window, ICP)
+      Color Transformer: RGB8
+      Queue Size: 10
+      Size (Pixels): 3
+      Style: Points
+      Topic: __ROS_MERGED_POINTS_TOPIC__
       Unreliable: false
       Value: true
   Enabled: true

@@ -84,3 +84,36 @@ Both are plain parameters (topics, sync slop, window duration, ICP voxel
 size/iterations) -- see `sensor_fusion.launch.py` for the full list, and
 override `*_topic` there when running against `scan_test_sim.launch.py`'s
 `/scan_test/...` topics instead of the landfill scenario's `/landfill/...`.
+
+## Streaming the fused cloud over the network
+
+`web_stream.launch.py` serves the merged cloud to any browser -- no ROS
+install needed on the viewing device:
+
+```bash
+ros2 launch landfill_camera_sim web_stream.launch.py
+```
+
+`fusion_web_streamer.py` subscribes to `points_merged` (override
+`input_topic` for `points_rgbt` or a `/scan_test/...` topic), keeps the
+latest scan as a compact binary buffer, and serves it plus a
+self-contained three.js viewer (RGB/thermal color toggle, orbit camera)
+over plain HTTP on port 8080 (`http_port` param) -- open
+`http://<this-machine>:8080/`.
+
+**Reaching it from another device on WiFi, from WSL2:** WSL2 puts this
+machine behind a NAT (its own IP, e.g. `172.18.213.120`, isn't reachable
+from the LAN), but Windows forwards `localhost` into WSL2 automatically,
+so `http://localhost:8080/` already works *on the Windows host itself*.
+For other devices on the WiFi network, forward the port from Windows to
+WSL2 -- in an elevated PowerShell on the Windows host:
+
+```powershell
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=8080 connectaddress=<WSL2-IP> connectport=8080
+netsh advfirewall firewall add rule name="PitFusion3D web stream" dir=in action=allow protocol=TCP localport=8080
+```
+
+Get `<WSL2-IP>` from `ip addr show eth0` inside WSL2 (it can change on
+reboot, so redo the `portproxy` line if it stops working after one).
+Then browse to `http://<windows-wifi-ip>:8080/` from any device on the
+network (find the Windows WiFi IP with `ipconfig`).
