@@ -30,6 +30,15 @@ Server-only (no GUI):
 ros2 launch landfill_camera_sim landfill_camera_sim.launch.py gz_gui:=false rviz:=false
 ```
 
+Each scenario is entirely self-contained -- run whichever one you want,
+independently of the other:
+
+| | Landfill (moving platform) | Scan test (stationary, rotating) |
+|---|---|---|
+| Simulator | `ros2 launch landfill_camera_sim landfill_camera_sim.launch.py` | `ros2 launch landfill_camera_sim scan_test_sim.launch.py` |
+| Fusion pipeline | `ros2 launch landfill_camera_sim sensor_fusion.launch.py` | `ros2 launch landfill_camera_sim sensor_fusion.launch.py lidar_points_topic:=/scan_test/livox/points rgb_image_topic:=/scan_test/rgb/image_raw thermal_image_topic:=/scan_test/thermal/image_raw fused_points_topic:=/scan_test/fusion/points_rgbt merged_points_topic:=/scan_test/fusion/points_merged` |
+| Web streamer | `ros2 launch landfill_camera_sim web_stream.launch.py` | `ros2 launch landfill_camera_sim web_stream.launch.py input_topic:=/scan_test/fusion/points_merged` |
+
 Sensor settings and topic names live in the YAML files under `config/`.
 Platform motion is under `platform.motion` in each -- linear speed +
 travel distance for the landfill run, `travel_distance: 0` with a nonzero
