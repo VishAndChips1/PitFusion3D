@@ -84,9 +84,10 @@ class RegistrationMergeNode(Node):
         self.declare_parameter('max_icp_iterations', 20)
         self.declare_parameter('max_correspondence_distance', 0.5)
         self.declare_parameter('min_correspondences', 200)
-        # 0 = keep every point from every scan in the window (e.g. 10 scans
-        # of 24000 points/scan merges into 240000 points, not decimated).
-        self.declare_parameter('output_voxel_size', 0.0)
+        # 1cm voxel: merges near-duplicate points where scans overlap
+        # without visibly thinning the cloud (0 keeps every raw point,
+        # e.g. 10 scans of 24000 points/scan -> 240000 points).
+        self.declare_parameter('output_voxel_size', 0.01)
 
         input_topic = str(self.get_parameter('input_topic').value)
         output_topic = str(self.get_parameter('output_topic').value)

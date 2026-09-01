@@ -172,6 +172,12 @@ window.addEventListener('resize', () => {
 """
 
 
+class _ReusableThreadingTCPServer(socketserver.ThreadingTCPServer):
+    # Without this, a quick restart (or a killed/crashed prior instance)
+    # fails to rebind the port for ~a minute while it's in TIME_WAIT.
+    allow_reuse_address = True
+
+
 class _SharedState:
     def __init__(self):
         self.lock = threading.Lock()
@@ -221,7 +227,7 @@ class FusionWebStreamer(Node):
 
         self._state = _SharedState()
         handler = type('BoundHandler', (_Handler,), {'shared_state': self._state})
-        self._server = socketserver.ThreadingTCPServer(('0.0.0.0', self._http_port), handler)
+        self._server = _ReusableThreadingTCPServer(('0.0.0.0', self._http_port), handler)
         self._server.daemon_threads = True
         self._server_thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._server_thread.start()
