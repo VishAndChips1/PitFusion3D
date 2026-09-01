@@ -55,6 +55,14 @@ the real, non-repetitive Avia scan pattern from
 (`config/scan_patterns/avia.csv`), rather than a synthetic curve -- see
 `config/scan_patterns/README.md`.
 
+Its input is the sensor's `<topic>/points` (`gz.msgs.PointCloudPacked`,
+bridged to `sensor_msgs/msg/PointCloud2`) -- the real per-ray x,y,z grid
+gz-sim's `gpu_lidar` publishes alongside its `LaserScan`, not the
+`LaserScan` itself, which only carries one flat horizontal row with no
+elevation information and can't represent a multi-row sensor like this
+one. The `LaserScan` topic is still bridged (some tools expect it) but
+isn't consumed by anything in this package.
+
 ## Calibration
 
 `config/calibration/extrinsics.yaml` and `intrinsics.yaml` are the

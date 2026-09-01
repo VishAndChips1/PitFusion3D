@@ -2,13 +2,15 @@
 
 import csv
 import math
-import struct
+
+import numpy as np
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from sensor_msgs.msg import LaserScan, PointCloud2, PointField
+from sensor_msgs.msg import PointCloud2, PointField
+from sensor_msgs_py import point_cloud2 as pc2
 
 
 def _load_scan_pattern(csv_path):
@@ -48,7 +50,18 @@ class LivoxPatternFilter(Node):
         except Exception:
             pass
 
-        self.declare_parameter('input_scan_topic', '/landfill/livox/raw_scan')
+        # Gazebo Sim's gpu_lidar sensor auto-publishes a native structured
+        # point cloud on <lidar topic>/points (gz.msgs.PointCloudPacked,
+        # bridged as sensor_msgs/msg/PointCloud2) with real per-ray x,y,z
+        # from its own raycasting, laid out as a regular
+        # horizontal_samples x vertical_samples grid. That -- not the
+        # bridged sensor_msgs/msg/LaserScan, which only carries a single
+        # flat horizontal row with no elevation information at all -- is
+        # this node's input, so every one of the 24000 Avia pattern points
+        # gets its own real 3D sample instead of reusing one row's range
+        # across every elevation angle (which produced a flat, planar
+        # cloud).
+        self.declare_parameter('input_points_topic', '/landfill/livox/raw_scan/points')
         self.declare_parameter('output_points_topic', '/landfill/livox/points')
         self.declare_parameter('frame_id', 'camera_platform/camera_link')
         self.declare_parameter('horizontal_samples', 200)
@@ -63,7 +76,7 @@ class LivoxPatternFilter(Node):
         self.declare_parameter('range_max', 200.0)
         self.declare_parameter('scan_pattern_csv', default_csv)
 
-        self.input_scan_topic = self.get_parameter('input_scan_topic').value
+        self.input_points_topic = self.get_parameter('input_points_topic').value
         self.output_points_topic = self.get_parameter('output_points_topic').value
         self.frame_id = self.get_parameter('frame_id').value
         self.horizontal_samples = int(self.get_parameter('horizontal_samples').value)
@@ -82,8 +95,28 @@ class LivoxPatternFilter(Node):
             raise RuntimeError(
                 'scan_pattern_csv is empty and the packaged avia.csv could not be located'
             )
-        self.pattern_azimuth, self.pattern_zenith = _load_scan_pattern(scan_pattern_csv)
-        self.pattern_size = len(self.pattern_azimuth)
+        pattern_azimuth, pattern_zenith = _load_scan_pattern(scan_pattern_csv)
+        self.pattern_size = len(pattern_azimuth)
+
+        # Precompute each Avia pattern row's target (horizontal_index,
+        # vertical_index) into the incoming grid once, since the pattern
+        # table itself never changes.
+        pattern_azimuth = np.asarray(pattern_azimuth)
+        pattern_zenith = np.asarray(pattern_zenith)
+        horizontal_angle = pattern_azimuth
+        # Upstream's zenith-after-90deg-shift is a pitch where positive
+        # means "down" (Gazebo's pitch convention, also used for this
+        # package's camera rpy); the incoming grid's z is up, so flip sign.
+        vertical_angle = -pattern_zenith
+        self.pattern_horizontal_index = self._angle_to_index_array(
+            horizontal_angle, self.horizontal_min_angle, self.horizontal_max_angle, self.horizontal_samples
+        )
+        self.pattern_vertical_index = self._angle_to_index_array(
+            vertical_angle, self.vertical_min_angle, self.vertical_max_angle, self.vertical_samples
+        )
+        self.pattern_grid_index = (
+            self.pattern_vertical_index * self.horizontal_samples + self.pattern_horizontal_index
+        )
 
         # Running index into the scan pattern table, advanced by
         # points_per_scan every update (regardless of downsample) and
@@ -93,21 +126,21 @@ class LivoxPatternFilter(Node):
         # real Avia pattern.
         self.pattern_index = 0
 
-        self.expected_ranges = self.horizontal_samples * self.vertical_samples
-        self.warned_range_shape = False
+        self.expected_points = self.horizontal_samples * self.vertical_samples
+        self.warned_grid_shape = False
 
         self.publisher = self.create_publisher(PointCloud2, self.output_points_topic, 10)
         self.subscription = self.create_subscription(
-            LaserScan,
-            self.input_scan_topic,
-            self._on_scan,
+            PointCloud2,
+            self.input_points_topic,
+            self._on_points,
             10,
         )
 
         self.get_logger().info(
             'Publishing Livox Avia pattern %s -> %s (%d points/scan, %d-row scan table from %s)'
             % (
-                self.input_scan_topic,
+                self.input_points_topic,
                 self.output_points_topic,
                 self.points_per_scan,
                 self.pattern_size,
@@ -115,67 +148,54 @@ class LivoxPatternFilter(Node):
             )
         )
 
-    def _on_scan(self, scan):
-        range_count = len(scan.ranges)
-        if range_count < self.horizontal_samples:
+    def _on_points(self, cloud_msg):
+        grid_point_count = cloud_msg.width * cloud_msg.height
+        if grid_point_count != self.expected_points and not self.warned_grid_shape:
+            self.warned_grid_shape = True
             self.get_logger().warn(
-                'Expected at least %d lidar ranges, received %d'
-                % (self.horizontal_samples, range_count)
+                'Expected a %dx%d (%d point) lidar grid, got %dx%d (%d points); '
+                'indices may not line up with the configured FOV.'
+                % (
+                    self.horizontal_samples, self.vertical_samples, self.expected_points,
+                    cloud_msg.width, cloud_msg.height, grid_point_count,
+                )
             )
+        if grid_point_count == 0:
             return
-        has_vertical_grid = range_count >= self.expected_ranges
-        if not has_vertical_grid and not self.warned_range_shape:
-            self.warned_range_shape = True
-            self.get_logger().warn(
-                'ROS LaserScan bridge exposed %d horizontal ranges; sampling the '
-                'real Avia scan pattern while using measured horizontal ranges.'
-                % range_count
-            )
+
+        grid = pc2.read_points_numpy(cloud_msg, field_names=['x', 'y', 'z', 'intensity'])
+        if grid.shape[0] < self.expected_points:
+            return  # grid smaller than configured FOV; indices would be out of range
 
         start_index = self.pattern_index
         self.pattern_index = (self.pattern_index + self.points_per_scan) % self.pattern_size
 
-        points = bytearray()
-        for step in range(0, self.points_per_scan, self.downsample):
-            pattern_row = (start_index + step) % self.pattern_size
-            horizontal_angle, vertical_angle = self._pattern_angles(pattern_row)
-            horizontal_index = self._angle_to_index(
-                horizontal_angle,
-                self.horizontal_min_angle,
-                self.horizontal_max_angle,
-                self.horizontal_samples,
-            )
-            vertical_index = self._angle_to_index(
-                vertical_angle,
-                self.vertical_min_angle,
-                self.vertical_max_angle,
-                self.vertical_samples,
-            )
+        sample_rows = (start_index + np.arange(0, self.points_per_scan, self.downsample)) % self.pattern_size
+        grid_indices = self.pattern_grid_index[sample_rows]
 
-            if has_vertical_grid:
-                range_index = vertical_index * self.horizontal_samples + horizontal_index
-            else:
-                range_index = min(range_count - 1, horizontal_index)
-            distance = float(scan.ranges[range_index])
-            if (
-                not math.isfinite(distance)
-                or distance < self.range_min
-                or distance > self.range_max
-            ):
-                continue
+        sampled = grid[grid_indices]
+        xyz = sampled[:, 0:3]
+        intensity = sampled[:, 3]
 
-            cos_vertical = math.cos(vertical_angle)
-            x = distance * cos_vertical * math.cos(horizontal_angle)
-            y = distance * cos_vertical * math.sin(horizontal_angle)
-            z = distance * math.sin(vertical_angle)
-            intensity = float(pattern_row % 255)
-            points.extend(struct.pack('<ffff', x, y, z, intensity))
+        distance = np.linalg.norm(xyz, axis=1)
+        valid = np.isfinite(distance) & (distance >= self.range_min) & (distance <= self.range_max)
+
+        out_xyz = xyz[valid].astype(np.float32)
+        out_intensity = intensity[valid].astype(np.float32)
+        # NaN/garbage intensity from unhit rays; fall back to the pattern
+        # row index (matches the previous synthetic-intensity behavior).
+        out_intensity = np.where(np.isfinite(out_intensity), out_intensity, sample_rows[valid] % 255)
+
+        n = out_xyz.shape[0]
+        payload = np.empty((n, 4), dtype=np.float32)
+        payload[:, 0:3] = out_xyz
+        payload[:, 3] = out_intensity
 
         cloud = PointCloud2()
-        cloud.header = scan.header
+        cloud.header = cloud_msg.header
         cloud.header.frame_id = self.frame_id
         cloud.height = 1
-        cloud.width = len(points) // 16
+        cloud.width = n
         cloud.fields = [
             PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
             PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
@@ -184,28 +204,18 @@ class LivoxPatternFilter(Node):
         ]
         cloud.is_bigendian = False
         cloud.point_step = 16
-        cloud.row_step = cloud.point_step * cloud.width
-        cloud.data = bytes(points)
+        cloud.row_step = cloud.point_step * n
+        cloud.data = payload.tobytes()
         cloud.is_dense = False
         self.publisher.publish(cloud)
 
-    def _pattern_angles(self, pattern_row):
-        horizontal_angle = self.pattern_azimuth[pattern_row]
-        # Upstream's zenith-after-90deg-shift is a pitch where positive
-        # means "down" (Gazebo's pitch convention, also used for this
-        # package's camera rpy). This node treats positive vertical_angle
-        # as "up" (z = distance * sin(vertical_angle)), so the sign is
-        # flipped here.
-        vertical_angle = -self.pattern_zenith[pattern_row]
-        return horizontal_angle, vertical_angle
-
     @staticmethod
-    def _angle_to_index(angle, min_angle, max_angle, sample_count):
+    def _angle_to_index_array(angle, min_angle, max_angle, sample_count):
         if sample_count <= 1 or max_angle <= min_angle:
-            return 0
+            return np.zeros_like(angle, dtype=np.int64)
         normalized = (angle - min_angle) / (max_angle - min_angle)
-        normalized = min(1.0, max(0.0, normalized))
-        return int(round(normalized * (sample_count - 1)))
+        normalized = np.clip(normalized, 0.0, 1.0)
+        return np.round(normalized * (sample_count - 1)).astype(np.int64)
 
 
 def main():

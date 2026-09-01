@@ -232,6 +232,13 @@ def _setup(context):
     ros_lidar_scan_topic = _normalize_topic(
         output_topics.get('lidar_scan', gz_lidar_scan_topic)
     )
+    # gz-sim's gpu_lidar sensor auto-publishes a native structured point
+    # cloud alongside its LaserScan, with real per-ray x,y,z from its own
+    # raycasting (the LaserScan has no elevation info at all -- one flat
+    # horizontal row -- so it can't represent this multi-row sensor).
+    # livox_pattern_filter.py reads this grid, not the LaserScan.
+    gz_lidar_grid_topic = gz_lidar_scan_topic.rstrip('/') + '/points'
+    ros_lidar_grid_topic = ros_lidar_scan_topic.rstrip('/') + '/points'
     ros_lidar_points_topic = _normalize_topic(
         output_topics.get('lidar_points', '/scan_test/livox/points')
     )
@@ -369,6 +376,16 @@ def _setup(context):
             'frame_id': frame_id,
         },
         {
+            'ros_topic_name': ros_lidar_grid_topic,
+            'gz_topic_name': gz_lidar_grid_topic,
+            'ros_type_name': 'sensor_msgs/msg/PointCloud2',
+            'gz_type_name': 'gz.msgs.PointCloudPacked',
+            'direction': 'GZ_TO_ROS',
+            'qos_profile': 'SENSOR_DATA',
+            'lazy': False,
+            'frame_id': frame_id,
+        },
+        {
             'ros_topic_name': ros_clock_topic,
             'gz_topic_name': gz_clock_topic,
             'ros_type_name': 'rosgraph_msgs/msg/Clock',
@@ -423,6 +440,7 @@ def _setup(context):
         f'{gz_rgb_image_topic}@sensor_msgs/msg/Image[gz.msgs.Image',
         f'{gz_thermal_image_topic}@sensor_msgs/msg/Image[gz.msgs.Image',
         f'{gz_lidar_scan_topic}@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+        f'{gz_lidar_grid_topic}@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
         f'{gz_clock_topic}@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
         f'{platform_gz_cmd_topic}@geometry_msgs/msg/Twist]gz.msgs.Twist',
     ]
@@ -430,6 +448,7 @@ def _setup(context):
         (gz_rgb_image_topic, ros_rgb_image_topic),
         (gz_thermal_image_topic, ros_thermal_image_topic),
         (gz_lidar_scan_topic, ros_lidar_scan_topic),
+        (gz_lidar_grid_topic, ros_lidar_grid_topic),
         (gz_clock_topic, ros_clock_topic),
         (platform_gz_cmd_topic, platform_ros_cmd_topic),
     ]
@@ -490,7 +509,7 @@ def _setup(context):
 
     if lidar_pattern_enabled:
         pattern_node_parameters = {
-            'input_scan_topic': ros_lidar_scan_topic,
+            'input_points_topic': ros_lidar_grid_topic,
             'output_points_topic': ros_lidar_points_topic,
             'frame_id': frame_id,
             'horizontal_samples': lidar_horizontal_samples,
