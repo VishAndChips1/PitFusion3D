@@ -32,6 +32,11 @@ def generate_launch_description():
             default_value='1.0',
             description='Length, in seconds, of the scan window merged by registration_merge_node.',
         ),
+        DeclareLaunchArgument(
+            'output_voxel_size',
+            default_value='0.0',
+            description='Voxel size to decimate the merged cloud by; 0 keeps every point from every scan.',
+        ),
 
         Node(
             package=PACKAGE_NAME,
@@ -57,6 +62,7 @@ def generate_launch_description():
                 'input_topic': LaunchConfiguration('fused_points_topic'),
                 'output_topic': LaunchConfiguration('merged_points_topic'),
                 'window_duration': LaunchConfiguration('window_duration'),
+                'output_voxel_size': LaunchConfiguration('output_voxel_size'),
             }],
         ),
     ])
