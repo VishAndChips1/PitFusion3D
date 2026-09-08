@@ -49,6 +49,34 @@ near ambient, and a leachate pond at 291 K. Per-visual temperatures are set with
 the `gz::sim::systems::Thermal` plugin so the thermal camera sees real contrast
 instead of a uniform ambient field.
 
+Around that sit the rest of the site: a weighbridge, site cabin, shipping
+container, lighting masts, jersey barriers, perimeter fencing, skip bins, drums,
+pallets, rebar and cones, plus a parked dozer.
+
+### Moving vehicles
+
+`scene_traffic_controller.py` drives three background vehicles -- a haul truck,
+a wheel loader and a service pickup -- around looping routes so the scans are
+not of a completely static scene.
+
+They are kinematic models carrying gz-sim's `VelocityControl` plugin, driven by
+ROS `Twist` through the same bridge the sensor truck uses. Two other approaches
+were tried and rejected:
+
+- **`TrajectoryFollower`** applies a constant force, and with only Coulomb
+  friction opposing it there is no terminal velocity, so the props accelerated
+  past their waypoints and left the site.
+- **Skinless `<actor>` trajectories** segfault gz-sim 8's `SceneBroadcaster`.
+
+Note the routes are dead-reckoned from the commanded velocity (`VelocityControl`
+publishes no odometry back), so each vehicle's `spawn yaw` in `DEFAULT_ROUTES`
+must match its `<pose>` in the world template or it will veer off route.
+
+Only the vehicles and the ground carry collision geometry. Decorative props are
+visual-only on purpose: gz-sim's `gpu_lidar` and cameras raycast against
+*rendered visuals*, not collisions, so the sensors still see them while the
+physics engine ignores them entirely.
+
 Sensor settings and topic names live in the YAML files under `config/`.
 `config/sensors_sim_lite.yaml` is a reduced-cost profile (quarter-resolution
 images, quarter the lidar rays, half rate) for constrained hardware or faster
@@ -109,6 +137,24 @@ producing flying pixels.
 The 34 MB / 960 000-row Avia table is parsed once and cached as `.npy` under
 `$ROS_HOME/landfill_camera_sim/`, so node startup after the first run is
 immediate.
+
+### Verification against upstream
+
+The upstream plugin is ROS 1 / Gazebo Classic (catkin + `RayPlugin`), so it
+cannot be dropped into ROS 2 + gz-sim and its geometry is reimplemented here
+instead. `test/test_scan_pattern.py` pins that reimplementation to the upstream
+reference -- the direction vectors are compared against the quaternion
+`livox_points_plugin.cpp` builds (`ray.Euler(0, zenith, azimuth)` applied to the
+unit x axis) and agree to 4.4e-16 over 50 000 rays:
+
+```bash
+python3 -m pytest test/test_scan_pattern.py -v
+```
+
+Worth noting: upstream's own source contains a commented-out block that indexes
+returns into a uniform grid exactly the way this package used to, immediately
+above the live code that instead does `point = range * axis` per ray. The fix
+here restores what upstream settled on.
 
 ## Calibration
 

@@ -35,60 +35,92 @@ def _node(ax, x, y, w, h, title, subtitle, color):
         facecolor=color, edgecolor='none', alpha=0.13, zorder=2))
     ax.add_patch(FancyBboxPatch(
         (x, y), w, h, boxstyle='round,pad=0.02,rounding_size=0.06',
-        facecolor='none', edgecolor=color, linewidth=1.6, zorder=3))
-    ax.text(x + w / 2, y + h * 0.62, title, ha='center', va='center',
-            fontsize=9.5, fontweight='bold', color=INK, zorder=4)
-    ax.text(x + w / 2, y + h * 0.26, subtitle, ha='center', va='center',
-            fontsize=7.6, color=MUTED, zorder=4)
+        facecolor='none', edgecolor=color, linewidth=2.2, zorder=3))
+    ax.text(x + w / 2, y + h * 0.63, title, ha='center', va='center',
+            fontsize=15, fontweight='bold', color=INK, zorder=4)
+    ax.text(x + w / 2, y + h * 0.27, subtitle, ha='center', va='center',
+            fontsize=11.5, color=MUTED, zorder=4)
 
 
-def _arrow(ax, x0, y0, x1, y1, label=None, color=MUTED):
+def _arrow(ax, x0, y0, x1, y1, label=None, color=MUTED, label_above=True):
     ax.add_patch(FancyArrowPatch(
-        (x0, y0), (x1, y1), arrowstyle='-|>', mutation_scale=13,
-        color=color, linewidth=1.3, zorder=1,
-        shrinkA=2, shrinkB=2))
+        (x0, y0), (x1, y1), arrowstyle='-|>', mutation_scale=20,
+        color=color, linewidth=2.0, zorder=1,
+        shrinkA=3, shrinkB=3))
     if label:
-        ax.text((x0 + x1) / 2, (y0 + y1) / 2 + 0.11, label, ha='center',
-                va='bottom', fontsize=7.1, color=MUTED, style='italic', zorder=5)
+        mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+        offset = 0.18 if label_above else -0.30
+        ax.text(mx, my + offset, label, ha='center', va='bottom' if label_above else 'top',
+                fontsize=11, color=INK, style='italic', zorder=5,
+                bbox=dict(boxstyle='round,pad=0.22', facecolor='white',
+                          edgecolor='none', alpha=0.95))
 
 
 def fig_pipeline():
-    fig, ax = plt.subplots(figsize=(12, 5.4))
-    ax.set_xlim(0, 12)
-    ax.set_ylim(0, 5.4)
+    """Two-row serpentine flow: wide boxes so the labels stay readable."""
+    fig, ax = plt.subplots(figsize=(15, 9.5))
+    ax.set_xlim(0, 15)
+    ax.set_ylim(0, 9.5)
     ax.axis('off')
 
-    ax.text(0.15, 5.15, 'PitFusion3D pipeline', fontsize=15, fontweight='bold', color=INK)
-    ax.text(0.15, 4.85, 'Gazebo sensors -> Livox resample -> RGB/thermal fusion -> '
-                        'windowed ICP merge -> browser', fontsize=9, color=MUTED)
+    ax.text(0.4, 9.05, 'PitFusion3D pipeline', fontsize=25, fontweight='bold', color=INK)
+    ax.text(0.4, 8.55, 'Gazebo sensors  ->  Livox resample  ->  RGB/thermal fusion  ->  '
+                       'windowed ICP merge  ->  browser', fontsize=13, color=MUTED)
 
-    w, h = 2.05, 0.95
-    _node(ax, 0.15, 3.35, w, h, 'Gazebo Sim', 'RGB / thermal / gpu_lidar', SIM_C)
-    _node(ax, 0.15, 1.95, w, h, 'ros_gz_bridge', 'gz topics -> ROS 2', SIM_C)
-    _node(ax, 0.15, 0.55, w, h, 'platform_motion', 'truck cmd_vel', SIM_C)
+    w, h = 4.2, 1.5
+    top, bottom = 6.3, 3.3
+    xa, xb, xc = 0.4, 5.4, 10.4
 
-    _node(ax, 2.75, 1.95, w, h, 'livox_pattern_filter', 'true-angle resample', PROC_C)
-    _node(ax, 5.35, 1.95, w, h, 'sensor_fusion_node', 'colour + temperature', PROC_C)
-    _node(ax, 7.95, 1.95, w, h, 'registration_merge', 'ICP over 1s window', PROC_C)
-    _node(ax, 10.45, 1.95, 1.4, h, 'web streamer', ':8080', OUT_C)
+    _node(ax, xa, top, w, h, 'Gazebo Sim', 'RGB / thermal / gpu_lidar', SIM_C)
+    _node(ax, xb, top, w, h, 'ros_gz_bridge', 'gz topics  ->  ROS 2', SIM_C)
+    _node(ax, xc, top, w, h, 'livox_pattern_filter', 'true-angle resample', PROC_C)
 
-    _node(ax, 5.35, 3.35, w, h, 'calibration_publisher', 'intrinsics + extrinsics', SIM_C)
+    _node(ax, xa, bottom, w, h, 'sensor_fusion_node', 'colour + temperature', PROC_C)
+    _node(ax, xb, bottom, w, h, 'registration_merge', 'ICP over 1s window', PROC_C)
+    _node(ax, xc, bottom, w, h, 'web streamer', 'browser on :8080', OUT_C)
 
-    _arrow(ax, 1.18, 3.35, 1.18, 2.90, None)
-    _arrow(ax, 2.20, 2.42, 2.75, 2.42, 'raw_scan/points')
-    _arrow(ax, 4.80, 2.42, 5.35, 2.42, 'livox/points')
-    _arrow(ax, 7.40, 2.42, 7.95, 2.42, 'points_rgbt')
-    _arrow(ax, 10.00, 2.42, 10.45, 2.42, 'points_merged')
-    _arrow(ax, 6.37, 3.35, 6.37, 2.90, 'camera_info')
-    # The controller publishes cmd_vel up into the bridge, which forwards it
-    # to Gazebo's VelocityControl plugin.
-    _arrow(ax, 1.18, 1.50, 1.18, 1.95, 'cmd_vel')
-    ax.text(2.45, 1.02, 'drives the truck through the scene', fontsize=7.4,
-            color=MUTED, style='italic', va='center')
+    _node(ax, xa, 0.75, w, 1.25, 'calibration_publisher', 'intrinsics + extrinsics', SIM_C)
+    _node(ax, xb, 0.75, w, 1.25, 'platform_motion', 'drives the truck', SIM_C)
 
-    ax.text(0.15, 0.12, 'blue: simulation + bridge     green: processing nodes '
-                        '(the Raspberry Pi 5 workload)     amber: output',
-            fontsize=7.8, color=MUTED)
+    mid_top, mid_bottom = top + h / 2, bottom + h / 2
+    _arrow(ax, xa + w, mid_top, xb, mid_top, 'sensor topics')
+    _arrow(ax, xb + w, mid_top, xc, mid_top, 'raw_scan/points')
+    _arrow(ax, xa + w, mid_bottom, xb, mid_bottom, 'points_rgbt')
+    _arrow(ax, xb + w, mid_bottom, xc, mid_bottom, 'points_merged')
+
+    # Wrap from the end of the top row down and back to the start of the
+    # bottom row, the way a serpentine flow chart reads. Drawn as an explicit
+    # elbow: matplotlib's 'angle' connector rejects a 180-degree pair.
+    wrap_y = (top + bottom + h) / 2
+    ax.plot([xc + w / 2, xc + w / 2], [top - 0.05, wrap_y],
+            color=MUTED, linewidth=2.0, zorder=1, solid_capstyle='round')
+    ax.plot([xc + w / 2, xa + w / 2], [wrap_y, wrap_y],
+            color=MUTED, linewidth=2.0, zorder=1, solid_capstyle='round')
+    ax.add_patch(FancyArrowPatch(
+        (xa + w / 2, wrap_y), (xa + w / 2, bottom + h),
+        arrowstyle='-|>', mutation_scale=20, color=MUTED, linewidth=2.0,
+        zorder=1, shrinkA=0, shrinkB=3))
+    ax.text((xa + xc) / 2 + w / 2, wrap_y + 0.14, 'livox/points', fontsize=11,
+            color=INK, style='italic', ha='center',
+            bbox=dict(boxstyle='round,pad=0.22', facecolor='white',
+                      edgecolor='none', alpha=0.95), zorder=5)
+
+    _arrow(ax, xa + w / 2, 2.0, xa + w / 2, bottom, 'camera_info', label_above=False)
+    # Short stub rather than a long line: cmd_vel goes back through the bridge
+    # into Gazebo, and drawing that literally would cut across the whole chart.
+    _arrow(ax, xb + w / 2, 2.0, xb + w / 2, 2.75, None)
+    ax.text(xb + w / 2 + 0.15, 2.5, 'cmd_vel  ->  ros_gz_bridge  ->  Gazebo',
+            fontsize=11, color=INK, style='italic', va='center', ha='left',
+            bbox=dict(boxstyle='round,pad=0.22', facecolor='white',
+                      edgecolor='none', alpha=0.95), zorder=5)
+
+    legend = [('blue: simulation + bridge', SIM_C),
+              ('green: processing nodes (the Raspberry Pi 5 workload)', PROC_C),
+              ('amber: output', OUT_C)]
+    x = 0.4
+    for label, color in legend:
+        ax.text(x, 0.25, label, fontsize=11.5, color=color, fontweight='bold')
+        x += len(label) * 0.107 + 0.5
     fig.tight_layout()
     return fig
 

@@ -439,6 +439,11 @@ def _setup(context):
     # RGB/thermal camera_info are intentionally not bridged from Gazebo:
     # calibration_publisher.py is the single source of truth for intrinsics,
     # publishing them on these same ROS topics from config/calibration/intrinsics.yaml.
+    # Background vehicles are driven the same way as the sensor truck: ROS
+    # Twist bridged into each prop's VelocityControl plugin.
+    scene_vehicles = ['haul_truck', 'wheel_loader', 'service_pickup']
+    scene_vehicle_topics = [f'/model/{name}/cmd_vel' for name in scene_vehicles]
+
     bridge_arguments = [
         f'{gz_rgb_image_topic}@sensor_msgs/msg/Image[gz.msgs.Image',
         f'{gz_thermal_image_topic}@sensor_msgs/msg/Image[gz.msgs.Image',
@@ -446,7 +451,7 @@ def _setup(context):
         f'{gz_lidar_grid_topic}@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
         f'{gz_clock_topic}@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
         f'{platform_gz_cmd_topic}@geometry_msgs/msg/Twist]gz.msgs.Twist',
-    ]
+    ] + [f'{topic}@geometry_msgs/msg/Twist]gz.msgs.Twist' for topic in scene_vehicle_topics]
     bridge_remappings = [
         (gz_rgb_image_topic, ros_rgb_image_topic),
         (gz_thermal_image_topic, ros_thermal_image_topic),
@@ -509,6 +514,17 @@ def _setup(context):
                 'update_rate': motion_update_rate,
             }],
         ))
+
+    actions.append(Node(
+        package=PACKAGE_NAME,
+        executable='scene_traffic_controller.py',
+        name='scene_traffic_controller',
+        output='screen',
+        parameters=[{
+            'vehicles': scene_vehicles,
+            'update_rate': 20.0,
+        }],
+    ))
 
     if lidar_pattern_enabled:
         pattern_node_parameters = {
