@@ -12,8 +12,9 @@ Two interchangeable worlds, both using the exact same sensor rig, config
 schema, and node stack:
 
 - **`landfill_camera_sim.launch.py`** (`config/sensors_sim.yaml`,
-  `worlds/landfill_camera_world.sdf.in`) -- the rig rides a platform that
-  drives back and forth along a landfill access road.
+  `worlds/landfill_camera_world.sdf.in`) -- the rig rides a mast on a works
+  truck (cab, open refuse body, tandem rear axles) that drives back and forth
+  along a landfill access road.
 - **`scan_test_sim.launch.py`** (`config/scan_test_sim.yaml`,
   `worlds/scan_test_world.sdf.in`) -- the rig is stationary and slowly
   yaws in place (no translation) inside a ring of ~24 colorful primitive
@@ -39,7 +40,25 @@ independently of the other:
 | Fusion pipeline | `ros2 launch landfill_camera_sim sensor_fusion.launch.py` | `ros2 launch landfill_camera_sim sensor_fusion.launch.py lidar_points_topic:=/scan_test/livox/points rgb_image_topic:=/scan_test/rgb/image_raw thermal_image_topic:=/scan_test/thermal/image_raw fused_points_topic:=/scan_test/fusion/points_rgbt merged_points_topic:=/scan_test/fusion/points_merged` |
 | Web streamer | `ros2 launch landfill_camera_sim web_stream.launch.py` | `ros2 launch landfill_camera_sim web_stream.launch.py input_topic:=/scan_test/fusion/points_merged` |
 
+![Sensor truck](benchmark/report/truck_platform.png)
+
+The landfill world carries a thermal signature worth imaging: a gas flare at
+760 K, smouldering subsurface hot spots at 370-425 K on the active cell,
+sun-warmed asphalt and scrap metal at 310-325 K, a capped cell under vegetation
+near ambient, and a leachate pond at 291 K. Per-visual temperatures are set with
+the `gz::sim::systems::Thermal` plugin so the thermal camera sees real contrast
+instead of a uniform ambient field.
+
 Sensor settings and topic names live in the YAML files under `config/`.
+`config/sensors_sim_lite.yaml` is a reduced-cost profile (quarter-resolution
+images, quarter the lidar rays, half rate) for constrained hardware or faster
+iteration:
+
+```bash
+ros2 launch landfill_camera_sim landfill_camera_sim.launch.py \
+  config_file:=$(ros2 pkg prefix landfill_camera_sim)/share/landfill_camera_sim/config/sensors_sim_lite.yaml
+```
+
 Platform motion is under `platform.motion` in each -- linear speed +
 travel distance for the landfill run, `travel_distance: 0` with a nonzero
 `angular_speed` for the stationary scan (see `platform_motion_controller.py`).
@@ -49,7 +68,7 @@ and lidar point cloud together (`rviz/landfill_camera.rviz.in`).
 
 ## Lidar scan pattern
 
-`livox_pattern_filter.py` reshapes the native Gazebo `gpu_lidar` scan into
+`livox_pattern_filter.py` resamples the native Gazebo `gpu_lidar` scan into
 the real, non-repetitive Avia scan pattern from
 [Livox-SDK/livox_laser_simulation](https://github.com/Livox-SDK/livox_laser_simulation)
 (`config/scan_patterns/avia.csv`), rather than a synthetic curve -- see
@@ -62,6 +81,34 @@ gz-sim's `gpu_lidar` publishes alongside its `LaserScan`, not the
 elevation information and can't represent a multi-row sensor like this
 one. The `LaserScan` topic is still bridged (some tools expect it) but
 isn't consumed by anything in this package.
+
+![Scan pattern](benchmark/report/scan_pattern.png)
+
+The uniform grid is used purely as a **range source**. Each row of the Avia
+table keeps its own exact azimuth/zenith, bilinearly samples a range out of
+the grid's range image at those angles, and the point is rebuilt along that
+ray's true unit direction:
+
+    x = cos(zenith) cos(azimuth)
+    y = cos(zenith) sin(azimuth)
+    z = -sin(zenith)
+
+matching `LivoxPointsPlugin::convertDataToRotateInfo` (azimuth as-is, zenith
+shifted by -90 deg). A direction's elevation is then exactly `-zenith` and its
+azimuth exactly `azimuth`, independent of one another, which is what makes the
+(azimuth, elevation) grid interpolation valid.
+
+Snapping each ray to its nearest grid cell instead -- the previous behaviour --
+quantised every return onto one of only `vertical_samples` (120) distinct
+elevations, so a 24 000-point scan landed on just 12 304 unique cells. That
+renders as horizontal banding indistinguishable from a multi-beam 2D scanner.
+Where the four neighbouring cells straddle a depth discontinuity the node falls
+back to nearest-neighbour rather than blending, so edges stay sharp instead of
+producing flying pixels.
+
+The 34 MB / 960 000-row Avia table is parsed once and cached as `.npy` under
+`$ROS_HOME/landfill_camera_sim/`, so node startup after the first run is
+immediate.
 
 ## Calibration
 
@@ -134,3 +181,54 @@ Get `<WSL2-IP>` from `ip addr show eth0` inside WSL2 (it can change on
 reboot, so redo the `portproxy` line if it stops working after one).
 Then browse to `http://<windows-wifi-ip>:8080/` from any device on the
 network (find the Windows WiFi IP with `ipconfig`).
+
+## Performance and benchmarking
+
+The pipeline nodes target a Raspberry Pi 5 running against real sensors, so the
+processing hot paths were rewritten for CPU cost. `benchmark/bench_offline.py`
+compares them against the pre-optimization implementations, which are preserved
+verbatim under `benchmark/baseline/`. It runs on synthetic data with no
+simulator involved, so the numbers reflect the pipeline code rather than
+whatever real-time factor Gazebo achieves.
+
+![Per-stage cost](benchmark/report/stage_times.png)
+
+| stage | baseline | optimized | speedup |
+|---|---:|---:|---:|
+| PointCloud2 decode (24k pts, 32B stride) | 0.03 ms | 0.00 ms | 7.6x |
+| PointCloud2 encode (24k pts, 6 fields) | 0.15 ms | 0.10 ms | 1.5x |
+| Voxel downsample (264k pts, 1 cm) | 308.8 ms | 64.0 ms | 4.8x |
+| RGB+thermal fusion (24k pts, 1280x720) | 6.70 ms | 3.01 ms | 2.2x |
+| Windowed ICP merge (11 scans x 24k pts) | 8538 ms | 1259 ms | 6.8x |
+| **Total** | **8854 ms** | **1326 ms** | **6.7x** |
+
+Processing one second of sensor data went from ~8.6 s of CPU to ~1.3 s. The full
+write-up is in [`benchmark/report/optimization_report.pdf`](benchmark/report/optimization_report.pdf).
+
+```bash
+python3 benchmark/bench_offline.py --repeat 15   # per-stage, baseline vs optimized
+python3 benchmark/make_report.py                 # PDF + figures
+python3 benchmark/make_diagrams.py               # pipeline + platform figures
+python3 benchmark/bench_live.py --duration 90    # live rates, needs a running pipeline
+```
+
+Key changes:
+
+- **`cloud_io.py`** -- shared zero-copy PointCloud2 helpers. `msg.data` is mapped
+  with a numpy dtype carrying the real field offsets, so padded layouts (gz-sim's
+  32-byte stride) need no repacking, and consecutive float32 fields come back as
+  one strided view.
+- **`registration_merge_node.py`** -- the running map is kept voxel-downsampled
+  and grown incrementally rather than rebuilding a KD-tree over an ever-growing
+  raw map; ICP source/target sizes are capped; voxel keys are hashed to int64 so
+  the dedupe is a 1-D sort instead of `np.unique(..., axis=0)`. Correspondence
+  search stays serial below 20k points -- scipy's per-call thread spawn cost was
+  2.1 s of a 2.4 s window.
+- **`sensor_fusion_node.py`** -- samples the raw thermal `uint16` at the projected
+  pixels and converts only those ~24k values instead of the whole 921k-pixel
+  frame; stays in float32; folds the extrinsic hops into one `(M, b)` at startup;
+  reuses the RGB projection for thermal when the rig is co-located.
+
+Both the merge node and the fusion node now detect a backwards jump in message
+timestamps (which happens whenever Gazebo restarts and sim time rewinds) and
+reset their window / synchronizer queues instead of silently wedging.

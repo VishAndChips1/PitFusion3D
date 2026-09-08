@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "python": "3.12.3",
+    "numpy": "1.26.4",
+    "cpu_count": 20
+  },
+  "results": {
+    "cloud_read": {
+      "label": "PointCloud2 decode (24k pts, 32B stride)",
+      "baseline": {
+        "median_ms": 0.033427999824198196,
+        "mean_ms": 0.035804799987696846,
+        "min_ms": 0.029491000077541685,
+        "samples": 15
+      },
+      "optimized": {
+        "median_ms": 0.004402000058689737,
+        "mean_ms": 0.004669133325781634,
+        "min_ms": 0.004172999979346059,
+        "samples": 15
+      }
+    },
+    "cloud_write": {
+      "label": "PointCloud2 encode (24k pts, 6 fields)",
+      "baseline": {
+        "median_ms": 0.1466549999804556,
+        "mean_ms": 0.14992260004570804,
+        "min_ms": 0.12029100003019266,
+        "samples": 15
+      },
+      "optimized": {
+        "median_ms": 0.09985599990613991,
+        "mean_ms": 0.10482919997230056,
+        "min_ms": 0.09757399993759464,
+        "samples": 15
+      }
+    },
+    "voxel_downsample": {
+      "label": "Voxel downsample (264000 pts, 1cm)",
+      "baseline": {
+        "median_ms": 308.8380669998969,
+        "mean_ms": 312.4304544000097,
+        "min_ms": 282.4258020000343,
+        "samples": 15
+      },
+      "optimized": {
+        "median_ms": 64.04336799982957,
+        "mean_ms": 63.54816313337324,
+        "min_ms": 55.61692500009485,
+        "samples": 15
+      },
+      "kept_baseline": 263915,
+      "kept_optimized": 263915,
+      "identical_selection": true
+    },
+    "fusion_projection": {
+      "label": "RGB+thermal fusion (24k pts, 1280x720)",
+      "baseline": {
+        "median_ms": 6.7020509998201305,
+        "mean_ms": 7.147601933274927,
+        "min_ms": 5.452124999919761,
+        "samples": 15
+      },
+      "optimized": {
+        "median_ms": 3.0093150000993774,
+        "mean_ms": 3.066384866648756,
+        "min_ms": 2.48332199998913,
+        "samples": 15
+      }
+    },
+    "window_merge": {
+      "label": "Windowed ICP merge (11 scans x 24k pts)",
+      "baseline": {
+        "median_ms": 8538.39267599983,
+        "mean_ms": 8573.720118999896,
+        "min_ms": 8275.4422779999,
+        "samples": 3
+      },
+      "optimized": {
+        "median_ms": 1259.2666290001944,
+        "mean_ms": 1226.654569333353,
+        "min_ms": 1148.9876849998382,
+        "samples": 3
+      },
+      "out_points_baseline": 263922,
+      "out_points_optimized": 263908
+    }
+  }
+}

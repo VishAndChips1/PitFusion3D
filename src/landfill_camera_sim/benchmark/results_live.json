@@ -1,0 +1,54 @@
+{
+  "label": "optimized",
+  "duration_s": 90.0,
+  "topics": {
+    "/landfill/livox/raw_scan/points": {
+      "messages": 215,
+      "hz": 2.396532027902341,
+      "period_ms_median": 277.9004659998918,
+      "period_ms_max": 1687.2599889998128,
+      "mean_points": 24000,
+      "description": "gz lidar grid (sim output)"
+    },
+    "/landfill/livox/points": {
+      "messages": 387,
+      "hz": 4.313216215554496,
+      "period_ms_median": 225.1837419998992,
+      "period_ms_max": 363.65689799959,
+      "mean_points": 18384,
+      "description": "Livox pattern resample"
+    },
+    "/landfill/fusion/points_rgbt": {
+      "messages": 387,
+      "hz": 4.313235100263904,
+      "period_ms_median": 225.92557200005103,
+      "period_ms_max": 362.0250769999984,
+      "mean_points": 18384,
+      "description": "RGB+thermal fusion"
+    },
+    "/landfill/fusion/points_merged": {
+      "messages": 6,
+      "hz": 0.09398210034544105,
+      "period_ms_median": 12880.165315999875,
+      "period_ms_max": 13865.997103000154,
+      "mean_points": 167029,
+      "description": "windowed ICP merge"
+    },
+    "/landfill/rgb/image_raw": {
+      "messages": 408,
+      "hz": 4.554835267195385,
+      "period_ms_median": 147.74785400004475,
+      "period_ms_max": 1839.9580109999079,
+      "mean_points": 0,
+      "description": "RGB camera"
+    },
+    "/landfill/thermal/image_raw": {
+      "messages": 483,
+      "hz": 5.385260261263852,
+      "period_ms_median": 137.85462599980747,
+      "period_ms_max": 1621.5971040001023,
+      "mean_points": 0,
+      "description": "thermal camera"
+    }
+  }
+}

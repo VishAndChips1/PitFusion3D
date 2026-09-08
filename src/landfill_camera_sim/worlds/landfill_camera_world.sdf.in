@@ -150,6 +150,11 @@
             <diffuse>0.48 0.43 0.33 1</diffuse>
             <specular>0.04 0.04 0.03 1</specular>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>299.0</temperature>
+          </plugin>
         </visual>
       </link>
     </model>
@@ -168,6 +173,11 @@
             <ambient>0.07 0.075 0.072 1</ambient>
             <diffuse>0.10 0.105 0.10 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>316.0</temperature>
+          </plugin>
         </visual>
         <visual name="service_road">
           <pose>-4 11 0.022 0 0 -0.72</pose>
@@ -180,6 +190,11 @@
             <ambient>0.065 0.070 0.068 1</ambient>
             <diffuse>0.095 0.100 0.095 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>315.0</temperature>
+          </plugin>
         </visual>
         <visual name="haul_loop_north">
           <pose>17 7 0.023 0 0 1.35</pose>
@@ -192,6 +207,11 @@
             <ambient>0.065 0.070 0.068 1</ambient>
             <diffuse>0.095 0.100 0.095 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>315.5</temperature>
+          </plugin>
         </visual>
         <visual name="haul_loop_south">
           <pose>19 -17 0.023 0 0 1.35</pose>
@@ -204,6 +224,11 @@
             <ambient>0.065 0.070 0.068 1</ambient>
             <diffuse>0.095 0.100 0.095 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>315.5</temperature>
+          </plugin>
         </visual>
         <visual name="yellow_centerline_main">
           <pose>0 -5 0.052 0 0 0.12</pose>
@@ -216,6 +241,11 @@
             <ambient>0.85 0.68 0.08 1</ambient>
             <diffuse>0.95 0.77 0.12 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>314.0</temperature>
+          </plugin>
         </visual>
         <visual name="white_edge_line_a">
           <pose>0 -2.28 0.054 0 0 0.12</pose>
@@ -228,6 +258,11 @@
             <ambient>0.80 0.80 0.75 1</ambient>
             <diffuse>0.92 0.92 0.86 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>313.0</temperature>
+          </plugin>
         </visual>
         <visual name="white_edge_line_b">
           <pose>0 -7.72 0.054 0 0 0.12</pose>
@@ -240,6 +275,11 @@
             <ambient>0.80 0.80 0.75 1</ambient>
             <diffuse>0.92 0.92 0.86 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>313.0</temperature>
+          </plugin>
         </visual>
         <collision name="main_access_road_collision">
           <pose>0 -5 0.01 0 0 0.12</pose>
@@ -275,6 +315,11 @@
             <diffuse>0.34 0.32 0.25 1</diffuse>
             <specular>0.03 0.03 0.02 1</specular>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>327.0</temperature>
+          </plugin>
         </visual>
         <visual name="covered_cell_mound">
           <pose>-11 8 0.70 0 0 -0.35</pose>
@@ -287,6 +332,11 @@
             <ambient>0.43 0.39 0.30 1</ambient>
             <diffuse>0.56 0.50 0.38 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>305.0</temperature>
+          </plugin>
         </visual>
         <visual name="fresh_waste_pile">
           <pose>20 -8 0.50 0 0 0.65</pose>
@@ -299,6 +349,11 @@
             <ambient>0.20 0.22 0.21 1</ambient>
             <diffuse>0.30 0.34 0.31 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>318.0</temperature>
+          </plugin>
         </visual>
         <visual name="berm_left">
           <pose>-23 -1 0.45 0 0 1.05</pose>
@@ -311,6 +366,11 @@
             <ambient>0.40 0.35 0.25 1</ambient>
             <diffuse>0.52 0.46 0.34 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>298.0</temperature>
+          </plugin>
         </visual>
         <visual name="berm_back">
           <pose>2 23 0.50 0 0 0</pose>
@@ -323,6 +383,11 @@
             <ambient>0.37 0.32 0.23 1</ambient>
             <diffuse>0.49 0.43 0.31 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>298.0</temperature>
+          </plugin>
         </visual>
       </link>
     </model>
@@ -341,6 +406,11 @@
             <ambient>0.05 0.16 0.45 1</ambient>
             <diffuse>0.08 0.24 0.70 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>303.0</temperature>
+          </plugin>
         </visual>
         <visual name="green_container">
           <pose>14.5 -1.8 0.22 0 0 -0.5</pose>
@@ -353,6 +423,11 @@
             <ambient>0.05 0.32 0.13 1</ambient>
             <diffuse>0.08 0.46 0.20 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>304.0</temperature>
+          </plugin>
         </visual>
         <visual name="orange_barrel">
           <pose>11.5 6.0 0.28 1.5708 0 0.25</pose>
@@ -366,6 +441,11 @@
             <ambient>0.70 0.24 0.04 1</ambient>
             <diffuse>0.95 0.34 0.06 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>306.0</temperature>
+          </plugin>
         </visual>
         <visual name="white_pipe">
           <pose>21.0 -5.0 0.16 0 1.5708 0.4</pose>
@@ -379,6 +459,11 @@
             <ambient>0.75 0.76 0.72 1</ambient>
             <diffuse>0.88 0.89 0.84 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>312.0</temperature>
+          </plugin>
         </visual>
         <visual name="scrap_sheet_1">
           <pose>5.5 -0.8 0.08 0.08 0.05 -0.45</pose>
@@ -391,6 +476,11 @@
             <ambient>0.45 0.45 0.40 1</ambient>
             <diffuse>0.62 0.62 0.56 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>322.0</temperature>
+          </plugin>
         </visual>
         <visual name="scrap_sheet_2">
           <pose>17.0 -10.5 0.08 0.04 -0.08 0.85</pose>
@@ -403,6 +493,11 @@
             <ambient>0.55 0.18 0.12 1</ambient>
             <diffuse>0.75 0.25 0.16 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>322.0</temperature>
+          </plugin>
         </visual>
         <visual name="tire_stack">
           <pose>2.5 8.5 0.18 0 0 0</pose>
@@ -416,6 +511,11 @@
             <ambient>0.02 0.02 0.018 1</ambient>
             <diffuse>0.04 0.04 0.035 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>325.0</temperature>
+          </plugin>
         </visual>
         <visual name="survey_cone">
           <pose>-2.0 -2.1 0.35 0 0 0</pose>
@@ -429,6 +529,610 @@
             <ambient>0.75 0.30 0.04 1</ambient>
             <diffuse>0.98 0.43 0.08 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>308.0</temperature>
+          </plugin>
+        </visual>
+      </link>
+    </model>
+
+    <model name="gas_flare">
+      <static>true</static>
+      <link name="flare_link">
+        <visual name="flare_stack">
+          <pose>14 6 3.0 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.35</radius>
+              <length>6.0</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.18 0.18 0.19 1</ambient>
+            <diffuse>0.30 0.31 0.32 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>318.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="flare_shroud">
+          <pose>14 6 6.3 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.55</radius>
+              <length>1.2</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.25 0.16 0.10 1</ambient>
+            <diffuse>0.42 0.28 0.18 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>520.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="flare_tip">
+          <pose>14 6 7.1 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>0.45</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.85 0.45 0.10 1</ambient>
+            <diffuse>1.0 0.65 0.18 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>760.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="flare_guy_0">
+          <pose>15.60 6.00 2.6 -0.00 0.26 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.035</radius>
+              <length>5.4</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.15 0.15 0.15 1</ambient>
+            <diffuse>0.25 0.25 0.26 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>305.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="flare_guy_1">
+          <pose>13.20 7.40 2.6 -0.22 -0.13 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.035</radius>
+              <length>5.4</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.15 0.15 0.15 1</ambient>
+            <diffuse>0.25 0.25 0.26 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>305.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="flare_guy_2">
+          <pose>13.20 4.60 2.6 0.22 -0.13 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.035</radius>
+              <length>5.4</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.15 0.15 0.15 1</ambient>
+            <diffuse>0.25 0.25 0.26 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>305.0</temperature>
+          </plugin>
+        </visual>
+      </link>
+    </model>
+
+    <model name="thermal_hot_spots">
+      <static>true</static>
+      <link name="hot_spot_link">
+        <visual name="hot_spot_0">
+          <pose>7.40 2.60 0.06 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>1.10</radius>
+              <length>0.12</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.28 0.13 0.06 1</ambient>
+            <diffuse>0.45 0.22 0.10 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>402.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="hot_spot_1">
+          <pose>10.60 0.20 0.06 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.85</radius>
+              <length>0.12</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.28 0.13 0.06 1</ambient>
+            <diffuse>0.45 0.22 0.10 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>425.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="hot_spot_2">
+          <pose>11.40 3.40 0.06 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.70</radius>
+              <length>0.12</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.28 0.13 0.06 1</ambient>
+            <diffuse>0.45 0.22 0.10 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>388.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="hot_spot_3">
+          <pose>6.20 -0.80 0.06 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.95</radius>
+              <length>0.12</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.28 0.13 0.06 1</ambient>
+            <diffuse>0.45 0.22 0.10 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>372.0</temperature>
+          </plugin>
+        </visual>
+      </link>
+    </model>
+
+    <model name="gas_wellheads">
+      <static>true</static>
+      <link name="wellhead_link">
+        <visual name="wellhead_riser_0">
+          <pose>5.00 4.50 0.75 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.10</radius>
+              <length>1.50</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.55 0.42 0.10 1</ambient>
+            <diffuse>0.82 0.66 0.16 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>314.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wellhead_cap_0">
+          <pose>5.00 4.50 1.55 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.16</radius>
+              <length>0.14</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.30 0.31 0.32 1</ambient>
+            <diffuse>0.52 0.53 0.55 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>311.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wellhead_riser_1">
+          <pose>12.00 -1.50 0.75 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.10</radius>
+              <length>1.50</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.55 0.42 0.10 1</ambient>
+            <diffuse>0.82 0.66 0.16 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>314.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wellhead_cap_1">
+          <pose>12.00 -1.50 1.55 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.16</radius>
+              <length>0.14</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.30 0.31 0.32 1</ambient>
+            <diffuse>0.52 0.53 0.55 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>311.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wellhead_riser_2">
+          <pose>8.00 7.00 0.75 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.10</radius>
+              <length>1.50</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.55 0.42 0.10 1</ambient>
+            <diffuse>0.82 0.66 0.16 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>314.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wellhead_cap_2">
+          <pose>8.00 7.00 1.55 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.16</radius>
+              <length>0.14</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.30 0.31 0.32 1</ambient>
+            <diffuse>0.52 0.53 0.55 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>311.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wellhead_riser_3">
+          <pose>15.50 2.00 0.75 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.10</radius>
+              <length>1.50</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.55 0.42 0.10 1</ambient>
+            <diffuse>0.82 0.66 0.16 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>314.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wellhead_cap_3">
+          <pose>15.50 2.00 1.55 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.16</radius>
+              <length>0.14</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.30 0.31 0.32 1</ambient>
+            <diffuse>0.52 0.53 0.55 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>311.0</temperature>
+          </plugin>
+        </visual>
+      </link>
+    </model>
+
+    <model name="leachate_pond">
+      <static>true</static>
+      <link name="pond_link">
+        <visual name="pond_water">
+          <pose>-3 13 0.04 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>4.2</radius>
+              <length>0.08</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.10 0.16 0.15 1</ambient>
+            <diffuse>0.16 0.26 0.25 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>291.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="pond_liner">
+          <pose>-3 13 0.02 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>4.8</radius>
+              <length>0.06</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.18 0.18 0.19 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>300.0</temperature>
+          </plugin>
+        </visual>
+      </link>
+    </model>
+
+    <model name="capped_cell_vegetation">
+      <static>true</static>
+      <link name="vegetation_link">
+        <visual name="scrub_0">
+          <pose>-11.50 8.50 0.35 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>1.70</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.16 0.24 0.10 1</ambient>
+            <diffuse>0.28 0.42 0.18 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>294.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="scrub_1">
+          <pose>-9.00 10.50 0.35 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>1.20</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.16 0.24 0.10 1</ambient>
+            <diffuse>0.28 0.42 0.18 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>294.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="scrub_2">
+          <pose>-13.50 6.50 0.35 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>1.40</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.16 0.24 0.10 1</ambient>
+            <diffuse>0.28 0.42 0.18 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>294.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="scrub_3">
+          <pose>-8.00 6.00 0.35 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>1.00</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.16 0.24 0.10 1</ambient>
+            <diffuse>0.28 0.42 0.18 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>294.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="scrub_4">
+          <pose>-12.50 11.00 0.35 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>1.30</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.16 0.24 0.10 1</ambient>
+            <diffuse>0.28 0.42 0.18 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>294.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="grass_cover">
+          <pose>-11 8 0.05 0 0 -0.35</pose>
+          <geometry>
+            <box>
+              <size>16.0 11.0 0.06</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.20 0.26 0.13 1</ambient>
+            <diffuse>0.34 0.44 0.22 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>296.0</temperature>
+          </plugin>
+        </visual>
+      </link>
+    </model>
+
+    <model name="track_dozer">
+      <static>true</static>
+      <link name="dozer_link">
+        <visual name="dozer_hull">
+          <pose>3.5 -1.5 1.05 0 0 0.9</pose>
+          <geometry>
+            <box>
+              <size>2.20 3.20 0.90</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.62 0.42 0.05 1</ambient>
+            <diffuse>0.92 0.66 0.09 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>309.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="dozer_cab">
+          <pose>3.5 -1.5 2.00 0 0 0.9</pose>
+          <geometry>
+            <box>
+              <size>1.50 1.50 1.00</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.55 0.38 0.05 1</ambient>
+            <diffuse>0.85 0.60 0.08 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>304.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="dozer_engine">
+          <pose>3.9 -0.6 1.35 0 0 0.9</pose>
+          <geometry>
+            <box>
+              <size>1.10 1.10 0.60</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.30 0.22 0.05 1</ambient>
+            <diffuse>0.48 0.35 0.09 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>358.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="dozer_blade">
+          <pose>2.6 0.2 0.75 0 0 0.9</pose>
+          <geometry>
+            <box>
+              <size>3.00 0.30 1.10</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.30 0.31 0.33 1</ambient>
+            <diffuse>0.55 0.57 0.60 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>316.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="dozer_track_0">
+          <pose>3.04 -0.92 0.45 0 0 0.9</pose>
+          <geometry>
+            <box>
+              <size>0.60 3.20 0.90</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.08 0.08 0.09 1</ambient>
+            <diffuse>0.15 0.15 0.16 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>307.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="dozer_track_1">
+          <pose>3.96 -2.08 0.45 0 0 0.9</pose>
+          <geometry>
+            <box>
+              <size>0.60 3.20 0.90</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.08 0.08 0.09 1</ambient>
+            <diffuse>0.15 0.15 0.16 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>307.0</temperature>
+          </plugin>
         </visual>
       </link>
     </model>
@@ -450,114 +1154,488 @@
             <izz>10.0</izz>
           </inertia>
         </inertial>
-        <visual name="concrete_pad">
-          <pose>0 0 0.05 0 0 0</pose>
+        <!-- Refuse/works truck: forward is +Y, matching platform.motion.axis -->
+        <visual name="chassis_frame">
+          <pose>0 -0.25 0.95 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.8 2.0 0.10</size>
+              <size>2.30 6.60 0.26</size>
             </box>
           </geometry>
           <material>
-            <ambient>0.43 0.43 0.40 1</ambient>
-            <diffuse>0.58 0.58 0.54 1</diffuse>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.19 0.20 0.21 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>303.0</temperature>
+          </plugin>
         </visual>
-        <visual name="steel_deck">
-          <pose>0 0 __DECK_HEIGHT__ 0 0 0</pose>
+        <visual name="chassis_rail_left">
+          <pose>0.95 -0.25 1.12 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.2 1.5 0.12</size>
+              <size>0.18 6.40 0.14</size>
             </box>
           </geometry>
           <material>
-            <ambient>0.17 0.18 0.18 1</ambient>
-            <diffuse>0.25 0.26 0.26 1</diffuse>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.19 0.20 0.21 1</diffuse>
           </material>
         </visual>
-        <visual name="leg_front_left">
-          <pose>0.85 0.55 __LEG_HALF_HEIGHT__ 0 0 0</pose>
+        <visual name="chassis_rail_right">
+          <pose>-0.95 -0.25 1.12 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.18 6.40 0.14</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.19 0.20 0.21 1</diffuse>
+          </material>
+        </visual>
+        <visual name="cab_body">
+          <pose>0 2.10 1.98 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.36 2.05 1.72</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.55 0.28 0.03 1</ambient>
+            <diffuse>0.90 0.47 0.06 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>301.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="cab_windshield">
+          <pose>0 3.10 2.20 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.10 0.10 0.95</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.06 0.09 0.12 1</ambient>
+            <diffuse>0.13 0.19 0.26 1</diffuse>
+          </material>
+        </visual>
+        <visual name="cab_side_window_left">
+          <pose>1.19 2.30 2.20 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.06 1.10 0.70</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.06 0.09 0.12 1</ambient>
+            <diffuse>0.13 0.19 0.26 1</diffuse>
+          </material>
+        </visual>
+        <visual name="cab_side_window_right">
+          <pose>-1.19 2.30 2.20 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.06 1.10 0.70</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.06 0.09 0.12 1</ambient>
+            <diffuse>0.13 0.19 0.26 1</diffuse>
+          </material>
+        </visual>
+        <visual name="cab_bumper">
+          <pose>0 3.22 1.05 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.40 0.22 0.42</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.19 0.20 0.21 1</diffuse>
+          </material>
+        </visual>
+        <visual name="cab_grille">
+          <pose>0 3.16 1.55 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.90 0.10 0.45</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.19 0.20 0.21 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>341.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="headlight_left">
+          <pose>0.86 3.20 1.32 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.36 0.10 0.20</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.75 0.74 0.62 1</ambient>
+            <diffuse>0.96 0.95 0.85 1</diffuse>
+          </material>
+        </visual>
+        <visual name="headlight_right">
+          <pose>-0.86 3.20 1.32 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.36 0.10 0.20</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.75 0.74 0.62 1</ambient>
+            <diffuse>0.96 0.95 0.85 1</diffuse>
+          </material>
+        </visual>
+        <visual name="beacon_bar">
+          <pose>0 2.55 2.90 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.70 0.16 0.12</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.72 0.45 0.03 1</ambient>
+            <diffuse>0.98 0.62 0.05 1</diffuse>
+          </material>
+        </visual>
+        <visual name="body_floor">
+          <pose>0 -2.05 1.20 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.42 3.40 0.14</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.20 0.22 0.21 1</ambient>
+            <diffuse>0.34 0.37 0.35 1</diffuse>
+          </material>
+        </visual>
+        <visual name="body_wall_left">
+          <pose>1.20 -2.05 1.88 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.10 3.40 1.30</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.20 0.22 0.21 1</ambient>
+            <diffuse>0.34 0.37 0.35 1</diffuse>
+          </material>
+        </visual>
+        <visual name="body_wall_right">
+          <pose>-1.20 -2.05 1.88 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.10 3.40 1.30</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.20 0.22 0.21 1</ambient>
+            <diffuse>0.34 0.37 0.35 1</diffuse>
+          </material>
+        </visual>
+        <visual name="body_headboard">
+          <pose>0 -0.40 1.98 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.42 0.12 1.50</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.20 0.22 0.21 1</ambient>
+            <diffuse>0.34 0.37 0.35 1</diffuse>
+          </material>
+        </visual>
+        <visual name="body_tailgate">
+          <pose>0 -3.70 1.82 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.42 0.12 1.18</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.20 0.22 0.21 1</ambient>
+            <diffuse>0.34 0.37 0.35 1</diffuse>
+          </material>
+        </visual>
+        <visual name="body_load">
+          <pose>0 -2.10 1.55 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2.10 3.00 0.55</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.24 0.20 0.15 1</ambient>
+            <diffuse>0.38 0.32 0.24 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>312.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wheel_front_left">
+          <pose>1.06 2.35 0.55 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.055</radius>
-              <length>__LEG_HEIGHT__</length>
+              <radius>0.55</radius>
+              <length>0.40</length>
             </cylinder>
           </geometry>
           <material>
-            <ambient>0.12 0.13 0.13 1</ambient>
-            <diffuse>0.20 0.21 0.21 1</diffuse>
+            <ambient>0.02 0.02 0.02 1</ambient>
+            <diffuse>0.07 0.07 0.08 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>305.0</temperature>
+          </plugin>
         </visual>
-        <visual name="leg_front_right">
-          <pose>0.85 -0.55 __LEG_HALF_HEIGHT__ 0 0 0</pose>
+        <visual name="wheel_front_left_hub">
+          <pose>1.12 2.35 0.55 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.055</radius>
-              <length>__LEG_HEIGHT__</length>
+              <radius>0.22</radius>
+              <length>0.10</length>
             </cylinder>
           </geometry>
           <material>
-            <ambient>0.12 0.13 0.13 1</ambient>
-            <diffuse>0.20 0.21 0.21 1</diffuse>
+            <ambient>0.30 0.30 0.32 1</ambient>
+            <diffuse>0.55 0.56 0.58 1</diffuse>
           </material>
         </visual>
-        <visual name="leg_back_left">
-          <pose>-0.85 0.55 __LEG_HALF_HEIGHT__ 0 0 0</pose>
+        <visual name="wheel_front_right">
+          <pose>-1.06 2.35 0.55 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.055</radius>
-              <length>__LEG_HEIGHT__</length>
+              <radius>0.55</radius>
+              <length>0.40</length>
             </cylinder>
           </geometry>
           <material>
-            <ambient>0.12 0.13 0.13 1</ambient>
-            <diffuse>0.20 0.21 0.21 1</diffuse>
+            <ambient>0.02 0.02 0.02 1</ambient>
+            <diffuse>0.07 0.07 0.08 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>305.0</temperature>
+          </plugin>
         </visual>
-        <visual name="leg_back_right">
-          <pose>-0.85 -0.55 __LEG_HALF_HEIGHT__ 0 0 0</pose>
+        <visual name="wheel_front_right_hub">
+          <pose>-1.12 2.35 0.55 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.055</radius>
-              <length>__LEG_HEIGHT__</length>
+              <radius>0.22</radius>
+              <length>0.10</length>
             </cylinder>
           </geometry>
           <material>
-            <ambient>0.12 0.13 0.13 1</ambient>
-            <diffuse>0.20 0.21 0.21 1</diffuse>
+            <ambient>0.30 0.30 0.32 1</ambient>
+            <diffuse>0.55 0.56 0.58 1</diffuse>
           </material>
         </visual>
-        <visual name="front_guard_rail">
-          <pose>0.0 0.78 __RAIL_HEIGHT__ 0 1.5708 0</pose>
+        <visual name="wheel_mid_left">
+          <pose>1.06 -1.30 0.55 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.035</radius>
-              <length>2.2</length>
+              <radius>0.55</radius>
+              <length>0.40</length>
             </cylinder>
           </geometry>
           <material>
-            <ambient>0.85 0.72 0.08 1</ambient>
-            <diffuse>0.97 0.83 0.12 1</diffuse>
+            <ambient>0.02 0.02 0.02 1</ambient>
+            <diffuse>0.07 0.07 0.08 1</diffuse>
           </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>306.0</temperature>
+          </plugin>
         </visual>
-        <visual name="back_guard_rail">
-          <pose>0.0 -0.78 __RAIL_HEIGHT__ 0 1.5708 0</pose>
+        <visual name="wheel_mid_left_hub">
+          <pose>1.12 -1.30 0.55 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.035</radius>
-              <length>2.2</length>
+              <radius>0.22</radius>
+              <length>0.10</length>
             </cylinder>
           </geometry>
           <material>
-            <ambient>0.85 0.72 0.08 1</ambient>
-            <diffuse>0.97 0.83 0.12 1</diffuse>
+            <ambient>0.30 0.30 0.32 1</ambient>
+            <diffuse>0.55 0.56 0.58 1</diffuse>
           </material>
         </visual>
-        <visual name="camera_mast">
-          <pose>0 0 __MAST_HALF_HEIGHT__ 0 0 0</pose>
+        <visual name="wheel_mid_right">
+          <pose>-1.06 -1.30 0.55 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.06</radius>
-              <length>__MAST_HEIGHT__</length>
+              <radius>0.55</radius>
+              <length>0.40</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.02 0.02 0.02 1</ambient>
+            <diffuse>0.07 0.07 0.08 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>306.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wheel_mid_right_hub">
+          <pose>-1.12 -1.30 0.55 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.22</radius>
+              <length>0.10</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.30 0.30 0.32 1</ambient>
+            <diffuse>0.55 0.56 0.58 1</diffuse>
+          </material>
+        </visual>
+        <visual name="wheel_rear_left">
+          <pose>1.06 -2.60 0.55 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.55</radius>
+              <length>0.40</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.02 0.02 0.02 1</ambient>
+            <diffuse>0.07 0.07 0.08 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>306.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wheel_rear_left_hub">
+          <pose>1.12 -2.60 0.55 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.22</radius>
+              <length>0.10</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.30 0.30 0.32 1</ambient>
+            <diffuse>0.55 0.56 0.58 1</diffuse>
+          </material>
+        </visual>
+        <visual name="wheel_rear_right">
+          <pose>-1.06 -2.60 0.55 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.55</radius>
+              <length>0.40</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.02 0.02 0.02 1</ambient>
+            <diffuse>0.07 0.07 0.08 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>306.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="wheel_rear_right_hub">
+          <pose>-1.12 -2.60 0.55 0 1.5708 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.22</radius>
+              <length>0.10</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.30 0.30 0.32 1</ambient>
+            <diffuse>0.55 0.56 0.58 1</diffuse>
+          </material>
+        </visual>
+        <visual name="fuel_tank_step">
+          <pose>1.15 0.55 0.86 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.30 1.10 0.42</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.30 0.30 0.32 1</ambient>
+            <diffuse>0.55 0.56 0.58 1</diffuse>
+          </material>
+          <plugin
+            filename="gz-sim-thermal-system"
+            name="gz::sim::systems::Thermal">
+            <temperature>302.0</temperature>
+          </plugin>
+        </visual>
+        <visual name="mud_flap_rear_left">
+          <pose>1.06 -3.20 0.42 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.42 0.05 0.55</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.05 0.05 0.05 1</ambient>
+            <diffuse>0.11 0.11 0.11 1</diffuse>
+          </material>
+        </visual>
+        <visual name="mud_flap_rear_right">
+          <pose>-1.06 -3.20 0.42 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.42 0.05 0.55</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.05 0.05 0.05 1</ambient>
+            <diffuse>0.11 0.11 0.11 1</diffuse>
+          </material>
+        </visual>
+        <visual name="mast_base_plate">
+          <pose>0 0 1.14 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.70 0.70 0.10</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.19 0.20 0.21 1</diffuse>
+          </material>
+        </visual>
+        <visual name="sensor_mast">
+          <pose>0 0 __TRUCK_MAST_CENTER_Z__ 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.075</radius>
+              <length>__TRUCK_MAST_HEIGHT__</length>
             </cylinder>
           </geometry>
           <material>
@@ -565,11 +1643,37 @@
             <diffuse>0.18 0.19 0.19 1</diffuse>
           </material>
         </visual>
-        <collision name="deck_collision">
-          <pose>0 0 __DECK_HEIGHT__ 0 0 0</pose>
+        <visual name="mast_brace_left">
+          <pose>0.30 0 1.55 0.45 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.035</radius>
+              <length>0.95</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.19 0.20 0.21 1</diffuse>
+          </material>
+        </visual>
+        <visual name="mast_brace_right">
+          <pose>-0.30 0 1.55 -0.45 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.035</radius>
+              <length>0.95</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.10 0.10 0.11 1</ambient>
+            <diffuse>0.19 0.20 0.21 1</diffuse>
+          </material>
+        </visual>
+        <collision name="chassis_collision">
+          <pose>0 -0.25 1.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.2 1.5 0.12</size>
+              <size>2.40 6.60 0.60</size>
             </box>
           </geometry>
         </collision>

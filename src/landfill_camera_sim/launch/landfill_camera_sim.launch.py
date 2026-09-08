@@ -281,6 +281,12 @@ def _setup(context):
     rail_height = deck_height + 0.55
     mast_height = max(0.3, xyz[2] - deck_height)
 
+    # Truck sensor mast: rises from the mast base plate on the chassis deck
+    # (top face at 1.19 m in the model) up to the sensor link's height.
+    TRUCK_MAST_BASE_Z = 1.19
+    truck_mast_height = max(0.2, xyz[2] - TRUCK_MAST_BASE_Z)
+    truck_mast_center_z = TRUCK_MAST_BASE_Z + truck_mast_height / 2.0
+
     _render_template(
         package_share / 'worlds' / 'landfill_camera_world.sdf.in',
         world_path,
@@ -336,6 +342,8 @@ def _setup(context):
             'RAIL_HEIGHT': f'{rail_height:.6f}',
             'MAST_HALF_HEIGHT': f'{deck_height + mast_height / 2.0:.6f}',
             'MAST_HEIGHT': f'{mast_height:.6f}',
+            'TRUCK_MAST_CENTER_Z': f'{truck_mast_center_z:.6f}',
+            'TRUCK_MAST_HEIGHT': f'{truck_mast_height:.6f}',
         },
     )
 

@@ -10,6 +10,7 @@ install(
 
 install(
   PROGRAMS
+    scripts/cloud_io.py
     scripts/platform_motion_controller.py
     scripts/livox_pattern_filter.py
     scripts/calibration_publisher.py
