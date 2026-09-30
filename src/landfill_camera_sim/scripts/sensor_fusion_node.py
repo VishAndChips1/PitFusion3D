@@ -18,6 +18,7 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import Image, PointCloud2
 
@@ -155,10 +156,25 @@ class SensorFusionNode(Node):
             and np.array_equal(self._rgb_transform[1], self._thermal_transform[1])
         )
 
-        self._publisher = self.create_publisher(PointCloud2, output_topic, 10)
-        self._lidar_sub = message_filters.Subscriber(self, PointCloud2, lidar_topic)
-        self._rgb_sub = message_filters.Subscriber(self, Image, rgb_topic)
-        self._thermal_sub = message_filters.Subscriber(self, Image, thermal_topic)
+        # BEST_EFFORT throughout: this node's inputs (lidar/rgb/thermal,
+        # each 10-30Hz) and output (fused cloud) are all live sensor
+        # streams where a dropped message is superseded almost
+        # immediately, so DDS's default RELIABLE ACK/retransmit tracking
+        # is pure overhead here. Every publisher feeding these topics
+        # (rgb_camera_node, thermal_camera_node, livox_restamp_node) and
+        # every subscriber of this node's output (registration_merge_node,
+        # fusion_web_streamer) must use a compatible QoS -- see their own
+        # create_publisher/create_subscription calls.
+        self._publisher = self.create_publisher(PointCloud2, output_topic, qos_profile_sensor_data)
+        self._lidar_sub = message_filters.Subscriber(
+            self, PointCloud2, lidar_topic, qos_profile=qos_profile_sensor_data
+        )
+        self._rgb_sub = message_filters.Subscriber(
+            self, Image, rgb_topic, qos_profile=qos_profile_sensor_data
+        )
+        self._thermal_sub = message_filters.Subscriber(
+            self, Image, thermal_topic, qos_profile=qos_profile_sensor_data
+        )
         self._sync = message_filters.ApproximateTimeSynchronizer(
             [self._lidar_sub, self._rgb_sub, self._thermal_sub],
             queue_size=queue_size,

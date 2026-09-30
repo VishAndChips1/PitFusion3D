@@ -31,6 +31,7 @@ import rclpy
 from cv_bridge import CvBridge
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
 
@@ -56,7 +57,15 @@ class RgbCameraNode(Node):
         self._frame_size = self._width * self._height * 3 // 2  # I420
 
         self._bridge = CvBridge()
-        self._publisher = self.create_publisher(Image, str(self.get_parameter('topic').value), 10)
+        # BEST_EFFORT (not the default RELIABLE): a live camera feed has a
+        # newer frame arriving immediately anyway, so retransmitting a
+        # dropped one is pure overhead. Every downstream subscriber to
+        # this topic must use a compatible (BEST_EFFORT-or-looser) QoS or
+        # DDS will silently refuse to connect them -- see
+        # sensor_fusion_node.py and camera_viewer.py.
+        self._publisher = self.create_publisher(
+            Image, str(self.get_parameter('topic').value), qos_profile_sensor_data
+        )
 
         self._process = subprocess.Popen(
             [

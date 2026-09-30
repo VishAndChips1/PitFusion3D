@@ -135,6 +135,12 @@ def generate_launch_description():
             'image_frame_id': 'camera_platform/camera_link',
             'rgb_camera_info_topic': '/landfill/rgb/camera_info',
             'thermal_camera_info_topic': '/landfill/thermal/camera_info',
+            # This data is loaded once from YAML at startup and never
+            # changes -- republishing it at the 30Hz default is pure
+            # waste. 2Hz is still instant for any RViz/rqt display that
+            # comes up expecting it soon, without a timer firing 15x more
+            # often than the data can possibly differ.
+            'publish_rate': 2.0,
         }],
     )
 

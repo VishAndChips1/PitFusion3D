@@ -38,6 +38,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 
@@ -519,11 +520,13 @@ class FusionWebStreamer(Node):
         self._server_thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._server_thread.start()
 
+        # BEST_EFFORT: matches registration_merge_node.py/sensor_fusion_node.py's
+        # publisher QoS on these topics.
         self._merged_sub = self.create_subscription(
-            PointCloud2, merged_topic, self._on_merged, 5
+            PointCloud2, merged_topic, self._on_merged, qos_profile_sensor_data
         )
         self._live_sub = self.create_subscription(
-            PointCloud2, live_topic, self._on_live, 5
+            PointCloud2, live_topic, self._on_live, qos_profile_sensor_data
         )
 
         self.get_logger().info(

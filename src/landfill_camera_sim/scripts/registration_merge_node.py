@@ -20,6 +20,7 @@ from scipy.spatial import cKDTree
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import Header
 
@@ -149,8 +150,15 @@ class RegistrationMergeNode(Node):
         self._last_publish_wall_time = None
         self._rng = np.random.default_rng(0)
 
-        self._publisher = self.create_publisher(PointCloud2, output_topic, 10)
-        self._subscription = self.create_subscription(PointCloud2, input_topic, self._on_cloud, 10)
+        # BEST_EFFORT: matches sensor_fusion_node.py's output QoS (this
+        # node's input) and lets fusion_web_streamer.py's subscription to
+        # this node's output skip DDS's reliable-delivery bookkeeping too.
+        self._publisher = self.create_publisher(
+            PointCloud2, output_topic, qos_profile_sensor_data
+        )
+        self._subscription = self.create_subscription(
+            PointCloud2, input_topic, self._on_cloud, qos_profile_sensor_data
+        )
 
         self.get_logger().info(
             'Merging %s -> %s over %.2fs windows with ICP motion compensation'

@@ -14,6 +14,7 @@ from cv_bridge import CvBridge
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
 
@@ -27,8 +28,13 @@ class CameraViewer(Node):
         rgb_topic = str(self.get_parameter('rgb_topic').value)
         thermal_topic = str(self.get_parameter('thermal_topic').value)
 
-        self.rgb_sub = Subscriber(self, Image, rgb_topic)
-        self.thermal_sub = Subscriber(self, Image, thermal_topic)
+        # Must match rgb_camera_node/thermal_camera_node's BEST_EFFORT
+        # publishers -- a RELIABLE subscription request is stricter than
+        # what they offer, so DDS would silently refuse to connect.
+        self.rgb_sub = Subscriber(self, Image, rgb_topic, qos_profile=qos_profile_sensor_data)
+        self.thermal_sub = Subscriber(
+            self, Image, thermal_topic, qos_profile=qos_profile_sensor_data
+        )
         self.sync = ApproximateTimeSynchronizer(
             [self.rgb_sub, self.thermal_sub], queue_size=10, slop=0.15,
         )

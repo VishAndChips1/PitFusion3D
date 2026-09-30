@@ -34,6 +34,7 @@ from collections import deque
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import PointCloud2
 
 
@@ -52,11 +53,20 @@ class LivoxRestampNode(Node):
         self._last_device_ns = None
         self._msg_count = 0
 
+        # BEST_EFFORT: a lidar scan arriving at 10Hz makes retransmitting a
+        # dropped one pointless, and it removes DDS's ACK/retransmit
+        # bookkeeping from this node and sensor_fusion_node.py (its
+        # subscriber). The raw livox/lidar topic (input side) is published
+        # RELIABLE by the compiled driver and can't be changed, but a
+        # BEST_EFFORT *request* is compatible with a RELIABLE *offer* (DDS
+        # only refuses to match when the request is stricter than what's
+        # offered), so this is safe here too.
         self._publisher = self.create_publisher(
-            PointCloud2, str(self.get_parameter('output_topic').value), 10
+            PointCloud2, str(self.get_parameter('output_topic').value), qos_profile_sensor_data
         )
         self._subscription = self.create_subscription(
-            PointCloud2, str(self.get_parameter('input_topic').value), self._on_cloud, 10
+            PointCloud2, str(self.get_parameter('input_topic').value), self._on_cloud,
+            qos_profile_sensor_data,
         )
         self.get_logger().info(
             f"Re-stamping {self.get_parameter('input_topic').value} -> "

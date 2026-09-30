@@ -186,6 +186,28 @@ cheap numpy gather, not extra ICP compute -- so they can be tuned up for
 a denser/better-looking view without touching the Pi's tighter compute
 budget.
 
+A second pass took total CPU from ~159% to ~103%: every publisher and
+subscriber pipeline-wide was switched from ROS2's default `RELIABLE` QoS
+to `BEST_EFFORT` (`rclpy.qos.qos_profile_sensor_data`) -- correct for a
+live sensor stream where a dropped frame is superseded almost
+immediately, and it removes DDS's ACK/retransmission bookkeeping
+entirely. **QoS mismatches fail silently** (a stricter subscriber request
+than what's offered just never connects, with no error) -- every
+publisher/subscriber pair on every topic was changed together and
+verified afterward with `ros2 topic info <topic> --verbose` to confirm
+matching reliability and the expected publisher/subscriber counts on
+both ends. `calibration_publisher`'s republish rate was also cut from
+30Hz to 2Hz -- it's static data loaded once at startup, so redoing that
+15x more often than the data could possibly change was pure waste.
+
+If you touch QoS again: verify with `ros2 topic info --verbose`, not
+just "does data still arrive" -- a slow/naive test subscriber can itself
+under-count on `BEST_EFFORT` + shallow queues (older unconsumed messages
+get dropped instead of buffered) and look like a regression that isn't
+really there. Trust the producing node's own logged rate
+(`registration_merge_node` logs its publish rate on every message) or
+the actual served endpoint over an ad hoc subscriber script.
+
 ## Calibration
 
 `landfill_camera_sim/config/calibration/intrinsics.yaml` and

@@ -40,6 +40,7 @@ import rclpy
 from cv_bridge import CvBridge
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
 
@@ -77,11 +78,16 @@ class ThermalCameraNode(Node):
         self._publish_preview = bool(self.get_parameter('publish_preview').value)
 
         self._bridge = CvBridge()
-        self._publisher = self.create_publisher(Image, str(self.get_parameter('topic').value), 10)
+        # BEST_EFFORT: see rgb_camera_node.py's comment on the same
+        # change -- sensor_fusion_node.py and camera_viewer.py's
+        # subscriptions to this topic must match.
+        self._publisher = self.create_publisher(
+            Image, str(self.get_parameter('topic').value), qos_profile_sensor_data
+        )
         self._preview_publisher = None
         if self._publish_preview:
             self._preview_publisher = self.create_publisher(
-                Image, str(self.get_parameter('preview_topic').value), 10
+                Image, str(self.get_parameter('preview_topic').value), qos_profile_sensor_data
             )
 
         self._cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
