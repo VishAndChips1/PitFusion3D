@@ -34,6 +34,23 @@ Requires ROS 2 Jazzy, Gazebo (`gz-sim`) via `ros_gz_sim`/`ros_gz_bridge`, and
 Python's `numpy`, `scipy`, and `cv_bridge` (all standard with a
 `ros-jazzy-desktop` install).
 
+## Real hardware deployment
+
+[`src/pitfusion3d_bringup`](src/pitfusion3d_bringup) replaces the Gazebo
+scenario above with the actual rig -- Livox Avia, Raspberry Pi camera,
+UVC thermal camera -- feeding the same `sensor_fusion.launch.py` /
+`web_stream.launch.py` unmodified:
+
+```bash
+ros2 launch pitfusion3d_bringup pitfusion3d_full.launch.py
+```
+
+Also includes a standalone-WiFi-hotspot mode for viewing the fused cloud
+from a laptop with no router or existing network involved. See that
+package's README for the deployment notes and hardware/networking issues
+resolved along the way (NIC troubleshooting, ROS2 discovery vs. a
+changing WiFi subnet, running the viewer with zero internet dependency).
+
 ## The sensor truck
 
 The platform is a works truck: cab, open refuse body, tandem rear axles, and a

@@ -21,4 +21,15 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# fusion_web_streamer.py resolves this relative to its own file location
+# (lib/${PROJECT_NAME}/web_assets), not share/ -- keep this DESTINATION
+# matching that if it ever changes. Bundling three.js/OrbitControls here
+# instead of loading them from a CDN means the viewer page works with no
+# internet access at all, which matters on a robot deployed behind its
+# own standalone WiFi hotspot (see pitfusion3d_bringup).
+install(
+  DIRECTORY scripts/web_assets
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()

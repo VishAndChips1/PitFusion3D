@@ -11,12 +11,22 @@
 # static_transform convention: this is the pose of child_frame as seen
 # from reference_frame).
 #
-# All three sensors are mounted in the same enclosure at the same pose
-# in worlds/landfill_camera_world.sdf.in and worlds/scan_test_world.sdf.in
-# (see the "camera_platform/camera_link" sensor block), so the shipped
-# defaults are all zero. If you change the rig -- e.g. move the lidar to
-# a different point on the enclosure -- update the corresponding entry
-# here to match, no code changes required.
+# --- REAL HARDWARE ---
+# Unlike the Gazebo rig (one enclosure, all sensors co-located), the
+# physical setup is three separate devices -- Livox Avia, RPi camera,
+# USB thermal module -- mounted wherever they physically sit. Leaving
+# these at zero (as shipped) means the fusion node treats all three as
+# co-located, which is wrong by however far apart they actually are:
+# expect systematic misalignment between lidar geometry and camera color
+# proportional to that real offset (a lidar point a few meters out will
+# be off by roughly (offset / range) in the image).
+#
+# Measure the real x/y/z offset (meters) of each sensor's optical center
+# from one reference point (e.g. the lidar) with a tape measure/calipers,
+# in the rig's x-forward/y-left/z-up convention, and fill them in below.
+# Small rotational misalignment (rotation_rpy) matters more than
+# translation at range -- if you can, mount all three pointing the same
+# direction and note any residual tilt.
 reference_frame: camera_platform/camera_link
 transforms:
   camera_platform/rgb_optical_frame:
