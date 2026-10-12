@@ -54,6 +54,60 @@ Both launch files force `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` and cap
 OpenCV/BLAS/OpenMP to one thread per process -- see "Performance" and
 "Standalone WiFi hotspot" below for why both matter.
 
+## Auto-start on boot
+
+For field deployment -- power on, no keyboard/mouse/login, pipeline just
+comes up:
+
+```bash
+scripts/install_autostart.sh
+```
+
+This installs `systemd/pitfusion3d.service` as a **user** systemd unit
+(`~/.config/systemd/user/`, no root needed) and enables lingering
+(`loginctl enable-linger`) so that user's systemd instance -- and this
+service with it -- starts at boot independent of any login. Neither step
+needs `sudo`: polkit allows the logged-in user to manage their own
+lingering state and systemd --user units directly.
+
+**Stability is layered, deliberately:**
+- `rgb_camera_node`/`thermal_camera_node` retry opening their device
+  internally (backoff capped at 10s) instead of crashing on a failed
+  open, and `rgb_camera_node` respawns `rpicam-vid` the same way if it
+  ever dies mid-run. This matters because a node whose capture thread
+  dies but whose main thread doesn't **keeps running** -- no exception
+  reaches `rclpy.spin()`, so neither the node itself nor `ros2 launch`
+  (which doesn't by default propagate a child's exit into its own)
+  would otherwise notice or recover. Verified live: killing `rpicam-vid`
+  directly gets it respawned and publishing again within ~2s, logged.
+- The systemd unit itself has `Restart=on-failure` (`RestartSec=5`) as
+  the outer safety net, for failures the nodes' own retry logic can't
+  cover (e.g. the whole `ros2 launch` process being killed). Verified
+  live: `kill -9` on the main PID gets the whole pipeline back up within
+  ~8s. `StartLimitBurst=10` over `StartLimitIntervalSec=600` caps a
+  truly broken install at 10 restarts in 10 minutes rather than
+  spinning forever, without getting in the way of normal boot-time
+  hardware-enumeration variability.
+- `systemctl --user stop` (and a crash-triggered restart) correctly
+  tears down the *entire* process tree via systemd's cgroup tracking --
+  verified no node is ever left behind, which the manual `pkill` pattern
+  used everywhere else in this README can't guarantee.
+
+Useful commands:
+
+```bash
+systemctl --user status pitfusion3d.service     # is it running, since when
+journalctl --user -u pitfusion3d.service -f     # watch logs live
+systemctl --user restart pitfusion3d.service    # apply a config change
+systemctl --user stop pitfusion3d.service       # stop (stays enabled for next boot)
+systemctl --user disable pitfusion3d.service    # turn off auto-start entirely
+```
+
+Currently starts on whatever WiFi the Pi normally connects to (so you
+keep internet during development) -- auto-starting the standalone
+hotspot too is a planned follow-up for actual field deployment, once
+everything else is settled.
+
 ## Viewing the fused cloud
 
 `fusion_web_streamer` (in `landfill_camera_sim`) serves a self-contained
@@ -207,6 +261,18 @@ get dropped instead of buffered) and look like a regression that isn't
 really there. Trust the producing node's own logged rate
 (`registration_merge_node` logs its publish rate on every message) or
 the actual served endpoint over an ad hoc subscriber script.
+
+**Balancing quality against that CPU budget**: with the headroom the QoS
+pass freed up (~103% of 400% available, load average settling around
+2.5-3 on the 4-core board), `max_points_merged` was raised 28000 -> 35000
+for a denser/crisper merged view -- safe to tune because, as above, it's
+bandwidth and a numpy gather in `fusion_web_streamer`, not extra ICP
+compute. `window_duration` (0.5s) was left alone rather than pushed
+further for speed: it already lands ~1.3-1.8Hz with 5-7 scans per merge,
+which reads as the right trade-off between "updates often enough" and
+"dense enough to look like something" -- there wasn't clear evidence a
+tighter window would improve the balance rather than just trade one for
+the other.
 
 ## Calibration
 

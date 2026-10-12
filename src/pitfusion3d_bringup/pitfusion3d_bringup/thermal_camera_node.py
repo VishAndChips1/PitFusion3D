@@ -27,6 +27,7 @@ not Kelvin. Swap in a radiometric driver later (e.g. once vendor raw16
 mode access is available) without touching anything downstream.
 """
 import threading
+import time
 
 import cv2
 
@@ -73,8 +74,8 @@ class ThermalCameraNode(Node):
         self._frame_id = str(self.get_parameter('frame_id').value)
         self._width = int(self.get_parameter('width').value)
         self._height = int(self.get_parameter('height').value)
-        framerate = int(self.get_parameter('framerate').value)
-        device = str(self.get_parameter('device').value)
+        self._framerate = int(self.get_parameter('framerate').value)
+        self._device = str(self.get_parameter('device').value)
         self._publish_preview = bool(self.get_parameter('publish_preview').value)
 
         self._bridge = CvBridge()
@@ -90,32 +91,74 @@ class ThermalCameraNode(Node):
                 Image, str(self.get_parameter('preview_topic').value), qos_profile_sensor_data
             )
 
-        self._cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
-        self._cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'YUYV'))
-        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
-        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
-        self._cap.set(cv2.CAP_PROP_FPS, framerate)
-        self._cap.set(cv2.CAP_PROP_CONVERT_RGB, 0)
-
-        if not self._cap.isOpened():
-            self.get_logger().error(f'Failed to open thermal camera at {device}')
-            raise RuntimeError(f'Could not open {device}')
-
+        self._cap = None
         self._running = True
         self._thread = threading.Thread(target=self._capture_loop, daemon=True)
         self._thread.start()
-        self.get_logger().info(
-            f'{device} capture started ({self._width}x{self._height}@{framerate}), '
-            f'publishing mono16 on {self._publisher.topic_name} '
-            '(relative AGC signal, not radiometric Kelvin)'
-        )
+
+    def _open_capture(self):
+        cap = cv2.VideoCapture(self._device, cv2.CAP_V4L2)
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'YUYV'))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
+        cap.set(cv2.CAP_PROP_FPS, self._framerate)
+        cap.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+        if not cap.isOpened():
+            cap.release()
+            return None
+        return cap
 
     def _capture_loop(self):
+        # Self-healing, matching rgb_camera_node.py: on boot (systemd/
+        # lingering, no one watching) this USB device can take a few
+        # seconds to enumerate, and a cable hiccup in the field shouldn't
+        # need a human to notice and restart anything. Previously this
+        # raised in __init__ on a failed open, which would kill the node's
+        # *process* -- observable in a log, but ros2 launch doesn't by
+        # default propagate a child's exit into its own, so nothing
+        # upstream (including a systemd Restart=on-failure on the whole
+        # pipeline) was guaranteed to actually act on that. Retrying here
+        # instead means the node's own process survives and recovers on
+        # its own once the camera is actually available.
+        backoff = 1.0
+        consecutive_read_failures = 0
         while self._running and rclpy.ok():
+            if self._cap is None:
+                self._cap = self._open_capture()
+                if self._cap is None:
+                    self.get_logger().error(
+                        f'Failed to open thermal camera at {self._device}; '
+                        f'retrying in {backoff:.0f}s'
+                    )
+                    time.sleep(backoff)
+                    backoff = min(backoff * 2, 10.0)
+                    continue
+                self.get_logger().info(
+                    f'{self._device} capture started '
+                    f'({self._width}x{self._height}@{self._framerate}), '
+                    f'publishing mono16 on {self._publisher.topic_name} '
+                    '(relative AGC signal, not radiometric Kelvin)'
+                )
+                backoff = 1.0
+                consecutive_read_failures = 0
+
             ok, raw = self._cap.read()
             if not ok or raw is None:
+                consecutive_read_failures += 1
                 self.get_logger().warn('Failed to read frame from thermal camera')
+                # A handful of isolated drops is normal; many in a row
+                # means the device is actually gone (unplugged, etc.) --
+                # reopen rather than busy-loop calling read() on a dead
+                # capture forever.
+                if consecutive_read_failures >= 10:
+                    self.get_logger().error('Too many consecutive read failures; reopening device')
+                    self._cap.release()
+                    self._cap = None
+                else:
+                    time.sleep(0.1)
                 continue
+            consecutive_read_failures = 0
+
             yuyv = raw.reshape(self._height, self._width, 2)
             y = yuyv[:, :, 0]
             mono16 = (y.astype(np.uint16) << 8)

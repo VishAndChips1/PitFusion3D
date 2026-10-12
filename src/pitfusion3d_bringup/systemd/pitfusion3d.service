@@ -1,0 +1,21 @@
+[Unit]
+Description=PitFusion3D sensor pipeline (Livox + RGB + thermal -> fused point cloud web viewer)
+After=network-online.target
+Wants=network-online.target
+# Safety net against a tight restart loop on a genuinely broken install
+# (not against the normal "hardware not enumerated yet at boot" case,
+# which the nodes' own internal retry/respawn logic already handles --
+# see rgb_camera_node.py/thermal_camera_node.py). 10 restarts within 10
+# minutes comfortably covers boot-time variability; past that, something
+# is actually wrong and needs a human, not another instant retry.
+StartLimitIntervalSec=600
+StartLimitBurst=10
+
+[Service]
+Type=exec
+ExecStart=/home/vish/ros2_ws/src/pitfusion3d_bringup/scripts/run_pipeline.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

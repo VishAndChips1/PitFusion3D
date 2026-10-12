@@ -33,7 +33,7 @@ def generate_launch_description():
             description='Faster per-scan fused PointCloud2 (x,y,z,rgb,thermal) topic.',
         ),
         DeclareLaunchArgument('http_port', default_value='8080'),
-        DeclareLaunchArgument('max_points_merged', default_value='28000'),
+        DeclareLaunchArgument('max_points_merged', default_value='35000'),
         DeclareLaunchArgument('max_points_live', default_value='10000'),
 
         Node(

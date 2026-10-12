@@ -13,6 +13,7 @@ the channel order it expects.
 """
 import subprocess
 import threading
+import time
 
 import cv2
 
@@ -67,12 +68,19 @@ class RgbCameraNode(Node):
             Image, str(self.get_parameter('topic').value), qos_profile_sensor_data
         )
 
+        self._framerate = framerate
+        self._process = None
+        self._running = True
+        self._thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self._thread.start()
+
+    def _spawn(self):
         self._process = subprocess.Popen(
             [
                 'rpicam-vid', '-t', '0',
                 '--width', str(self._width),
                 '--height', str(self._height),
-                '--framerate', str(framerate),
+                '--framerate', str(self._framerate),
                 '--codec', 'yuv420',
                 '--nopreview',
                 '-o', '-',
@@ -81,12 +89,8 @@ class RgbCameraNode(Node):
             stderr=subprocess.DEVNULL,
             bufsize=self._frame_size * 2,
         )
-
-        self._running = True
-        self._thread = threading.Thread(target=self._capture_loop, daemon=True)
-        self._thread.start()
         self.get_logger().info(
-            f'rpicam-vid capture started ({self._width}x{self._height}@{framerate}), '
+            f'rpicam-vid capture started ({self._width}x{self._height}@{self._framerate}), '
             f'publishing rgb8 on {self._publisher.topic_name}'
         )
 
@@ -102,28 +106,61 @@ class RgbCameraNode(Node):
         return bytes(buf)
 
     def _capture_loop(self):
+        # Self-healing: on boot (systemd/lingering, no one watching) the
+        # imx477/unicam device can take a few seconds to be ready, and
+        # rpicam-vid can be killed or glitch mid-run. Respawning here with
+        # backoff means a transient hiccup fixes itself in seconds instead
+        # of leaving this node's thread dead and the node silently
+        # publishing nothing forever -- the node itself keeps running (no
+        # exception reaches rclpy.spin), so nothing would otherwise notice
+        # or restart it.
+        backoff = 1.0
         while self._running and rclpy.ok():
-            raw = self._read_exact(self._frame_size)
-            if raw is None:
-                self.get_logger().error('rpicam-vid stream ended unexpectedly')
-                return
-            yuv = np.frombuffer(raw, dtype=np.uint8).reshape(
-                (self._height * 3 // 2, self._width)
-            )
-            rgb = cv2.cvtColor(yuv, cv2.COLOR_YUV2RGB_I420)
-            msg = self._bridge.cv2_to_imgmsg(rgb, encoding='rgb8')
-            msg.header.stamp = self.get_clock().now().to_msg()
-            msg.header.frame_id = self._frame_id
-            self._publisher.publish(msg)
+            try:
+                self._spawn()
+            except OSError as exc:
+                self.get_logger().error(f'Failed to start rpicam-vid: {exc}; retrying')
+                time.sleep(backoff)
+                backoff = min(backoff * 2, 10.0)
+                continue
 
-    def destroy_node(self):
-        self._running = False
-        if self._process.poll() is None:
+            stream_started = False
+            while self._running and rclpy.ok():
+                raw = self._read_exact(self._frame_size)
+                if raw is None:
+                    break
+                stream_started = True
+                backoff = 1.0  # a good frame proves the stream recovered
+                yuv = np.frombuffer(raw, dtype=np.uint8).reshape(
+                    (self._height * 3 // 2, self._width)
+                )
+                rgb = cv2.cvtColor(yuv, cv2.COLOR_YUV2RGB_I420)
+                msg = self._bridge.cv2_to_imgmsg(rgb, encoding='rgb8')
+                msg.header.stamp = self.get_clock().now().to_msg()
+                msg.header.frame_id = self._frame_id
+                self._publisher.publish(msg)
+
+            if not self._running or not rclpy.ok():
+                break
+            self.get_logger().error(
+                f'rpicam-vid stream ended {"unexpectedly" if stream_started else "before producing any frames"}'
+                f'; respawning in {backoff:.0f}s'
+            )
+            self._terminate_process()
+            time.sleep(backoff)
+            backoff = min(backoff * 2, 10.0)
+
+    def _terminate_process(self):
+        if self._process is not None and self._process.poll() is None:
             self._process.terminate()
             try:
                 self._process.wait(timeout=2.0)
             except subprocess.TimeoutExpired:
                 self._process.kill()
+
+    def destroy_node(self):
+        self._running = False
+        self._terminate_process()
         super().destroy_node()
 
 

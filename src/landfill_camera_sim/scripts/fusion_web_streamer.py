@@ -491,12 +491,14 @@ class FusionWebStreamer(Node):
         # registration_merge_node (that cost is independent, already
         # spent before this node ever sees the cloud) -- so it's safe to
         # raise for a denser, better-looking view without touching the
-        # Pi's tighter CPU budget. 28000 pts (~766KB) at merged's
-        # ~1.5-1.6Hz -> ~1.2MB/s, comfortable for a direct hotspot link
-        # with one client. 10000 pts (~273KB) at live's ~10Hz -> ~2.7MB/s
-        # -- live mode still wants a strong/local link; merged is the
-        # recommended default.
-        self.declare_parameter('max_points_merged', 28000)
+        # Pi's tighter CPU budget, which freed up considerably once every
+        # topic moved to BEST_EFFORT QoS (measured ~103% of 400% available
+        # at this cap, comfortable headroom). 35000 pts (~958KB) at
+        # merged's ~1.3-1.8Hz -> ~1.2-1.7MB/s, still comfortable for a
+        # direct hotspot link with one client. 10000 pts (~273KB) at
+        # live's ~10Hz -> ~2.7MB/s -- live mode still wants a strong/local
+        # link; merged is the recommended default.
+        self.declare_parameter('max_points_merged', 35000)
         self.declare_parameter('max_points_live', 10000)
         # Backward-compat: an explicit input_topic overrides merged_topic,
         # matching the old single-stream parameter name.
