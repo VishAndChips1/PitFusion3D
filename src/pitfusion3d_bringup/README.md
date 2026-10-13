@@ -254,6 +254,28 @@ nmcli connection modify "Wired connection 1" connection.autoconnect no
 (No `sudo` needed -- polkit allows the logged-in user to manage
 NetworkManager connections directly.)
 
+## Image looked "pixely"/blobby despite good point density -- fixed
+
+Not a sensor resolution limitation -- the render point *size* was
+roughly 3-4x larger than the data actually needed. Measured directly:
+fetched the live served cloud and computed real nearest-neighbor point
+spacing (`scipy.spatial.cKDTree`) rather than guessing -- merged mode
+~1.4cm median spacing, live mode ~2.1cm (sparser; no ICP densification).
+The previous render size (0.05 world units = 5cm for merged) was ~3.5x
+the actual point spacing, so adjacent points overlapped heavily enough
+to merge into solid blobs, hiding real structure the data already had.
+Confirmed visually, not just by the numbers: re-rendering the identical
+fetched cloud at progressively smaller sizes went from "mostly solid
+black blobs, no visible structure" to individual points and real
+geometric edges being distinguishable, with zero change to the
+underlying data. Fixed by sizing each mode to ~1.3-1.5x its own measured
+spacing (the standard point-cloud-rendering target -- enough overlap to
+read as a continuous surface, not enough to blob): merged 0.05 -> 0.018,
+live 0.06 -> 0.028. If you change sensor resolution, lidar density,
+`max_points_*`, or `window_duration` later, re-measure spacing rather
+than assuming these sizes still apply -- they're calibrated to this
+specific scene's density, not a universal constant.
+
 ## Performance
 
 Measured end to end on the Pi: reducing every OpenCV-using node to

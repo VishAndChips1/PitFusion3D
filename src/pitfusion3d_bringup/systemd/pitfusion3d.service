@@ -1,7 +1,18 @@
 [Unit]
 Description=PitFusion3D sensor pipeline (Livox + RGB + thermal -> fused point cloud web viewer)
-After=network-online.target
-Wants=network-online.target
+# Deliberately NOT After=/Wants=network-online.target: this pipeline
+# needs no network to function at all (ROS discovery is pinned to
+# localhost, the Livox is wired via eth0, the camera nodes are local
+# hardware) -- only *viewing* it needs a network, and the web server
+# binds 0.0.0.0 at startup regardless of whether any interface has an
+# address yet, so it just becomes reachable organically as wlan0/eth0
+# come up. In the field, with no WiFi in range and the hotspot not
+# started, network-online.target would never actually trigger and
+# NetworkManager-wait-online's own 60s timeout (NM_ONLINE_TIMEOUT) would
+# delay every single boot by up to a minute for a dependency that buys
+# nothing -- the sensors should start capturing within seconds of power
+# on, not wait on a network they don't need.
+After=network.target
 # Safety net against a tight restart loop on a genuinely broken install
 # (not against the normal "hardware not enumerated yet at boot" case,
 # which the nodes' own internal retry/respawn logic already handles --

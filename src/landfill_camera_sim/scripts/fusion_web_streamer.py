@@ -138,7 +138,16 @@ function makeDiscTexture() {
 const discTexture = makeDiscTexture();
 
 let geometry = new THREE.BufferGeometry();
-const POINT_SIZE = {merged: 0.05, live: 0.06};
+// Calibrated from measured point spacing, not guessed: a live merged
+// cloud's nearest-neighbor spacing measured ~1.4cm median (live mode,
+// sparser/no ICP densification, ~2.1cm). Rendering at a size much larger
+// than that spacing makes adjacent points overlap into solid blobs --
+// confirmed visually (identical data re-rendered at ~1/4 this size went
+// from "mostly black blobs, no visible structure" to individual points
+// and real geometric edges being distinguishable). ~1.3-1.5x the
+// measured spacing is the standard point-cloud-rendering target: just
+// enough overlap to read as a continuous surface without blobbing.
+const POINT_SIZE = {merged: 0.018, live: 0.028};
 let material = new THREE.PointsMaterial({
   size: POINT_SIZE.merged, vertexColors: true, sizeAttenuation: true,
   map: discTexture, transparent: true, alphaTest: 0.1, depthWrite: true,
