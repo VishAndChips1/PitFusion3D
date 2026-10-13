@@ -108,6 +108,41 @@ keep internet during development) -- auto-starting the standalone
 hotspot too is a planned follow-up for actual field deployment, once
 everything else is settled.
 
+### Merged cloud crawls for the first few minutes after every boot -- fixed
+
+First real symptom of a genuine reboot test (auto-start itself worked):
+the merged cloud's refresh rate collapsed to ~0.2-0.4Hz, way down from
+its normal ~1.3-1.8Hz, immediately after power-on.
+
+Root cause, found via `journalctl --user -u pitfusion3d.service`:
+`registration_merge_node` was logging `Timestamps jumped backwards;
+resetting merge window` every 15-30 seconds, each one discarding
+whatever scans had already accumulated in that window and starting
+over from nothing -- directly tanking the refresh rate. This Pi has no
+battery-backed RTC (`journalctl -u systemd-timesyncd` shows "clock
+jumped backwards, restored from recorded timestamp" on *every* boot,
+followed by an NTP correction a minute or so later), and
+`registration_merge_node`'s reset check had **zero tolerance** -- any
+backward movement at all, even a millisecond, triggered a full reset.
+`sensor_fusion_node.py` has the identical check but with a sensible
+1-second tolerance; `registration_merge_node.py` just never got the
+same treatment. Fixed by matching it.
+
+Worth being precise about what actually caused each backward tick,
+since "faulty RTC" isn't the whole story: the observed jumps were
+small and suspiciously uniform (~100ms), which points more at
+`livox_restamp_node`'s own min-offset estimator finding a new
+lowest-latency sample in its rolling window (expected behavior of any
+min-tracking filter) than at NTP making a correction of that exact,
+repeated size. Either way -- post-boot clock settling or ordinary
+estimator jitter -- the fix is the same and the 1-second tolerance
+covers both. This can recur any time during a long session, not just
+at boot, so the fix is a tolerance in the code rather than something
+boot-ordering (e.g. `After=time-sync.target`) could fully solve --
+that target is also, on testing, not reliably signalled on this system
+regardless, and waiting on it would actively break the no-internet
+hotspot/field case, where NTP sync can never complete at all.
+
 ## Viewing the fused cloud
 
 `fusion_web_streamer` (in `landfill_camera_sim`) serves a self-contained

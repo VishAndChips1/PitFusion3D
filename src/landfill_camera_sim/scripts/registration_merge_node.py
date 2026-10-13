@@ -175,7 +175,15 @@ class RegistrationMergeNode(Node):
 
         # A sim restart rewinds the clock; without this the window never
         # closes again because stamp_sec stays below the stale start.
-        if self._window_start is not None and stamp_sec < self._window_start:
+        # 1-second tolerance (matching sensor_fusion_node.py's identical
+        # check), not a hair-trigger on *any* backward movement: on real
+        # hardware with no battery-backed RTC, the clock gets stepped by
+        # NTP as it settles after every boot -- small backward jitter
+        # from that is normal and was previously enough to reset this
+        # window every few seconds, discarding whatever scans had
+        # already accumulated and tanking the merged cloud's refresh
+        # rate for the first several minutes after every power-on.
+        if self._window_start is not None and stamp_sec < self._window_start - 1.0:
             self.get_logger().warn(
                 'Timestamps jumped backwards (%.3f < %.3f); resetting merge window'
                 % (stamp_sec, self._window_start)
