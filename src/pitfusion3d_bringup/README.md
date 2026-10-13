@@ -254,6 +254,56 @@ nmcli connection modify "Wired connection 1" connection.autoconnect no
 (No `sudo` needed -- polkit allows the logged-in user to manage
 NetworkManager connections directly.)
 
+## Browser refresh rate well below the pipeline's actual production rate -- fixed
+
+Reported on real Patelnet (not the hotspot): pipeline producing merged
+clouds at ~1.4Hz internally (per `registration_merge_node`'s own log),
+but the browser only refreshing at ~0.7Hz. The gap wasn't the pipeline
+at all -- it was transfer time of the ~980KB float32 payload over a
+real, router-mediated WiFi link, plus a client-side inefficiency that
+compounded it: the poll loop added a *fixed* delay after every fetch
+regardless of how long that fetch itself took, so a slow network and
+the polling logic were both stretching the effective interval at once.
+
+Two independent fixes, stacked:
+
+1. **Quantized wire format** (`_encode_cloud` in `fusion_web_streamer.py`):
+   xyz as int16 relative to a per-message origin+scale, rgb as uint8
+   (already 0-255, no precision lost), thermal as int16 at 0.01
+   resolution -- 28 bytes/point down to 11, a 2.55x reduction, with
+   quantization error sub-millimeter against this rig's ~1.4cm measured
+   point spacing (invisible). This is the same core idea Draco uses for
+   web-delivered point clouds/meshes; a full Draco integration (external
+   WASM decoder + encoder dependency) wasn't worth the added complexity
+   or offline-field risk for this.
+2. **Gzip** (`Content-Encoding: gzip`, compressed once per data update
+   in `_StreamState.set_payload`, not per-poll): quantized integers
+   compress further than noisy float32 mantissas did. The browser
+   decompresses transparently inside `fetch()` -- no client code needed
+   for this part.
+3. **Adaptive poll delay**: `setTimeout(poll, Math.max(20, targetInterval
+   - elapsed))` instead of a flat `setTimeout(poll, targetInterval)` --
+   on a slow link, where the fetch already took longer than the target
+   interval, this stops *adding* the full interval on top of that again.
+
+Verified, not assumed: measured actual compressed transfer size at
+**3.10x smaller** (980KB -> 316KB) with the full 35000-point cap
+unchanged -- zero density/quality trade-off, confirmed by fetching and
+fully decoding+re-rendering the live quantized data (clean, correct,
+no artifacts). CPU cost of compression is modest (~14% on
+`fusion_web_streamer`, not a new bottleneck). Should take ~0.7Hz
+observed to somewhere around ~2Hz on the same link, since the dominant
+bottleneck (transfer time) just got cut roughly 3x -- but this number
+specifically wants confirming on your end, on the actual network, since
+I can't test over Patelnet myself from here.
+
+If it's still not enough: `max_points_merged` is still the next dial
+(bandwidth/numpy cost, not ICP compute -- see "Performance" below), and
+a genuine push-based transport (WebSocket instead of polling) would
+remove the 20-250ms poll floor entirely, at the cost of more connection-
+management complexity than felt justified before measuring whether the
+above was enough.
+
 ## Image looked "pixely"/blobby despite good point density -- fixed
 
 Not a sensor resolution limitation -- the render point *size* was

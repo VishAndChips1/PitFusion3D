@@ -27,6 +27,7 @@ Serving both files locally means the page has zero internet dependency,
 which is the actual requirement for a standalone field deployment.
 """
 
+import gzip
 import http.server
 import os
 import socketserver
@@ -256,30 +257,57 @@ async function poll() {
   // network does to any one request.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 4000);
+  const fetchStart = performance.now();
   try {
     const path = source === 'merged' ? '/merged.bin' : '/live.bin';
     // 'no-cache' (not 'no-store'): always revalidate with the server, but
     // let the browser send If-None-Match and reuse its cached body on a
     // 304 -- critical over real WiFi, where re-downloading an unchanged
     // multi-hundred-KB point cloud on every poll is the difference
-    // between smooth and unusable.
+    // between smooth and unusable. The server also gzips the body
+    // (Content-Encoding: gzip) -- the browser decompresses this
+    // transparently before arrayBuffer() ever sees it, no code needed
+    // here for that part.
     const res = await fetch(path, {cache:'no-cache', signal: controller.signal});
     if (res.ok) {
       const buf = await res.arrayBuffer();
-      if (buf.byteLength >= 4) {
+      // Quantized wire format (see _encode_cloud in the server): 24-byte
+      // header (n, seq, origin xyz, scale) then 11 bytes/point (3x int16
+      // xyz, relative to the origin and scaled up; 3x uint8 rgb, already
+      // 0-255 so no precision lost; 1x int16 thermal at 0.01 resolution,
+      // -32768 sentinel for "no value"). Was 7x float32 = 28 bytes/point
+      // -- over a real WiFi link transfer time of that, not the
+      // pipeline's own production rate, was the actual bottleneck on
+      // the refresh rate actually seen in the browser (measured: pipeline
+      // producing merged clouds at ~1.4Hz internally, this page only
+      // seeing ~0.7Hz). 11 bytes/point is a per-point size that isn't a
+      // multiple of 2 or 4, so points aren't 2-byte-aligned past the
+      // first one -- DataView (not a strided typed-array view) handles
+      // that correctly.
+      if (buf.byteLength >= 24) {
         const dv = new DataView(buf);
         const n = dv.getUint32(0, true);
         const seq = dv.getUint32(4, true);
         if (n > 0 && seq !== poll._lastSeq) {
           poll._lastSeq = seq;
-          const floats = new Float32Array(buf, 8, n * 7);
+          const ox = dv.getFloat32(8, true);
+          const oy = dv.getFloat32(12, true);
+          const oz = dv.getFloat32(16, true);
+          const scale = dv.getFloat32(20, true);
           const xyz = new Float32Array(n * 3);
           const rgb = new Float32Array(n * 3);
           const thermal = new Float32Array(n);
+          let p = 24;
           for (let i = 0; i < n; i++) {
-            xyz[i*3] = floats[i*7]; xyz[i*3+1] = floats[i*7+1]; xyz[i*3+2] = floats[i*7+2];
-            rgb[i*3] = floats[i*7+3]; rgb[i*3+1] = floats[i*7+4]; rgb[i*3+2] = floats[i*7+5];
-            thermal[i] = floats[i*7+6];
+            xyz[i*3]   = ox + dv.getInt16(p, true) * scale;
+            xyz[i*3+1] = oy + dv.getInt16(p + 2, true) * scale;
+            xyz[i*3+2] = oz + dv.getInt16(p + 4, true) * scale;
+            rgb[i*3]   = dv.getUint8(p + 6) / 255;
+            rgb[i*3+1] = dv.getUint8(p + 7) / 255;
+            rgb[i*3+2] = dv.getUint8(p + 8) / 255;
+            const tq = dv.getInt16(p + 9, true);
+            thermal[i] = (tq === -32768) ? NaN : tq / 100;
+            p += 11;
           }
           lastXYZ = xyz; lastRGB = rgb; lastThermal = thermal;
           geometry.setAttribute('position', new THREE.BufferAttribute(xyz, 3));
@@ -295,7 +323,18 @@ async function poll() {
   finally { clearTimeout(timeoutId); }
   const staleMs = performance.now() - (recentUpdateTimestamps[recentUpdateTimestamps.length-1] || 0);
   if (staleMs > 3000) document.getElementById('stat-hz').classList.add('stale');
-  setTimeout(poll, source === 'merged' ? 250 : 60);
+  // Adaptive, not a flat delay: on a fast (e.g. loopback) link the fetch
+  // finishes well under the target interval and this waits out the rest
+  // of it as before. On a slow link, where the fetch itself already took
+  // longer than the target interval, adding the *full* target delay on
+  // top of that again would compound an already-slow network into an
+  // even slower effective refresh rate -- this was a real, measurable
+  // contributor to the 1.4Hz-internal/0.7Hz-observed gap, not just the
+  // payload size. Floor of 20ms just yields the event loop rather than
+  // hammering the server back-to-back with zero gap.
+  const elapsed = performance.now() - fetchStart;
+  const targetInterval = source === 'merged' ? 250 : 60;
+  setTimeout(poll, Math.max(20, targetInterval - elapsed));
 }
 poll();
 
@@ -333,14 +372,21 @@ class _StreamState:
     """
     def __init__(self):
         self.lock = threading.Lock()
-        self.buffer = struct.pack('<II', 0, 0)
+        self.buffer = gzip.compress(struct.pack('<II', 0, 0), compresslevel=6)
         self.seq = 0
 
-    def set_payload(self, payload_bytes):
-        n_points = len(payload_bytes) // 28  # 7 float32 fields per point
+    def set_payload(self, n_points, payload_bytes):
+        # Compressed once here, per actual data update (~1-10Hz), not
+        # per poll (browsers poll faster than that to catch an update
+        # promptly -- compressing per-poll would redo this work for
+        # nothing on every single unchanged-data request).
         with self.lock:
-            self.seq += 1
-            self.buffer = struct.pack('<II', n_points, self.seq) + payload_bytes
+            next_seq = self.seq + 1
+            body = gzip.compress(
+                struct.pack('<II', n_points, next_seq) + payload_bytes, compresslevel=6
+            )
+            self.seq = next_seq
+            self.buffer = body
 
     def get_buffer_and_seq(self):
         with self.lock:
@@ -403,6 +449,13 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         fetch(..., {cache:'no-cache'}), which always revalidates) serves
         the last real body transparently either way.
         """
+        # The buffer is pre-gzipped once per data update in
+        # _StreamState.set_payload (not here, not per-poll) -- quantized
+        # point data compresses meaningfully better than noisy float32
+        # mantissas, on top of the ~2.55x the quantization itself already
+        # buys (see _encode_cloud). Content-Encoding: gzip means the
+        # browser decompresses transparently inside fetch(); no client-
+        # side change needed to receive the benefit.
         body, seq = stream_state.get_buffer_and_seq()
         etag = f'"{seq}"'
         if self.headers.get('If-None-Match') == etag:
@@ -413,6 +466,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             return
         self.send_response(200)
         self.send_header('Content-Type', 'application/octet-stream')
+        self.send_header('Content-Encoding', 'gzip')
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Cache-Control', 'no-cache')
@@ -438,30 +492,65 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
 
+_THERMAL_SENTINEL = -32768  # int16 "no thermal value" marker (source was NaN)
+
+
 def _encode_cloud(msg, max_points, rng):
+    """Pack a cloud into a compact quantized wire format.
+
+    Was 7 x float32 = 28 bytes/point. Over a real WiFi link (hotspot or
+    a router-mediated LAN), transfer time of that payload -- not the
+    pipeline's own production rate -- turned out to be the actual
+    bottleneck on the viewer's observed refresh rate (measured: pipeline
+    producing merged clouds at ~1.4Hz internally, browser only seeing
+    ~0.7Hz). Point position only needs to be accurate to the lidar's own
+    precision (millimeters), nowhere near float32's ~7 significant
+    digits over a scene a few meters across, so this quantizes xyz to
+    int16 relative to a per-message offset+scale (same idea as Draco's
+    quantized attributes, minus the external WASM decoder/encoder
+    dependency, which isn't worth the complexity or the offline-field
+    risk here) -- 24-byte header (n, seq, ox, oy, oz, scale) + 11
+    bytes/point (6 xyz + 3 rgb, already 0-255 so no precision lost at
+    all + 2 thermal, 0.01 resolution). That's a 2.55x reduction before
+    gzip (applied once per update in _StreamState.set_payload, not
+    per-poll) adds more on top -- quantized integers compress better
+    than noisy float32 mantissas. Quantization error is sub-millimeter
+    against this rig's ~1.4cm measured point spacing: invisible.
+    """
     points = pc2.read_points_numpy(msg, field_names=['x', 'y', 'z', 'rgb', 'thermal'])
     if points.size == 0:
-        return b''
+        return 0, struct.pack('<ffff', 0.0, 0.0, 0.0, 1.0)
     n = points.shape[0]
     if n > max_points:
         idx = rng.choice(n, size=max_points, replace=False)
         points = points[idx]
         n = points.shape[0]
 
-    xyz = points[:, 0:3].astype(np.float32)
-    packed_rgb = points[:, 3].astype(np.float32).view(np.uint32)
-    r = ((packed_rgb >> 16) & 0xFF).astype(np.float32) / 255.0
-    g = ((packed_rgb >> 8) & 0xFF).astype(np.float32) / 255.0
-    b = (packed_rgb & 0xFF).astype(np.float32) / 255.0
-    thermal = points[:, 4].astype(np.float32)
+    xyz = points[:, 0:3].astype(np.float64)  # headroom for the subtraction below
+    mins = xyz.min(axis=0)
+    extent = float((xyz.max(axis=0) - mins).max())
+    scale = max(extent, 1e-6) / 32000.0
+    xyz_q = np.round((xyz - mins) / scale).astype(np.int16)
 
-    payload = np.empty((n, 7), dtype=np.float32)
-    payload[:, 0:3] = xyz
-    payload[:, 3] = r
-    payload[:, 4] = g
-    payload[:, 5] = b
-    payload[:, 6] = thermal
-    return payload.tobytes()
+    packed_rgb = points[:, 3].astype(np.float32).view(np.uint32)
+    r = ((packed_rgb >> 16) & 0xFF).astype(np.uint8)
+    g = ((packed_rgb >> 8) & 0xFF).astype(np.uint8)
+    b = (packed_rgb & 0xFF).astype(np.uint8)
+
+    thermal = points[:, 4].astype(np.float32)
+    finite = np.isfinite(thermal)
+    thermal_q = np.full(n, _THERMAL_SENTINEL, dtype=np.int16)
+    thermal_q[finite] = np.clip(np.round(thermal[finite] * 100.0), -32767, 32767).astype(np.int16)
+
+    header = struct.pack('<ffff', mins[0], mins[1], mins[2], scale)
+    point_dtype = np.dtype([
+        ('xyz', np.int16, 3), ('rgb', np.uint8, 3), ('t', np.int16),
+    ])
+    point_data = np.empty(n, dtype=point_dtype)
+    point_data['xyz'] = xyz_q
+    point_data['rgb'] = np.stack([r, g, b], axis=1)
+    point_data['t'] = thermal_q
+    return n, header + point_data.tobytes()
 
 
 _WEB_ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web_assets')
@@ -546,10 +635,12 @@ class FusionWebStreamer(Node):
         )
 
     def _on_merged(self, msg):
-        self._state.merged.set_payload(_encode_cloud(msg, self._max_points_merged, self._rng))
+        n, payload = _encode_cloud(msg, self._max_points_merged, self._rng)
+        self._state.merged.set_payload(n, payload)
 
     def _on_live(self, msg):
-        self._state.live.set_payload(_encode_cloud(msg, self._max_points_live, self._rng))
+        n, payload = _encode_cloud(msg, self._max_points_live, self._rng)
+        self._state.live.set_payload(n, payload)
 
     def destroy_node(self):
         self._server.shutdown()
