@@ -70,6 +70,12 @@ class ThermalCameraNode(Node):
         # this raw feed; flip on only for direct thermal-camera debugging.
         self.declare_parameter('publish_preview', False)
         self.declare_parameter('preview_topic', '/landfill/thermal/image_preview')
+        # This module is physically mounted upside down relative to the
+        # RGB camera/rig -- confirmed visually (a person standing upright
+        # in frame appeared head-down, feet-up). A parameter rather than
+        # a hardcoded flip so it's one launch arg to flip back if the
+        # physical mounting ever changes, not a code edit.
+        self.declare_parameter('vflip', True)
 
         self._frame_id = str(self.get_parameter('frame_id').value)
         self._width = int(self.get_parameter('width').value)
@@ -77,6 +83,7 @@ class ThermalCameraNode(Node):
         self._framerate = int(self.get_parameter('framerate').value)
         self._device = str(self.get_parameter('device').value)
         self._publish_preview = bool(self.get_parameter('publish_preview').value)
+        self._vflip = bool(self.get_parameter('vflip').value)
 
         self._bridge = CvBridge()
         # BEST_EFFORT: see rgb_camera_node.py's comment on the same
@@ -161,6 +168,8 @@ class ThermalCameraNode(Node):
 
             yuyv = raw.reshape(self._height, self._width, 2)
             y = yuyv[:, :, 0]
+            if self._vflip:
+                y = np.flipud(y)
             mono16 = (y.astype(np.uint16) << 8)
 
             stamp = self.get_clock().now().to_msg()

@@ -50,11 +50,34 @@ class RgbCameraNode(Node):
         # 30fps; 15fps still keeps frame age well inside the 0.15s sync
         # slop with room to spare).
         self.declare_parameter('framerate', 15)
+        # Measured the actual default (1.0) output: mean HSV saturation
+        # ~0.137 across a real captured frame -- genuinely washed out,
+        # not just a subjective impression (a normally-saturated photo is
+        # more like 0.2-0.4+). This is rpicam-vid's own ISP saturation
+        # control, applied before the lossy YUV420 encode -- strictly
+        # better than boosting saturation in software afterward on an
+        # already 8-bit-quantized, chroma-subsampled image, and free (the
+        # ISP does this work regardless of the value). It's specifically
+        # the HSV "S" channel: hue is unaffected, only color intensity
+        # changes -- not a contrast/brightness/hue change.
+        #
+        # 1.6 on that same low-chroma test scene (mostly white walls, a
+        # backlit window) only moved measured saturation to ~0.178 (1.29x,
+        # not 1.6x) -- a real but modest change, and probably an
+        # understatement of the effect on genuinely colorful subjects:
+        # boosting an already-near-zero-chroma pixel does very little (it
+        # has nothing to amplify), while a pixel with real color in it
+        # gets proportionally more boost. Pushed to 1.8 as a more
+        # assertive default given how strongly "couldn't tell the colors
+        # apart" came through -- adjust from here based on how it looks
+        # against an actual colorful subject, not just this room.
+        self.declare_parameter('saturation', 1.8)
 
         self._frame_id = str(self.get_parameter('frame_id').value)
         self._width = int(self.get_parameter('width').value)
         self._height = int(self.get_parameter('height').value)
         framerate = int(self.get_parameter('framerate').value)
+        self._saturation = float(self.get_parameter('saturation').value)
         self._frame_size = self._width * self._height * 3 // 2  # I420
 
         self._bridge = CvBridge()
@@ -82,6 +105,7 @@ class RgbCameraNode(Node):
                 '--height', str(self._height),
                 '--framerate', str(self._framerate),
                 '--codec', 'yuv420',
+                '--saturation', str(self._saturation),
                 '--nopreview',
                 '-o', '-',
             ],

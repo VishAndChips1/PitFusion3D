@@ -392,6 +392,55 @@ intrinsics, tape-measure offsets for extrinsics, since the three sensors
 are physically separate devices here, unlike the co-located simulated
 rig).
 
+## Thermal camera was physically mounted upside down -- fixed
+
+Confirmed visually, not just by report: captured a live frame and
+rendered it -- a person standing upright appeared head-down, feet-up.
+Fixed with a vertical flip (`np.flipud`) in `thermal_camera_node.py`,
+gated by a new `vflip` parameter (default `True`) rather than a bare
+hardcoded flip, so it's one launch arg to reverse if the physical
+mounting ever changes.
+
+This wasn't just a viewer cosmetics bug: `sensor_fusion_node.py` reads
+the *same* `/landfill/thermal/image_raw` topic to sample a temperature
+value at each lidar point's projected pixel. With the image upside
+down, that projection math (which assumes image rows increase downward,
+matching the RGB camera's un-flipped convention) was sampling thermal
+values from the vertically mirrored position -- every fused point's
+thermal reading was being pulled from the wrong place in the frame.
+Fixing the orientation fixes both the live preview and the actual fused
+point cloud's accuracy at once, no other calibration file changes
+needed (the flip doesn't change the sensor's physical 3D pose, so
+`extrinsics.yaml` is still correct; `intrinsics.yaml`'s `cy` is
+symmetric around the image center and unaffected by a vertical flip
+either).
+
+## RGB colors looked washed out, hard to distinguish -- improved
+
+Measured, not just reported: captured a live frame and computed actual
+HSV saturation -- mean 0.137 across the frame, genuinely low (a
+normally-saturated photo is more like 0.2-0.4+). Fixed at the source
+with `rpicam-vid`'s own `--saturation` ISP control in
+`rgb_camera_node.py` (new `saturation` parameter, default 1.8) --
+applied before the lossy YUV420 encode, so it's strictly better than
+boosting saturation in software afterward on an already 8-bit,
+chroma-subsampled image, and free (the ISP does this work regardless of
+the value). This is specifically the HSV "S" channel: hue is untouched,
+only color intensity changes, matching the saturation does -- not a
+contrast/brightness adjustment.
+
+Measured effect on the available test scene (a backlit room, mostly
+white walls -- genuinely low in actual color content) was modest: 1.6
+on the saturation knob only moved measured output saturation to ~0.178
+(1.29x, not 1.6x). That's expected, not a sign the fix isn't working:
+boosting a near-zero-chroma pixel does very little, there's nothing to
+amplify, while a pixel with real color in it (the colorful objects this
+was actually reported against) gets proportionally more boost. Pushed
+to 1.8 as a more assertive default given how strongly the color
+distinction problem came through in the report; if it's still not
+enough (or overshoots) against an actual colorful subject, this is the
+one parameter to retune.
+
 ## Still open (needs your input, not a software fix)
 
 - **Calibration is placeholder-only** -- see above.
