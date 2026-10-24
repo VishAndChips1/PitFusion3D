@@ -333,7 +333,16 @@ async function poll() {
   // payload size. Floor of 20ms just yields the event loop rather than
   // hammering the server back-to-back with zero gap.
   const elapsed = performance.now() - fetchStart;
-  const targetInterval = source === 'merged' ? 250 : 60;
+  // 'live' was 60ms (~17 polls/s) -- raised to 120ms (~8/s) after a
+  // measured power test: even with keep-alive connections (removing the
+  // handshake/thread-spawn cost), real WiFi-connected viewing still hit
+  // CPU-core-current spikes up to 8.99A (vs 9.21A before keep-alive, only
+  // a modest drop) -- each poll's actual WiFi radio transmission has a
+  // real driver/interrupt cost keep-alive doesn't touch, so cutting poll
+  // *count* is the remaining lever. Halving live's rate roughly halves
+  // that per-second transmission count. 'merged' (the default/
+  // recommended mode, already a more modest 4Hz) is left as-is.
+  const targetInterval = source === 'merged' ? 250 : 120;
   setTimeout(poll, Math.max(20, targetInterval - elapsed));
 }
 poll();
@@ -619,8 +628,19 @@ class FusionWebStreamer(Node):
         # direct hotspot link with one client. 10000 pts (~273KB) at
         # live's ~10Hz -> ~2.7MB/s -- live mode still wants a strong/local
         # link; merged is the recommended default.
+        #
+        # max_points_live cut 10000 -> 5000 (halves live's per-update
+        # payload) alongside the poll-interval change above, after a
+        # measured power test on real hardware: a battery-powered Pi 5
+        # showed repeated CPU-core-current spikes up to 9A specifically
+        # correlated with real WiFi-connected viewing (not loopback, not
+        # pipeline load), severe enough to trip a USB-C power bank's
+        # overcurrent protection. Switching the HTTP server to keep-alive
+        # connections only partly reduced this (9.21A -> 8.99A peak) --
+        # the remaining cost is real WiFi radio transmission work that
+        # scales with poll count and payload size, not connection setup.
         self.declare_parameter('max_points_merged', 35000)
-        self.declare_parameter('max_points_live', 10000)
+        self.declare_parameter('max_points_live', 5000)
         # Backward-compat: an explicit input_topic overrides merged_topic,
         # matching the old single-stream parameter name.
         self.declare_parameter('input_topic', '')
