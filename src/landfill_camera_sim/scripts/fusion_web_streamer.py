@@ -619,27 +619,42 @@ class FusionWebStreamer(Node):
         # per-update transfer size. This cap costs bandwidth + a cheap
         # numpy gather/pack here, NOT extra ICP compute in
         # registration_merge_node (that cost is independent, already
-        # spent before this node ever sees the cloud) -- so it's safe to
-        # raise for a denser, better-looking view without touching the
-        # Pi's tighter CPU budget, which freed up considerably once every
-        # topic moved to BEST_EFFORT QoS (measured ~103% of 400% available
-        # at this cap, comfortable headroom). 35000 pts (~958KB) at
-        # merged's ~1.3-1.8Hz -> ~1.2-1.7MB/s, still comfortable for a
-        # direct hotspot link with one client. 10000 pts (~273KB) at
-        # live's ~10Hz -> ~2.7MB/s -- live mode still wants a strong/local
-        # link; merged is the recommended default.
+        # spent before this node ever sees the cloud).
+        #
+        # max_points_merged is a HARD RELIABILITY CONSTRAINT, not just a
+        # quality/bandwidth tradeoff: this project's CPU-core-current
+        # ceiling (see max_points_live's comment below) must stay under
+        # 5A at all times, because a Pi 5 running off a USB-C battery bank
+        # was repeatedly, fully losing power at higher draw -- a hard
+        # cutoff requiring a physical reconnect, not a graceful recovery.
+        # The default here used to be 35000 pts; a dedicated real-WiFi
+        # power sweep (Merged mode specifically, the recommended/default
+        # view -- not Live) found that config peaking at 6.29A, over the
+        # ceiling. 20000 pts was tested next and measured 4.34A and 4.51A
+        # peak (zero samples over 5A either time) across two separate
+        # ~100s real-WiFi viewing sessions -- consistent, with real margin
+        # below 5A. This is the highest point count that measured safely
+        # under the ceiling; raising it again should be re-validated with
+        # the same real-WiFi burst_monitor.py methodology
+        # (tools/power_monitoring/), not just reasoned about, since
+        # loopback-only testing was shown not to reproduce this effect at
+        # all (see fusion_web_streamer's HTTP/1.1 comment below).
         #
         # max_points_live cut 10000 -> 5000 (halves live's per-update
-        # payload) alongside the poll-interval change above, after a
-        # measured power test on real hardware: a battery-powered Pi 5
-        # showed repeated CPU-core-current spikes up to 9A specifically
-        # correlated with real WiFi-connected viewing (not loopback, not
-        # pipeline load), severe enough to trip a USB-C power bank's
-        # overcurrent protection. Switching the HTTP server to keep-alive
-        # connections only partly reduced this (9.21A -> 8.99A peak) --
-        # the remaining cost is real WiFi radio transmission work that
-        # scales with poll count and payload size, not connection setup.
-        self.declare_parameter('max_points_merged', 35000)
+        # payload) alongside the poll-interval change below, after the
+        # same style of measured power test on real hardware: a battery-
+        # powered Pi 5 showed repeated CPU-core-current spikes up to 9A
+        # specifically correlated with real WiFi-connected viewing (not
+        # loopback, not pipeline load), severe enough to trip the power
+        # bank's overcurrent protection. Switching the HTTP server to
+        # keep-alive connections only partly reduced this (9.21A -> 8.99A
+        # peak) -- the remaining cost is real WiFi radio transmission work
+        # that scales with poll count and payload size, not connection
+        # setup. Live mode was not re-swept to the same rigor as Merged
+        # above since Merged is this project's recommended/default and
+        # primary-use view; treat Live's cap as a reasonable but less
+        # thoroughly-validated value if it becomes the primary view again.
+        self.declare_parameter('max_points_merged', 20000)
         self.declare_parameter('max_points_live', 5000)
         # Backward-compat: an explicit input_topic overrides merged_topic,
         # matching the old single-stream parameter name.
