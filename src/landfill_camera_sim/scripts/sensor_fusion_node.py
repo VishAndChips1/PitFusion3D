@@ -209,11 +209,45 @@ class SensorFusionNode(Node):
         self._last_stamp = stamp
 
     def _on_synced(self, cloud_msg, rgb_msg, thermal_msg):
+        # Defensive: this callback runs continuously on live sensor data,
+        # and nothing here was previously caught -- an unexpected error
+        # (a malformed image buffer from a USB/CSI hiccup, a degenerate
+        # projection, etc.) would propagate out of this subscription
+        # callback and kill the entire node process, matching a gap found
+        # the same way in registration_merge_node.py's window-publish
+        # step (see its comment). systemd's Restart=on-failure is a
+        # backstop, but skipping one bad synced triple and continuing is
+        # far less disruptive than a full node restart.
+        try:
+            self._process_synced(cloud_msg, rgb_msg, thermal_msg)
+        except Exception as exc:
+            self.get_logger().error(f'Fusion of synced triple failed, skipping: {exc!r}')
+
+    def _process_synced(self, cloud_msg, rgb_msg, thermal_msg):
         points = cloud_io.read_fields(cloud_msg, cloud_io.XYZI_FIELDS, dtype=np.float32)
         if points.shape[0] == 0:
             return
         xyz = points[:, 0:3]
+        # Root-cause fix, not just a symptom-level catch: a lidar "no
+        # return" is sometimes represented as NaN/Inf rather than being
+        # omitted from the cloud entirely, depending on the driver. Left
+        # in, a NaN/Inf point survives the 1/x division in
+        # project_to_pixels (silently becoming an out-of-bounds/invalid
+        # sample, harmless here) but would propagate downstream into
+        # registration_merge_node's ICP/SVD (xyz.min/max, Kabsch) and
+        # fusion_web_streamer's quantization (xyz.min/max, scale factor),
+        # where a single non-finite value can corrupt an entire cloud's
+        # worth of output (e.g. scale becomes NaN, every point's
+        # quantized position becomes garbage) rather than just one point.
+        # Filtering once here, at the earliest point raw lidar data enters
+        # this pipeline, protects every downstream consumer at once.
+        finite = np.isfinite(xyz).all(axis=1)
+        if not finite.all():
+            points = points[finite]
+            xyz = points[:, 0:3]
         n = xyz.shape[0]
+        if n == 0:
+            return
 
         rgb_img = image_to_array(rgb_msg, 3, np.uint8)
         thermal_raw = image_to_array(thermal_msg, 1, np.uint16)[:, :, 0]

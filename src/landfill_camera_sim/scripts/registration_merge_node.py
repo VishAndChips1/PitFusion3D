@@ -117,8 +117,26 @@ class RegistrationMergeNode(Node):
         self.declare_parameter('input_topic', '/landfill/fusion/points_rgbt')
         self.declare_parameter('output_topic', '/landfill/fusion/points_merged')
         self.declare_parameter('window_duration', 1.0)
-        self.declare_parameter('icp_voxel_size', 0.15)
-        self.declare_parameter('max_icp_iterations', 20)
+        # ICP cost parameters below were cut after a real-world finding:
+        # this node's OWN log (the trustworthy rate source -- see the
+        # project's rate-measurement convention) showed it publishing at
+        # only 0.4-1.0Hz against a 1.0s/~1Hz nominal window target, with
+        # repeated "N of N scans did not converge" warnings. Root cause:
+        # _register_and_publish() runs synchronously inside the
+        # subscription callback, so while it's busy computing ICP, this
+        # node isn't consuming its (BEST_EFFORT, shallow-queue) input
+        # topic -- real incoming scans arriving during that busy window
+        # are silently dropped, which means it takes MORE real wall-clock
+        # time to accumulate 1.0s of actual scan data than it should,
+        # which is exactly what was observed. Cutting per-window ICP cost
+        # directly attacks this: less time busy per window -> fewer scans
+        # dropped while busy -> real elapsed time per window converges
+        # back toward the nominal 1.0s/~1Hz target. (This is distinct from
+        # fusion_web_streamer's point caps, which only affect transfer
+        # size/web-layer cost -- cutting those alone cannot fix a
+        # bottleneck that happens upstream of the web layer entirely.)
+        self.declare_parameter('icp_voxel_size', 0.2)       # was 0.15
+        self.declare_parameter('max_icp_iterations', 10)    # was 20
         self.declare_parameter('max_correspondence_distance', 0.5)
         self.declare_parameter('min_correspondences', 200)
         # 1cm voxel: merges near-duplicate points where scans overlap
@@ -127,11 +145,11 @@ class RegistrationMergeNode(Node):
         self.declare_parameter('output_voxel_size', 0.01)
         # Cap the ICP target so a long window cannot grow the correspondence
         # search without bound.
-        self.declare_parameter('max_icp_target_points', 20000)
+        self.declare_parameter('max_icp_target_points', 10000)  # was 20000
         # Consecutive scans are ~0.1s apart, so the pose delta ICP has to
         # recover is centimetres; a few thousand well-spread points resolve
         # that just as well as the full scan and dominate the window cost.
-        self.declare_parameter('max_icp_source_points', 3000)
+        self.declare_parameter('max_icp_source_points', 1500)   # was 3000
 
         input_topic = str(self.get_parameter('input_topic').value)
         output_topic = str(self.get_parameter('output_topic').value)
@@ -197,7 +215,22 @@ class RegistrationMergeNode(Node):
         self._buffer.append((stamp_sec, points[:, 0:3], points[:, 3:6]))
 
         if stamp_sec - self._window_start >= self._window_duration:
-            self._register_and_publish()
+            # Defensive: ICP/SVD/voxel-downsampling is real numerical code
+            # with edge cases (e.g. a degenerate all-coincident-points
+            # window, or a NaN/Inf point slipping through from upstream --
+            # see sensor_fusion_node.py's NaN filtering, added for exactly
+            # this reason). Before this fix, any such exception here would
+            # propagate uncaught out of this subscription callback and
+            # kill the entire node process -- matching the project's
+            # established pattern elsewhere (camera node capture retries)
+            # of treating a single bad frame as recoverable, not fatal.
+            # systemd's Restart=on-failure is still there as a backstop,
+            # but that's a much slower, more disruptive recovery than
+            # just skipping one window and continuing.
+            try:
+                self._register_and_publish()
+            except Exception as exc:
+                self.get_logger().error(f'Window registration/publish failed, skipping: {exc!r}')
             self._buffer = []
             self._window_start = None
 

@@ -706,12 +706,25 @@ class FusionWebStreamer(Node):
         )
 
     def _on_merged(self, msg):
-        n, payload = _encode_cloud(msg, self._max_points_merged, self._rng)
-        self._state.merged.set_payload(n, payload)
+        # Defensive, same gap/fix as sensor_fusion_node.py and
+        # registration_merge_node.py's subscription callbacks: an
+        # unexpected error here (e.g. a zero-extent cloud degenerate
+        # enough to upset the quantization scale math) would otherwise
+        # kill this entire node -- dropping the web viewer along with it
+        # -- rather than just skipping one update and keeping whatever
+        # was already being served.
+        try:
+            n, payload = _encode_cloud(msg, self._max_points_merged, self._rng)
+            self._state.merged.set_payload(n, payload)
+        except Exception as exc:
+            self.get_logger().error(f'Encoding merged cloud failed, skipping: {exc!r}')
 
     def _on_live(self, msg):
-        n, payload = _encode_cloud(msg, self._max_points_live, self._rng)
-        self._state.live.set_payload(n, payload)
+        try:
+            n, payload = _encode_cloud(msg, self._max_points_live, self._rng)
+            self._state.live.set_payload(n, payload)
+        except Exception as exc:
+            self.get_logger().error(f'Encoding live cloud failed, skipping: {exc!r}')
 
     def destroy_node(self):
         self._server.shutdown()
