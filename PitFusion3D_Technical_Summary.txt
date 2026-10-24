@@ -1,0 +1,1316 @@
+================================================================================
+PitFusion3D — Technical Project Summary
+Multi-Sensor (LiDAR + RGB + Thermal) Fusion Pipeline on Raspberry Pi 5
+Prepared as source material for thesis writing — software architecture,
+calibration methodology, optimization work, and reliability engineering
+================================================================================
+
+Repository: https://github.com/VishAndChips1/PitFusion3D
+Platform: Raspberry Pi 5 (4-core ARM, BCM2712), Ubuntu, ROS 2 Jazzy
+Sensors: Livox Avia LiDAR, Raspberry Pi HQ camera (imx477, CSI), generic
+         USB UVC thermal camera (640x512, 8-bit AGC, non-radiometric)
+Output: A live, colorized + thermal-tagged 3D point cloud, viewable in any
+        browser on the network with zero internet dependency
+
+This document summarizes everything built, measured, debugged, and learned
+across the full development of this project, organized by subsystem. Where a
+number is given, it was either measured directly on the real hardware or
+computed from a measurement described nearby — guessed/placeholder values are
+explicitly labeled as such.
+
+
+================================================================================
+1. SYSTEM ARCHITECTURE
+================================================================================
+
+The pipeline is a chain of ROS 2 nodes, each independently restartable and
+communicating over DDS topics:
+
+  livox_ros2_avia (vendor driver, PointCloud2 publisher)
+         |
+         v
+  livox_restamp_node  --------->  (re-stamps lidar clock into host time domain)
+         |
+         |         rgb_camera_node (rpicam-vid subprocess, YUV->RGB)
+         |                |
+         |         thermal_camera_node (OpenCV V4L2, YUYV->mono16)
+         |                |
+         v                v
+  sensor_fusion_node  <----+   (time-synchronizes all three, projects lidar
+         |                      points into both camera images, tags each
+         |                      point with RGB color + thermal value)
+         v
+  registration_merge_node   (accumulates a rolling window of fused scans,
+         |                    ICP-aligns them to compensate for platform
+         |                    motion, publishes one denser merged cloud)
+         v
+  fusion_web_streamer   (serves both the per-scan "live" stream and the
+                          windowed "merged" stream to any browser over
+                          plain HTTP, with a self-contained Three.js viewer)
+
+A separate calibration_publisher node reads the calibration YAML files at
+startup and republishes them as both tf2 static transforms and
+sensor_msgs/CameraInfo, so the intrinsics/extrinsics live in one place
+(config/calibration/*.yaml) rather than being hardcoded into multiple nodes.
+
+Supporting infrastructure built around this core pipeline:
+  - systemd --user services + loginctl linger for boot-time auto-start
+    without needing root or a login session
+  - A full power/voltage/current/kernel-log/USB-event monitoring toolkit
+    (tools/power_monitoring/) built specifically to diagnose a battery
+    reliability problem (Section 11)
+
+
+================================================================================
+2. TIME SYNCHRONIZATION
+================================================================================
+
+Three independent clock domains had to be reconciled:
+
+2.1 Livox lidar clock domain mismatch
+--------------------------------------
+The Livox Avia driver stamps every PointCloud2 message with the sensor's own
+internal hardware counter (nanoseconds since the sensor itself booted), not
+the host's wall clock — this is only bridged to a real time source if
+enable_timesync is turned on in the driver config, which it is not here.
+Measured live: the device clock read ~3034 seconds (its own uptime) against a
+host Unix-epoch time of ~1.79x10^9 seconds — an offset of billions of seconds.
+Left alone, this gap never falls inside any reasonable ApproximateTime-
+Synchronizer slop against the RGB/thermal nodes (which stamp with the host
+clock), so the fused output topic would stay silent forever even though
+lidar, RGB, and thermal all published fine standalone.
+
+Fix (livox_restamp_node.py): a dedicated re-stamping node sits between the
+raw driver and the rest of the pipeline. Key design decision: it does NOT
+simply re-stamp each message with its arrival time, because that would fold
+~8ms of measured network/ROS-scheduling jitter into every point's timestamp.
+Instead it estimates a single fixed offset using a rolling-minimum filter —
+the same idea NTP/PTP filtering uses:
+
+    sample_offset = arrival_host_ns - device_ns
+    offset_ns = min(sample_offset over a trailing 200-message / ~20s window)
+
+The true fixed offset, plus network/scheduling latency (which is always >=
+0), is what gets observed each time, so the MINIMUM over a window is the best
+estimate of the true offset (any positive latency only ever pushes a sample
+above the true value, never below it). The window is re-derived continuously
+(not a single startup sample) so it can track slow crystal drift between the
+lidar's free-running oscillator and the host clock over a long session, and
+it resets immediately (rather than slowly re-converging) if the device clock
+is ever seen jumping backwards by more than 1 second, which indicates a
+driver/sensor restart.
+
+2.2 Cross-sensor synchronization
+----------------------------------
+sensor_fusion_node.py uses message_filters.ApproximateTimeSynchronizer across
+the (now host-time-stamped) lidar topic, the RGB topic, and the thermal
+topic, with a 0.15-second slop and a queue depth of 5. This slop was sized
+around the RGB camera's chosen capture rate (see Section 3).
+
+2.3 Clock-jump resilience (a real post-reboot bug)
+-----------------------------------------------------
+This Pi has no battery-backed RTC, so on every boot its clock starts wrong
+and gets stepped by NTP as it settles — which produces small backward jumps
+in wall-clock time during the first seconds/minutes after boot. Both
+sensor_fusion_node.py's ApproximateTimeSynchronizer-feeding watch_clock
+callback and registration_merge_node.py's window-accumulation logic treat a
+backward jump as "did the clock just rewind" and must decide whether to
+discard their buffers.
+
+Bug found and fixed in this project: registration_merge_node.py originally
+reset its entire accumulation window on ANY backward timestamp movement at
+all (zero tolerance), while sensor_fusion_node.py already had a 1-second
+tolerance. On real hardware (not simulation, where this zero-tolerance logic
+was presumably fine since sim time only rewinds on an explicit reset), the
+normal small NTP-settling jitter during the first few minutes after boot was
+enough to trip this hair-trigger check constantly — discarding whatever scans
+had already accumulated and collapsing the merged-cloud refresh rate to
+roughly 0.2-0.4Hz for an extended period after every single power-on, before
+eventually settling back to its intended ~1-1.5Hz once NTP fully stabilized.
+Fix: widened registration_merge_node's tolerance to match sensor_fusion_node's
+existing 1-second tolerance.
+
+    # before (registration_merge_node.py):
+    if self._window_start is not None and stamp_sec < self._window_start:
+        ... reset ...
+    # after:
+    if self._window_start is not None and stamp_sec < self._window_start - 1.0:
+        ... reset ...
+
+
+================================================================================
+3. Hz / REFRESH-RATE MATCHING ACROSS SENSORS
+================================================================================
+
+Each sensor's rate was tuned relative to what the REST of the pipeline could
+actually use, not maximized independently:
+
+  Livox Avia lidar:    ~10Hz native scan rate (fixed by the sensor itself).
+                        This became the pipeline's natural "heartbeat" — every
+                        other rate was chosen relative to it.
+
+  RGB camera:           rpicam-vid capture rate deliberately capped at 15fps,
+                        down from an initial 30fps. Reasoning: the lidar only
+                        publishes at ~10Hz, and the ApproximateTimeSynchronizer
+                        has a 0.15s slop — any RGB frame captured faster than
+                        roughly 1/0.15s ~ 6-7Hz has no chance of ever being the
+                        synchronized match for a NEW lidar scan; frames beyond
+                        that are pure wasted capture/convert/publish work.
+                        15fps was chosen as a safety margin above the
+                        theoretical minimum, not the bare minimum itself.
+                        MEASURED effect: at 30fps, rgb_camera_node alone was
+                        pinned near 49% of a single CPU core. Halving the
+                        capture rate roughly halved that cost for zero loss of
+                        usable synchronized output.
+
+  Thermal camera:       Hardware-limited to two discrete modes (30fps or
+                        60fps per its own --list-formats-ext output) — any
+                        other requested framerate is silently clamped back to
+                        30fps by the driver, so this parameter is effectively
+                        cosmetic for this specific sensor. Real CPU savings
+                        for this node came from two different levers instead:
+                        publish_preview=False (the colorized debug preview
+                        via applyColorMap was pure overhead once viewing
+                        happens through the fused web viewer instead of this
+                        raw feed) and forcing single-threaded OpenCV (see
+                        Section 5).
+
+  Fused output
+  (sensor_fusion_node): Runs at whatever rate the synchronizer actually
+                        produces a matched triple — effectively lidar-rate-
+                        limited, ~10Hz.
+
+  Merged output
+  (registration_merge_
+  _node):                Windowed at 1.0 second per the window_duration
+                        parameter — buffers roughly 10 fused scans (at the
+                        fused rate above), ICP-aligns them against each
+                        other to compensate for platform motion between
+                        scans, and publishes one denser merged cloud per
+                        window. Measured real-world rate: ~1.3-1.8Hz
+                        internally (varies with how many scans + ICP
+                        iterations a given window needed), though this
+                        number is distinct from what a VIEWER sees — see
+                        the streaming-layer bottleneck below.
+
+  Web-viewer-observed
+  refresh rate:          A real, separately-measured bottleneck was found
+                        here: the pipeline was producing merged clouds at
+                        ~1.4Hz internally, but a browser was only observing
+                        ~0.7Hz — roughly half. Root-caused to WIRE PAYLOAD
+                        SIZE over a real WiFi link (not production rate),
+                        fixed via the wire-format quantization work in
+                        Section 6.
+
+A specific measurement-methodology lesson from this project, worth stating
+explicitly: registration_merge_node's own internal log line --
+
+    "Published merged cloud: %d pts (%d scans, %d raw pts, %.2fs window) @ %.2f Hz"
+
+-- was repeatedly found to be the trustworthy rate figure, while ad-hoc
+external test scripts subscribing to the same topic to "measure" the rate
+independently would systematically UNDER-count. Root cause: every topic in
+this pipeline uses BEST_EFFORT QoS with a shallow queue (see Section 4) —
+under BEST_EFFORT, a slow consumer doesn't queue up a backlog, it just drops
+messages it can't keep up with. A quick, simple Python test subscriber is
+often slower at consuming than the production pipeline's own tuned,
+performance-conscious code, so it silently drops more messages and reports a
+lower rate that doesn't reflect reality. Lesson for interpreting any rate
+measurement on this kind of pipeline: always cross-check against the
+PRODUCING node's own internal log before concluding a regression exists.
+
+
+================================================================================
+4. QoS STRATEGY (ROS 2 / DDS)
+================================================================================
+
+Every single topic in this pipeline — lidar points, RGB images, thermal
+images, the fused per-scan cloud, and the merged windowed cloud — uses
+rclpy.qos.qos_profile_sensor_data (BEST_EFFORT reliability, depth-limited
+history) rather than ROS 2's RELIABLE default.
+
+Reasoning, stated consistently in code comments across every node: these are
+all live sensor streams publishing at 10-30Hz, where a dropped message is
+superseded by a fresh one almost immediately. RELIABLE's ACK/retransmission
+bookkeeping exists to guarantee eventual delivery of a specific message — a
+guarantee that has essentially zero value here (nobody cares about lidar
+scan #4812 specifically once scan #4813 already exists) and that costs real
+CPU/network overhead on every single message, pipeline-wide.
+
+Documented gotcha (important for anyone extending this pipeline): a QoS
+mismatch between a publisher and subscriber on the SAME topic fails
+completely silently under ROS 2/DDS — no error, no exception, the
+subscription simply never receives anything and there's nothing in any log
+to say why. The project's own convention for avoiding this: after touching
+any QoS-related code, verify with `ros2 topic info <topic> --verbose` to
+confirm the actual negotiated QoS on both sides actually matches.
+
+
+================================================================================
+5. CPU / COMPUTE OPTIMIZATION
+================================================================================
+
+Measured baseline vs. optimized CPU usage: ~228% of a theoretical 400%
+available (4 cores) down to ~103% — roughly a 55% reduction in total CPU
+load for the same functional output. Contributing changes:
+
+5.1 OpenCV thread-pool oversubscription (a genuinely non-obvious bug class)
+------------------------------------------------------------------------------
+OpenCV, by default, spawns an internal worker-thread pool sized to the
+machine's core count — in EVERY process that imports it. This pipeline has
+at least two independent nodes using OpenCV (rgb_camera_node for YUV->RGB
+color conversion, thermal_camera_node for the UVC capture + optional
+colorized preview). With no mitigation, that's N independent 4-thread pools
+all fighting for the same 4 physical cores — a real, measured source of
+severe oversubscription: one node alone was observed staying pinned near 50%
+CPU with DECLINING throughput under load, even after separately cutting its
+own capture rate, which is the signature of thread-contention overhead rather
+than genuine compute work. Fix, applied identically in every OpenCV-using
+node:
+
+    cv2.setNumThreads(1)
+
+placed immediately after `import cv2`, before any other OpenCV call. A single
+cvtColor() call per frame doesn't benefit from internal multi-threading
+anyway, so this costs nothing in the normal case and removes the
+oversubscription entirely.
+
+5.2 RGB capture rate halved (see Section 3)
+------------------------------------------------------------------------------
+30fps -> 15fps, ~49% of a core -> roughly half that, for zero loss of usable
+synchronized output (see the slop-vs-capture-rate reasoning above).
+
+5.3 Thermal preview publishing disabled by default
+------------------------------------------------------------------------------
+publish_preview defaults to False; applyColorMap() on every single frame
+(30-60fps) is pure overhead once viewing happens through the fused web
+viewer rather than this raw debug feed.
+
+5.4 Zero-copy PointCloud2 <-> numpy conversion (cloud_io.py)
+------------------------------------------------------------------------------
+The standard ROS 2 helper, sensor_msgs_py.point_cloud2, builds an
+intermediate structured numpy array and re-packs it field-by-field — on an
+ARM CPU processing ~1e4-1e5 points per callback at 10Hz+, this was found to
+dominate per-callback cost. Replacement (cloud_io.py), used by every node
+that touches a PointCloud2 message in this pipeline:
+
+    def read_fields(msg, field_names, dtype=np.float32):
+        # Fast path: when the requested fields are consecutive float32
+        # values in memory (the layout every cloud in this pipeline uses),
+        # the whole block is read as ONE strided numpy view over msg.data
+        # -- a single bulk memory interpretation, not a copy, and not a
+        # per-field gather.
+        ...
+        block = np.frombuffer(msg.data, dtype=np.float32, count=...)
+        return block[:, start:start + len(field_names)]  # a VIEW, not a copy
+
+This pattern (view msg.data directly via a numpy dtype built from the
+message's own real field offsets, rather than looping over PointField
+descriptors) is used both for reading incoming clouds and for building
+outgoing ones (make_cloud()).
+
+5.5 ICP cost control (registration_merge_node.py)
+------------------------------------------------------------------------------
+Several explicit measures keep the per-window ICP registration cost bounded
+rather than growing with accumulated map size:
+  - The running map is kept voxel-downsampled (icp_voxel_size, 0.15m
+    default) — each new scan registers against this small map, not against
+    the full raw accumulated point history, keeping cost roughly linear in
+    scan count rather than quadratic.
+  - Both the ICP source and target point sets are capped independently
+    (max_icp_source_points=3000, max_icp_target_points=20000) via random
+    subsampling — consecutive scans are only ~0.1s apart, so the pose delta
+    ICP actually has to recover is centimeters; a few thousand well-spread
+    points resolve that exactly as well as the full scan.
+  - The nearest-neighbor correspondence search (the dominant cost in each
+    ICP iteration) only pays scipy's parallel-worker thread-spawn overhead
+    above a measured break-even point:
+
+        PARALLEL_QUERY_THRESHOLD = 20000
+        workers = -1 if source_xyz.shape[0] >= PARALLEL_QUERY_THRESHOLD else 1
+
+    Below this point count, spawning parallel query threads costs more than
+    it saves; above it, spreading the search across all cores wins.
+  - A hashed-integer-key voxel downsampling implementation
+    (voxel_downsample_indices) is used throughout instead of
+    np.unique(..., axis=0): hashing the 3 integer voxel coordinates into a
+    single int64 key turns the dedupe into a 1-D sort, which is markedly
+    faster than lexsorting a full (N,3) array for the ~1e5-point clouds seen
+    here.
+
+
+================================================================================
+6. WEB STREAMING / NETWORK LAYER OPTIMIZATION
+================================================================================
+
+fusion_web_streamer.py serves two independent streams (a sparser, faster
+per-scan "live" view and a denser, slower windowed "merged" view) plus a
+self-contained Three.js-based browser viewer, over plain HTTP, with zero
+third-party service or internet dependency.
+
+6.1 Custom quantized wire format (Draco-inspired, built from scratch)
+------------------------------------------------------------------------------
+Original format: 7 x float32 per point = 28 bytes/point. Measured over a
+real WiFi link (not loopback), TRANSFER TIME of this payload — not the
+pipeline's own production rate — was the actual bottleneck on the refresh
+rate a browser observed: pipeline producing merged clouds at ~1.4Hz
+internally, browser only seeing ~0.7Hz (see Section 3).
+
+Replacement format: a 24-byte header (point count, sequence number, a
+per-message origin x/y/z, and a scale factor) followed by 11 bytes per
+point — 3x int16 for xyz (quantized relative to the message's own origin
+and scale, similar in spirit to Draco's quantized attributes but
+implemented from scratch with plain numpy/struct, deliberately avoiding an
+external WASM decoder/encoder dependency given the hard requirement for
+fully offline field operation), 3x uint8 for RGB (already 0-255, so this
+loses no precision at all), and 1x int16 for the thermal value at 0.01
+resolution (with -32768 reserved as a "no value" sentinel for NaN).
+
+    # server side (_encode_cloud):
+    scale = max(extent, 1e-6) / 32000.0
+    xyz_q = np.round((xyz - mins) / scale).astype(np.int16)
+    ...
+    point_dtype = np.dtype([('xyz', np.int16, 3), ('rgb', np.uint8, 3), ('t', np.int16)])
+
+11 bytes/point is deliberately not a multiple of 2 or 4, so points past the
+first aren't naturally aligned in the client's buffer — the browser-side
+decoder correctly uses a DataView (not a strided typed-array view, which
+would require alignment) to handle this.
+
+Quantization error analysis: position error is sub-millimeter against this
+rig's measured ~1.4cm point spacing (Section 6.3) — invisible in practice.
+This is a 2.55x raw size reduction (28 bytes -> 11 bytes/point) before gzip
+is even applied.
+
+6.2 gzip compression, applied once per update, not once per poll
+------------------------------------------------------------------------------
+A browser polls faster than either stream necessarily has new data (to catch
+an update as promptly as possible once it lands) — compressing the SAME
+unchanged payload again on every single poll would be pure wasted CPU. The
+compressed buffer is built exactly once, inside the ROS subscription
+callback that fires when new data actually arrives (_StreamState.set_payload),
+and simply handed out to however many polls ask for it until the next real
+update:
+
+    def set_payload(self, n_points, payload_bytes):
+        with self.lock:
+            next_seq = self.seq + 1
+            body = gzip.compress(struct.pack('<II', n_points, next_seq) + payload_bytes,
+                                  compresslevel=6)
+            self.seq = next_seq
+            self.buffer = body
+
+Quantized integer data was also found to compress meaningfully better than
+noisy float32 mantissas would have, stacking on top of the quantization
+reduction above. Combined effect of quantization + gzip: measured ~3.1x
+total payload reduction versus the original float32 format.
+
+6.3 Conditional GET (ETag / 304) keyed on a sequence number
+------------------------------------------------------------------------------
+Since clouds only actually change at ~1-10Hz while browsers poll faster than
+that, MOST polls would otherwise re-download an unchanged multi-hundred-KB
+payload for nothing — described in the code as "fatal to reliability on a
+real WiFi link... the difference between the viewer being unusable and
+smooth from another room." Standard HTTP 304 handling, keyed on the
+monotonic sequence number bumped in set_payload(): an unchanged sequence
+number gets a ~150-byte empty 304 response instead of the full binary body.
+
+6.4 Adaptive client poll delay (not a flat interval)
+------------------------------------------------------------------------------
+    const elapsed = performance.now() - fetchStart;
+    const targetInterval = source === 'merged' ? 250 : 120;  // see 6.6 below
+    setTimeout(poll, Math.max(20, targetInterval - elapsed));
+
+On a fast link, the fetch finishes well under the target interval and the
+client waits out the remainder as normal. On a SLOW link, where the fetch
+itself already took longer than the target interval, blindly adding the full
+target delay ON TOP of that would compound an already-slow network into an
+even slower effective refresh rate. This was found to be a real, measurable
+contributor to the 1.4Hz-internal / 0.7Hz-observed gap described above, not
+just raw payload size. The 20ms floor exists only to yield the browser's
+event loop rather than hammering the server back-to-back with zero gap.
+
+6.5 Point rendering quality (client-side, Three.js)
+------------------------------------------------------------------------------
+  - Point size was MEASURED, not guessed: actual nearest-neighbor point
+    spacing was measured directly from real data (merged ~1.4cm median;
+    live mode is sparser with no ICP densification, ~2.1cm). Render size
+    was set to roughly 1.3-1.5x that measured spacing (merged: 0.018,
+    live: 0.028) — the standard point-cloud-rendering target of "just
+    enough overlap to read as a continuous surface without visibly
+    blobbing." Confirmed visually: the identical data re-rendered at
+    roughly 1/4 this size went from "mostly black blobs, no visible
+    structure" to individually distinguishable points and real geometric
+    edges.
+  - Circular, soft-edged point sprites (a canvas-drawn radial gradient
+    texture) replace Three.js's default hard-edged square points — square
+    points packed at any real density visually read as a blocky mosaic;
+    round soft-edged ones read as a smooth, photographic-looking cloud at
+    the identical point density.
+  - Depth fog (THREE.Fog fading toward the background color) gives a real
+    depth cue — without it, near and far points render equally sharp and
+    equally bright, which reads as a flat, hard-to-parse smear rather than
+    a 3D scene.
+  - renderer.setPixelRatio() is explicitly capped at 2 rather than using
+    the browser's raw devicePixelRatio (which can be 3+ on some modern
+    4K/Retina-class panels) — this avoids needlessly quadrupling the Pi's
+    own render-serving workload for a visual difference the eye won't
+    register past 2x.
+
+6.6 HTTP keep-alive and WiFi-correlated power draw (most recent work)
+------------------------------------------------------------------------------
+This was discovered and fixed directly in response to a hardware reliability
+investigation — see Section 11 for the full power debugging story. Brief
+summary of the web-layer-specific finding and fix:
+
+The HTTP server originally used protocol_version = 'HTTP/1.0' deliberately —
+this closes the TCP connection after every single response, so every poll
+(up to ~17 times/second in "live" mode at the original 60ms interval) opened
+a brand new TCP connection from scratch. The original reason for this choice
+(documented in the code at the time) was a genuine, separately-encountered
+bug: a persistent HTTP/1.1 connection through the Pi's own NAT'd standalone
+hotspot (NetworkManager's ipv4.method=shared) could go silently dead without
+either side seeing a clean FIN/RST, hanging a request until the OS's own much
+longer TCP timeout eventually gave up — a fresh connection per request could
+never hit that specific failure mode, since it either connects now or fails
+now.
+
+A controlled power measurement (full methodology in Section 11) found this
+one-connection-per-poll pattern was a real contributor to current spikes
+large enough to trip an attached USB-C power bank's overcurrent protection:
+CPU core current measured up to 9.2A during genuine WiFi-connected browser
+viewing, versus a ceiling of only ~4.5A during an equivalent-request-rate
+LOOPBACK simulation of the same load — strongly implicating the cost of
+repeatedly tearing down and rebuilding a real TCP connection (a full
+handshake through the actual WiFi driver/radio stack, plus a brand-new OS
+thread spawned per connection via ThreadingTCPServer) as a major factor,
+since none of that overhead is meaningfully exercised over loopback.
+
+Fix: switched to protocol_version = 'HTTP/1.1' with keep-alive, with a 30-
+second idle-connection timeout to eventually free threads for disconnected
+clients, and an http_keepalive launch parameter to revert to the old
+behavior if ever needed. This was judged safe specifically because the
+ORIGINAL failure mode HTTP/1.0 was defending against (a silently hanging
+request) is independently guarded against by a DIFFERENT, already-existing
+fix: the client's own fetch() call wraps every request in an AbortController
+with a hard 4-second timeout (added at the same time as the original
+HTTP/1.0 decision, for exactly this reason) — a stale keep-alive connection
+now costs one missed refresh cycle, the same as any other failed request,
+not a silent permanent hang.
+
+Measured result after the keep-alive fix ALONE: peak CPU-core current during
+real WiFi viewing dropped only modestly, from 9.21A to 8.99A — a real but
+INCOMPLETE improvement. This matters for the paper: it demonstrates that
+eliminating connection-SETUP overhead only addresses part of the cost; the
+remaining cost is the WiFi radio's actual data-transmission work (driver/
+interrupt handling per real packet sent), which scales with how often and
+how much data is actually sent, not with how many TCP handshakes occur.
+Follow-up fix, applied for the same reason: live mode's poll interval was
+raised from 60ms (~17/s) to 120ms (~8/s), and its point cap was cut from
+10,000 to 5,000 (halving its per-update payload), specifically to reduce the
+number and size of real WiFi transmissions per second as the next lever
+beyond connection reuse.
+
+Measured result after BOTH fixes combined (keep-alive + reduced live-mode
+rate/payload), confirmed via a third real-WiFi viewing test with the
+identical methodology: peak CPU-core current dropped to 4.86A, with ZERO
+samples above 5A across 5,104 high-rate samples (versus at least 6 samples
+above 5A, 3 above 7A, and a 9.21A peak before any fix was applied). This
+final figure is now roughly ON PAR with the 4.48A ceiling measured during
+the original LOOPBACK-only test — i.e., the WiFi-specific excess current
+this whole investigation was chasing has been essentially eliminated by the
+combination of these two software changes alone, independent of the
+separately-ordered hardware fix (Section 11.7). This is a clean, fully
+confirmed result as of this document (not a pending/partial one).
+
+This sequence is a useful case study for the paper's methodology section:
+the fix that seemed most obviously correct (keep-alive, a well-known HTTP
+performance best practice) only partially solved the actual problem, which
+was only revealed by directly measuring the real hardware rather than
+reasoning from the mechanism alone.
+
+
+================================================================================
+7. CAMERA / SENSOR CALIBRATION
+================================================================================
+
+7.1 Extrinsic/intrinsic file structure
+------------------------------------------------------------------------------
+Calibration lives in two YAML files, read once at startup by
+calibration_publisher.py and republished as tf2 static transforms +
+sensor_msgs/CameraInfo:
+
+  config/calibration/extrinsics.yaml — a reference frame
+  (camera_platform/camera_link) plus, per sensor, a translation (meters) and
+  rotation_rpy (radians) expressing that sensor's pose relative to the
+  reference frame, using the rig's x-forward / y-left / z-up convention.
+
+  config/calibration/intrinsics.yaml — standard pinhole camera_matrix
+  (fx, fy, cx, cy) plus distortion_coefficients per camera, in the standard
+  sensor_msgs/CameraInfo layout.
+
+The actual lidar-to-camera projection math (sensor_fusion_node.py):
+
+    def lidar_to_camera_transform(extrinsic_frames, lidar_frame, camera_frame):
+        r_lidar, t_lidar = extrinsic_frames.get(lidar_frame, (np.eye(3), np.zeros(3)))
+        r_cam, t_cam = extrinsic_frames.get(camera_frame, (np.eye(3), np.zeros(3)))
+        m = (r_lidar.T @ r_cam).astype(np.float32)
+        b = ((t_lidar - t_cam) @ r_cam).astype(np.float32)
+        return m, b   # points_camera_frame = points_lidar_frame @ m + b
+
+    def project_to_pixels(points_camera_frame, fx, fy, cx, cy, width, height):
+        x, y, z = points_camera_frame[:,0], points_camera_frame[:,1], points_camera_frame[:,2]
+        in_front = x > 0.05
+        inv_x = 1.0 / x  (only where in_front)
+        ui = round(fx * (-y * inv_x) + cx)
+        vi = round(fy * (-z * inv_x) + cy)
+        valid = in_front & in-bounds
+
+An optimization inside sensor_fusion_node: if the RGB and thermal cameras
+end up with IDENTICAL resolved extrinsics AND intrinsics (the co-located-rig
+default case), the RGB projection's pixel coordinates are reused directly
+for thermal sampling too, skipping a second full projection pass
+(_shared_transform flag). On the real rig, RGB and thermal intrinsics
+differ, so this optimization is not actually active in production — noted
+here because it's a real code path and relevant to describe in a
+"software design decisions" section.
+
+7.2 RGB intrinsics — UNCALIBRATED, flagged limitation
+------------------------------------------------------------------------------
+fx = fy = 1065.0, cx = 640.0, cy = 360.0 for the 1280x720 imx477 feed. This
+assumes a ~62-degree horizontal FOV typical of a 6mm CS-mount lens, and is
+explicitly documented in the YAML file itself as a PLACEHOLDER, not a
+measured calibration. Unlike the thermal camera (below), the RGB intrinsics
+were never empirically recalibrated over the life of this project — this is
+a genuine, currently-unaddressed gap worth stating plainly in the paper
+(Section 13).
+
+7.3 Thermal intrinsics/extrinsics — the full recalibration story
+------------------------------------------------------------------------------
+This is the most methodologically interesting part of the calibration work
+and is worth describing in detail for the paper, including the mistakes made
+along the way.
+
+STARTING POINT: fx = fy = 1443.0 (assumed ~25-degree HFOV, a guess for a
+"typical" 640x512 thermal module's stock lens), zero translation/rotation
+(i.e., assumed co-located with the lidar).
+
+SYMPTOM REPORTED: the live thermal signature, when projected onto the lidar
+point cloud, was landing on the wrong physical location — e.g., appearing on
+a bed rather than on the person sitting on it.
+
+ROOT CAUSE #1 (orientation, not calibration): the thermal module was
+discovered to be physically mounted rotated a FULL 180 degrees relative to
+the rig, not merely upside-down. The first fix applied only a vertical flip
+(np.flipud) after observing a person appearing head-down/feet-up — this
+correctly fixed vertical orientation but left the image mirrored left-right,
+which was only caught later when the user reported walking left in the real
+world appeared to move right on screen. Final fix flips both axes:
+
+    if self._vflip:
+        y = np.flipud(y)
+    if self._hflip:
+        y = np.fliplr(y)
+
+This single orientation bug was likely the dominant cause of the original
+misalignment complaint — a mirrored sampling source will assign a hot pixel's
+color/value to a laterally-flipped real-world location, which looks exactly
+like "the heat signature is on the wrong object" even with otherwise-correct
+calibration. LESSON: verify BOTH orientation axes independently; correcting
+one visual symptom (vertical) does not confirm the other axis (horizontal)
+is also correct.
+
+ROOT CAUSE #2 (genuine intrinsic/extrinsic error, confirmed afterward): even
+after the orientation fix, a later in-person test (user sitting ~1.5-2m from
+the rig) showed the thermal signature was visibly SMALLER than the real
+body, and offset slightly left — confirming the 1443 focal-length guess was
+too high (i.e., modeling too narrow an FOV) and that a small real mounting
+offset existed.
+
+CALIBRATION METHOD CHOSEN: a live "person-as-target" method rather than a
+textbook checkerboard calibration, because no heated/printed checkerboard
+target was available for the non-radiometric AGC thermal sensor (a
+checkerboard calibration for a thermal camera needs a target with real
+temperature contrast, not just visual contrast). The method:
+
+  1. Capture an empty-scene "baseline" (person out of frame) for both the
+     raw lidar point cloud and the raw thermal image.
+  2. Ask the subject to hold several distinct poses (varied depth AND
+     lateral position AND height, specifically to make the fit well-
+     conditioned — see the failed attempts below) while capturing lidar +
+     thermal data at each.
+  3. For each pose, identify "the person" independently in each modality:
+       - Lidar: nearest-neighbor distance (scipy.spatial.cKDTree) against
+         the baseline cloud; points with no close match in the baseline are
+         "new" (the person), then trimmed to the main connected cluster.
+       - Thermal: a FIRST, NAIVE attempt used a simple baseline-subtraction
+         threshold (pose_frame - baseline_frame > threshold) and FAILED
+         badly — it flagged 10-20% of the entire frame (38,000-63,000
+         pixels out of 327,680) as "new," because this is an AGC
+         (auto-gain-controlled) sensor: adding a person to the scene shifts
+         the WHOLE frame's exposure/gain level, not just the person's own
+         pixels, so a cross-frame diff picks up that global shift. The
+         resulting calibration fit from this bad data was physically
+         nonsensical (a solved translation of 1.58 METERS between sensors
+         mounted a few centimeters apart on the same small rig, and a 12x
+         change in focal length). This is documented here deliberately as
+         an example of a plausible-looking but wrong method, caught by a
+         physical-plausibility sanity check rather than by the fit's own
+         reported residuals (which looked small).
+       - FIXED thermal detection method: instead of diffing against
+         baseline, take THIS FRAME's own brightest percentile (92nd), after
+         first excluding any pixel that was ALREADY hot in the baseline
+         (catches static scene heat sources, e.g. direct sunlight on a bed,
+         which this room genuinely had and which was large enough to steal
+         the "largest connected blob" pick at a looser threshold), then
+         keep only the largest remaining connected component
+         (scipy.ndimage.label). This is robust to AGC drift because it
+         never compares brightness ACROSS frames, only within one frame's
+         own internal ranking.
+  4. FIRST calibration-fitting attempt (across all 4 poses, matching only
+     each pose's thermal-blob CENTROID against the lidar cluster's
+     centroid, solving jointly for a shared focal-length scale AND a 3D
+     translation via nonlinear least squares) FAILED — ill-conditioned:
+     with only a few noisy pose measurements, the optimizer could trade
+     off translation against focal length in a way that still fit the
+     noisy centroid data reasonably well numerically, while landing on
+     physically impossible values (translations from 0.6m up to 1.6m for
+     sensors mounted centimeters apart). This was traced partly to using
+     only coarse bounding-box/centroid summary statistics rather than
+     either (a) more data per pose, or (b) a fundamentally better-posed
+     problem formulation.
+  5. FINAL, successful method: a SINGLE clean, carefully-captured pose
+     (subject centered, ~2.1m out), matching BOTH the first moment
+     (centroid position) AND second moment (spread / standard deviation —
+     i.e., apparent SIZE) of the lidar cluster's projection against the
+     independently-detected thermal blob's actual pixel statistics, via
+     scipy.optimize.least_squares with sane bounds:
+
+         residuals = [u_pred.mean()-u_c, v_pred.mean()-v_c,
+                      u_pred.std()-sigma_u, v_pred.std()-sigma_v]
+         result = least_squares(residuals, x0=[700.0, 0.0, 0.0],
+                                 bounds=([200,-0.4,-0.4],[1500,0.4,0.4]))
+
+     Matching SPREAD (not just position) is what makes this well-posed:
+     it directly encodes the apparent-SIZE information needed to separate
+     focal length from depth/offset, which centroid-only matching cannot
+     do. Result: fx=fy=919.2 (versus the original 1443 guess — confirming
+     the real HFOV is closer to 38 degrees than the assumed 25), a lateral
+     offset (ty) of essentially zero (-0.003m, within the fit's own
+     noise), and a small, physically plausible real vertical mounting
+     offset (tz) of 0.061m.
+
+VALIDATION METHOD (also worth describing — this caught a real methodological
+trap): the first validation attempt projected the full raw lidar cloud onto
+the thermal image using the candidate parameters and visually checked
+whether the projected points clustered tightly around the person's visible
+outline. At the OLD, too-high focal length (1443), this check appeared to
+PASS beautifully — points clustered tightly on the person. This was
+initially (wrongly) taken as evidence the old calibration was fine after
+all. The actual explanation, caught only on reflection: at an artificially
+high (too-narrow) focal length, MOST of the lidar scene's real angular
+extent falls outside the image's pixel bounds and gets silently clipped by
+the projection's own valid-pixel check — so only points very near the
+optical axis (where the person happened to be sitting) ever get drawn at
+all, creating a FALSE impression of tight, accurate clustering purely as an
+artifact of aggressive clipping, not real calibration accuracy. The
+DEFINITIVE validation that was eventually used instead: comparing the
+THERMAL-COLORED 3D point cloud directly against the RGB-colored 3D point
+cloud, both shown in real (y,z) space (not reprojected into any 2D image at
+all) — this has no clipping-bias failure mode, since it's just asking "does
+the real 3D extent of 'points classified as hot' match the real 3D extent of
+'points classified as person' " directly. This comparison, run live on real
+data, showed the hot blob correctly matching the person's real size and
+position only after BOTH the orientation fix and the focal-length/offset
+recalibration were in place.
+
+LESSON FOR THE PAPER: a visual sanity check that LOOKS clean can still be
+systematically wrong if the check itself has an unexamined bias (here,
+silent out-of-bounds clipping at a narrow FOV). Prefer a validation method
+with no shared failure mode with the thing being validated.
+
+
+================================================================================
+8. NETWORKING ARCHITECTURE
+================================================================================
+
+8.1 Livox lidar on a pinned wired interface
+------------------------------------------------------------------------------
+The lidar is wired via Ethernet (not WiFi), at a static IP (192.168.1.5/24
+on the Pi's eth0, lidar itself at 192.168.1.165). A specific operational
+issue diagnosed during this project: a PCIe add-on NIC that was originally
+used for this connection was found to be flaky — frozen RX byte/packet
+counters combined with a climbing "missed" packet count, despite the link
+itself reporting "up" — root-caused as a hardware PHY fault on that
+add-in-card, not a cabling or software issue, and fixed by moving the
+connection to the Pi 5's own onboard eth0 (driver: macb), verified clean
+over a 60-second soak test with zero errors afterward.
+
+A host route is used to keep Livox traffic pinned to eth0 regardless of the
+general subnet routing table state:
+
+    192.168.1.165/32 dev eth0 metric 50
+
+while the general subnet route for that same address range was deliberately
+DEPRIORITIZED to a high metric (700) specifically so that normal LAN/WiFi
+traffic (e.g., to Patelnet) doesn't get pulled onto eth0 by default routing
+preference — the host route's /32 specificity plus low metric ensures only
+the lidar's exact address goes over the wired link, everything else
+(including the subnet's own broadcast range) prefers wlan0.
+
+8.2 ROS 2 discovery scope
+------------------------------------------------------------------------------
+ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST is set system-wide. This was a
+critical, repeatedly-relevant fix: the ROS 2/DDS default (SUBNET) ties node
+discovery to whatever the current WiFi subnet happens to be — which breaks
+immediately on switching between the Pi's own standalone hotspot and a
+regular router-mediated network (Patelnet), since those are different
+subnets with different discovery behavior. Pinning discovery to LOCALHOST
+means all ROS 2 nodes always find each other regardless of what's happening
+on wlan0 — the pipeline's internal node-to-node communication becomes fully
+independent of which WiFi mode or network the Pi happens to be using at any
+given moment, which is also a general good practice for a single-machine
+pipeline like this one, not relying on multicast discovery in a given
+subnet at all.
+
+8.3 Two WiFi deployment modes
+------------------------------------------------------------------------------
+  - Normal/development mode: the Pi joins an existing WiFi network
+    (Patelnet) as a regular client, and the web viewer is reached at the
+    Pi's DHCP-assigned IP on that network.
+  - Standalone field mode: the Pi hosts its OWN WiFi access point
+    (PitFusion3D-AP, via NetworkManager's ipv4.method=shared / NAT),
+    letting a viewing device connect directly with zero existing network
+    infrastructure required — this is the actual target deployment mode
+    for genuinely offline field use ("the bush").
+
+8.4 Zero-internet-dependency requirement and a specific bug it caused
+------------------------------------------------------------------------------
+The standalone hotspot mode has, by definition, no uplink to the internet at
+all. Three.js and OrbitControls (the 3D rendering library the web viewer
+depends on) were originally loaded from a CDN in the page's <script> tags —
+this is invisible during normal development (where the Pi has internet via
+Patelnet) but causes a completely silent, totally blank page on the
+standalone hotspot: the CDN request simply fails, THREE stays undefined, and
+the very first line of the page's own script (`new THREE.Scene()`) throws
+before the data-polling loop that would otherwise populate the view ever
+runs — with nothing in the served HTML itself to explain why. Fix: both
+libraries are now bundled as local static files (web_assets/) and served
+directly by fusion_web_streamer.py itself, loaded once into memory at node
+startup (_load_static_assets()), giving the page zero internet dependency —
+the actual hard requirement for a field deployment with no connectivity at
+all, not merely "works offline most of the time."
+
+
+================================================================================
+9. RESILIENCE AND AUTO-START ARCHITECTURE
+================================================================================
+
+9.1 Auto-start without root
+------------------------------------------------------------------------------
+The full pipeline, and separately the power-monitoring toolkit (Section 11),
+run as systemd --user services rather than system-level services — this
+requires no sudo/root privileges to install or manage. The one piece that DID
+require a privileged, one-time step is loginctl enable-linger, which allows
+user services to start at boot without an actual interactive login session
+existing — both the service installation and the linger enablement are
+allowed by polkit without root, matching the project's general low-friction,
+no-sudo-needed operational philosophy.
+
+9.2 Layered self-healing
+------------------------------------------------------------------------------
+Two independent layers of automatic recovery exist simultaneously:
+  - NODE-LEVEL: both rgb_camera_node.py and thermal_camera_node.py contain
+    their own internal retry loop with exponential backoff (capped at 10s)
+    around their respective capture subprocess/device-open logic. This
+    specifically matters at boot time: on a fresh boot with nobody watching
+    (via systemd + linger, exactly the unattended-field scenario this
+    project targets), the underlying camera device (imx477 CSI /
+    unicam/rp1-cfe pipeline, or the USB thermal module) can take a few
+    seconds to actually become available, and a transient capture-process
+    crash or device glitch can happen at any point during a long unattended
+    session. The retry loop means the node's own PROCESS survives and
+    recovers on its own within seconds, rather than needing an external
+    watchdog to notice and restart the whole process.
+  - SYSTEMD-LEVEL: Restart=on-failure (or always, for the power-monitoring
+    services) at the systemd unit level, as a second independent line of
+    defense in case a node's process does fully die despite its own
+    internal retry logic.
+
+9.3 Stable device paths
+------------------------------------------------------------------------------
+The thermal camera is opened via its stable /dev/v4l/by-id/ path (keyed to
+the device's own USB serial number), not a raw /dev/videoN number — the Pi's
+CSI/ISP pipeline (rp1-cfe, which exposes several device nodes of its own)
+competes for the same kernel video-device numbering space as the USB UVC
+thermal camera, and this numbering is not guaranteed stable across boots. A
+device observed as /dev/video8 in one boot was observed to come back as
+/dev/video0 after a reboot during testing — the by-id path is immune to this
+since it's derived from the device's own identity, not probe order.
+
+9.4 Deliberate boot-speed tradeoff
+------------------------------------------------------------------------------
+The pipeline's systemd unit uses After=network.target, deliberately NOT
+After=network-online.target — the latter waits for full network readiness
+confirmation before starting, which costs real boot time that this project's
+"power on in the field and have it start working quickly" goal doesn't
+benefit from (the pipeline's own ROS 2 discovery is already pinned to
+LOCALHOST and doesn't depend on network readiness at all — see Section 8.2).
+
+
+================================================================================
+10. REAL-HARDWARE SENSOR DRIVER NOTES
+================================================================================
+
+10.1 Thermal camera: no radiometric access (an important factual limitation)
+------------------------------------------------------------------------------
+The specific USB thermal module used here (USB VID 0x3474, "Thermal Cam
+Co.,Ltd") only exposes an 8-bit AGC'd (auto-gain-controlled) YUYV video
+stream over standard UVC — there is no vendor SDK available to switch it
+into whatever raw14/TLinear radiometric mode the hardware may or may not
+even support. The node samples the Y (luma) channel, which tracks SCENE
+TEMPERATURE MONOTONICALLY but is auto-gain-controlled (not an absolute
+radiometric measurement), and publishes it left-shifted into mono16 (value =
+Y * 256) to fit the pipeline's expected uint16 single-channel format. The
+"thermal" field recovered downstream (thermal_resolution=0.00390625 = 1/256,
+thermal_min_temp=0.0) is therefore a RELATIVE hot/cold signal on a 0-255
+scale, not real Kelvin or Celsius. This is a hard sensor limitation, not a
+software gap — any claim of actual temperature measurement in the paper
+should be qualified accordingly; swapping in a radiometric driver later
+(if vendor raw16 access ever becomes available) would not require touching
+anything downstream of this one node, since the 0-255-via-mono16 contract is
+isolated to it.
+
+10.2 RGB camera capture path
+------------------------------------------------------------------------------
+Raw YUV420 frames are captured via a subprocess pipe to rpicam-vid (not
+picamera2 or any Python camera library) and converted to RGB8 via OpenCV's
+cvtColor — this path was validated standalone before integration. The
+channel order (RGB, not BGR) was specifically chosen to match what
+sensor_fusion_node.py expects (it packs channel 0/1/2 directly as R/G/B with
+no additional encoding check).
+
+10.3 RGB saturation correction (measured, not assumed)
+------------------------------------------------------------------------------
+rpicam-vid's default saturation setting produced visibly washed-out color,
+confirmed by direct measurement rather than subjective impression: mean HSV
+saturation of ~0.137 across a real captured frame (a normally-saturated
+photo is typically more like 0.2-0.4+). This is corrected via rpicam-vid's
+own ISP-level --saturation control (applied pre-encode, in the camera's own
+image signal processor, which is strictly better than any software
+saturation boost applied after an already-8-bit, chroma-subsampled JPEG/YUV
+frame, and is free since the ISP performs this step regardless of the
+value). An intermediate setting of 1.6 was tested on a low-chroma scene
+(mostly white walls, a backlit window) and only moved measured saturation to
+~0.178 — a real but modest 1.29x change, not the naive 1.6x the setting name
+might suggest; an under-measurement is expected for genuinely colorful
+subjects, since boosting an already-near-zero-chroma pixel does very little
+(a pixel with real color in it gets proportionally more effect). The
+deployed default was set more assertively at 1.8 given how strongly user
+feedback about indistinguishable colors came through, with the explicit note
+in code that it should be re-tuned against a genuinely colorful subject
+rather than the specific low-chroma test room it was validated in.
+
+
+================================================================================
+11. POWER SUPPLY RELIABILITY INVESTIGATION
+================================================================================
+
+This was the most extensive debugging effort of the project and is worth a
+dedicated section of its own in the paper — it's a genuinely interesting
+case study in systematic, evidence-driven hardware debugging, including
+several wrong turns that were caught and corrected.
+
+11.1 Symptom
+------------------------------------------------------------------------------
+The Raspberry Pi 5, when powered from an Anker 737 (PowerCore 24K, 140W
+rated) USB-C battery bank, would intermittently and fully lose power —
+not a graceful shutdown, a hard, complete loss requiring the cable to be
+physically unplugged and replugged to recover. This did NOT happen when
+powered from mains.
+
+11.2 Measurement infrastructure built
+------------------------------------------------------------------------------
+The Raspberry Pi 5's PMIC exposes live per-rail voltage/current telemetry via
+`vcgencmd pmic_read_adc` — an undocumented-but-real capability, returning
+roughly two dozen internal rail voltage/current pairs (CPU core, DDR, WiFi
+module, etc.) plus EXT5V_V, the actual measured 5V INPUT rail voltage. Key
+limitation discovered: there is no direct EXT5V CURRENT channel — only
+voltage for the input rail itself, so total input current had to be
+estimated as (sum of internal-rail V*I) / EXT5V_V, a proxy that excludes
+regulator conversion losses and ALL downstream USB peripheral draw (there is
+no channel for that on this PMIC at all).
+
+A continuous logging toolkit (tools/power_monitoring/) was built around this:
+  - power_logger.py: polls the PMIC + get_throttled (the undervoltage/
+    throttle status flag) + SoC temperature + CPU clock frequency + system
+    load average, every 0.2 seconds, with every single row immediately
+    flush()'d AND fsync()'d to disk before moving to the next sample — this
+    matters specifically because the whole point is catching the moments
+    leading up to a SUDDEN, complete power loss, where anything still
+    sitting in an OS write buffer would be lost along with the power.
+    Runs as a systemd --user service with Restart=always, and writes an
+    explicit boot_events.log entry (including /proc/sys/kernel/random/
+    boot_id) every time it starts — this distinguishes a genuine full
+    system reboot from a mere process restart, which matters a great deal
+    for correctly interpreting any gap in the log (see 11.4).
+  - kernel_log_tail.py: continuously tails `journalctl -k -f` (no sudo
+    needed; the operating account is in the 'adm' group) to a persistent
+    file, to catch any kernel-level USB disconnect/undervoltage messages.
+  - usb_watch.py: polls `lsusb` and logs connect/disconnect DIFFs (not a
+    full dump each time) with timestamps — a peripheral dropping out right
+    as voltage sags is a useful independent signal.
+  - post_mortem.py: a single tool that finds power-loss gaps in the main
+    log, cross-references all of the above, and explicitly distinguishes a
+    real reboot (boot_id changed) from a harmless process restart (same
+    boot_id) before reporting anything as an "event" — this directly
+    prevented a false alarm during development, where restarting the
+    logging service itself during setup would otherwise have been
+    misreported as a crash.
+  - burst_monitor.py: a separate, SHORT-DURATION high-rate sampler (no
+    sleep between samples — runs as fast as vcgencmd allows, measured
+    ~28-33Hz, i.e. ~30ms/sample) used for targeted controlled experiments
+    when the steady 0.2s/5Hz logger's resolution was suspected to be too
+    coarse to see a fast transient.
+
+11.3 Hypothesis 1 — bad cable — tested and ruled out
+------------------------------------------------------------------------------
+A "random" (unspecified-quality) USB-C cable was initially the leading
+suspect, since cable resistance under real current draw is among the most
+common real-world causes of this exact symptom. Swapped for a second cable;
+the crashes continued on the new cable too, ruling out cable quality (at
+least for the specific second cable tested) as the sole explanation.
+
+11.4 Hypothesis 2 — sustained power draw exceeding supply capacity
+------------------------------------------------------------------------------
+The first full post-mortem analysis of the logged data found a consistent
+pattern across two confirmed REAL crashes (boot_id-verified): input voltage
+sagging into the 4.74-4.98V range for SEVERAL CONSECUTIVE SECONDS before
+each crash (versus a clean mains baseline of 5.03-5.15V with zero such
+samples), with the CPU pegged near its maximum boost clock throughout each
+lead-up, followed by a SUDDEN, complete cutoff with no gradual fade toward
+0V — interpreted as the battery's own protection circuitry detecting a
+sustained overload condition and latching the output off entirely (matching
+the observation that it required a physical reconnect, not just time, to
+recover). Cross-referenced against the Anker 737's published specification:
+its USB-C output's base/fixed 5V rail is rated at only 3A (15W); its much
+higher wattage modes (up to 140W) are only available at higher voltages
+(9V/15V/20V/28V) that the Raspberry Pi 5 cannot use directly, since its
+power input only ever operates at 5V.
+
+Software mitigations applied based on this hypothesis:
+  - usb_max_current_enable reverted from 1 back to 0 in /boot/firmware/
+    config.txt. This setting had been enabled earlier in the project (in
+    response to an unrelated earlier question about USB peripheral current)
+    specifically to raise the Pi's own USB-port current budget from the
+    conservative default 600mA to 1.6A — a change that implicitly assumes
+    a genuinely 5V/5A-capable supply, which the Anker's spec sheet does not
+    support. Reverting this restores the Pi's own conservative default
+    safety margin.
+  - arm_freq=2000 added, capping the CPU's maximum boost clock below its
+    2.4GHz default, specifically to reduce peak/sustained power draw under
+    load (the logged crashes showed the CPU pegged near 2.0-2.4GHz
+    throughout each lead-up).
+
+RESULT: these changes measurably eliminated the specific "sustained sag over
+several seconds" signature in subsequent testing — but crashes STILL
+occurred afterward, with a NEW, different signature (see 11.5). This is an
+important result for the paper: it demonstrates that a plausible, well-
+reasoned, DATA-SUPPORTED hypothesis can still be incomplete — fixing one real
+mechanism exposed a second one that had been present all along but masked.
+
+11.5 Hypothesis 3 — fast transient inrush at boot — tested and refined
+------------------------------------------------------------------------------
+After the Hypothesis 2 mitigations, new crashes occurred extremely quickly
+after each reboot (9-23 seconds of uptime, versus minutes before), with
+voltage looking completely normal (5.0-5.12V) right up until the instant of
+each cutoff — no warning sag at all. This pointed toward a fast TRANSIENT
+spike (too brief for the 0.2s/5Hz steady logger to see building up), plausibly
+tied to boot-time device enumeration (lidar, cameras, keyboard, and a
+wireless mouse receiver all powering up and enumerating over USB at once).
+
+A controlled experiment was run to test this directly: the high-rate
+burst_monitor.py was started, then the full ROS 2 pipeline was deliberately
+COLD-LAUNCHED (all sensor nodes opening their devices simultaneously) partway
+through the monitoring window, as the closest available proxy for a true
+boot-time device-enumeration burst without physically power-cycling the
+board. RESULT: a real, substantial internal CPU-core current ramp WAS
+observed (from ~0.7A idle up to 3-4A+, sustained for the better part of 20+
+seconds) — but EXT5V input voltage stayed completely flat (5.03-5.14V) the
+entire time, with no dip correlated with it at all. This specific test did
+NOT reproduce a crash-like signature.
+
+IMPORTANT CORRECTION made mid-investigation: it was initially reasoned that
+since this test found no dip, and since the pipeline's own systemd
+auto-start service is intentionally disabled (so it does not launch
+automatically after a crash-reboot), the recent crashes must have been
+occurring during PURE BOOT with no heavy sensor/compute load running at
+all — pointing away from the ROS 2 pipeline as a cause. This reasoning was
+WRONG and was directly corrected by the user: in their own actual usage
+pattern, the pipeline crashes most often specifically WHILE actively
+running AND being viewed over WiFi — a scenario the "pure boot" test never
+actually covered, since in this debugging session the pipeline HAD in fact
+been manually relaunched shortly after several of the observed reboots. This
+is documented here as a clear example of over-generalizing from a small,
+convenient sample of anecdotal detail rather than the full, authoritative
+pattern the actual end user reported firsthand.
+
+11.6 Hypothesis 4 (confirmed) — real WiFi-transmission-correlated spikes
+------------------------------------------------------------------------------
+Following the correction above, a properly targeted experiment was designed:
+simulate active stream VIEWING specifically, and compare LOOPBACK-simulated
+viewing against GENUINE over-the-air WiFi viewing from an actual client
+device, using the identical high-rate monitor for both.
+
+  Loopback test (Python script hammering http://localhost:8080/merged.bin
+  as fast as possible, 74,694 requests over 150 seconds — far harder than
+  any real viewer would ever poll): CPU core current never exceeded 4.48A.
+  Zero samples above 5A across 4,188 samples.
+
+  Real WiFi test (the actual end user opening the live page on their own
+  phone/laptop over the real Patelnet WiFi network, same monitoring
+  duration): CPU core current spiked repeatedly to 6-9.21A — more than
+  double the loopback ceiling — at least 6 separate times across 180
+  seconds, while input voltage still stayed clean throughout (this test
+  was deliberately run on MAINS power specifically so the supply's
+  abundant headroom would prevent an actual crash while still exposing the
+  real underlying current numbers for direct comparison).
+
+This was the clinching, directly-measured confirmation of the mechanism
+described in Section 6.6: real WiFi networking (actual driver/radio stack
+involvement — handshakes, interrupt handling, retransmission over an
+imperfect RF link) carries real CPU cost that simply does not exist over
+loopback, and this cost was being paid on every single poll due to the
+HTTP/1.0 one-connection-per-request design. This directly motivated and
+justified the HTTP/1.1 keep-alive fix and subsequent poll-rate/payload
+reduction described in Section 6.6.
+
+11.7 Hardware-side fix selected (purchase, not yet field-validated as of
+this document)
+------------------------------------------------------------------------------
+Given a real, measured current ceiling constraint (the Anker's native 5V
+rail capped at 3A) and that this measured spike magnitude (up to 9.2A on
+just the CPU core rail alone) plausibly exceeds that ceiling at the real
+input stage once all rails and downstream peripherals are accounted for,
+software mitigation alone was judged insufficient as the SOLE fix, and a
+hardware solution was selected: a 52Pi "PD Power Expansion Board for
+Raspberry Pi 5" ($58.45 AUD via Core Electronics, Australia — selected
+specifically for local stock/fast shipping over nominally-cheaper overseas
+listings, given the real cost of 1-3+ week international shipping and
+import complications for a part this specific). This board sits inline
+between the Anker and the Pi, and negotiates a HIGHER voltage (15V, within
+the Anker's supported range of fixed PD profiles) from the battery, then
+bucks that down internally to a clean, PD-compliant 5V/5A output matching
+exactly what the Raspberry Pi 5 expects from its own official power supply.
+Two independent, additive reasons this should help: (1) for the same real
+power demand, drawing it at 15V instead of 5V requires roughly 3x LESS
+current at the battery side (P = V x I — same P, triple V, one-third I),
+directly reducing how close any given spike gets to a current-based
+protection threshold; (2) the board's own input-side bulk capacitance acts
+as a local energy buffer, smoothing millisecond-scale current transients
+before they ever reach the battery — a capability a direct cable connection
+inherently cannot provide. A plain voltage-only "PD trigger" board (without
+an internal buck-converter stage) was explicitly considered and rejected as
+insufficient — such a board only SELECTS a voltage the source already
+offers and passes its native current ceiling through unchanged, so setting
+one to "5V" would simply replicate the Anker's existing native 5V/3A limit
+with no benefit at all.
+
+
+================================================================================
+12. DEVELOPMENT METHODOLOGY — OBSERVATIONS FOR A "METHODS" SECTION
+================================================================================
+
+A few recurring practices show up consistently across this project's history
+and are worth naming explicitly, since a thesis methodology section often
+benefits from this kind of explicit articulation:
+
+  - MEASURE, DON'T ASSUME, repeatedly: point render size came from measured
+    nearest-neighbor spacing, not a guessed constant; CPU savings from a
+    framerate cut were measured (49% of a core, not estimated); a claimed
+    "1.6x" saturation boost was independently measured in HSV space and
+    found to only be ~1.29x on the specific test scene, with the
+    explanation (near-zero-chroma pixels can't be boosted much) stated
+    rather than hand-waved; the power investigation is built almost
+    entirely around direct, continuous, high-resolution measurement rather
+    than inference from symptoms alone.
+
+  - PREFER a validation method with a DIFFERENT failure mode than the thing
+    it's validating: the thermal-calibration pixel-reprojection check was
+    caught giving a false pass specifically because it shared a hidden
+    assumption (correct FOV) with the thing it was trying to validate;
+    switching to a direct 3D-space color-overlay comparison, which has no
+    such shared assumption, caught the error.
+
+  - WHEN A MEASUREMENT CONTRADICTS A HYPOTHESIS, TRUST THE MEASUREMENT: the
+    multi-pose thermal calibration fit that produced a 1.6-meter solved
+    offset for sensors mounted centimeters apart was correctly discarded
+    despite having "worked" numerically (small residuals), because a basic
+    physical-plausibility check caught that the number itself was absurd.
+
+  - ITERATIVE, EVIDENCE-DRIVEN ROOT-CAUSING under live, real hardware
+    failures, with explicit correction of earlier wrong conclusions rather
+    than silently replacing them: the power investigation moved through (in
+    order) cable quality -> sustained load -> boot-time device enumeration
+    -> real WiFi transmission, discarding each earlier hypothesis only once
+    direct evidence (not just reasoning) ruled it out, and explicitly
+    recording in this project's own history the moment an earlier
+    conclusion (boot-only, pipeline not the cause) was shown to be wrong by
+    the end user's own first-hand usage pattern.
+
+  - SELF-DOCUMENTING CODE COMMENTS that preserve the REASONING and
+    MEASUREMENT behind a decision, not just what the code does — multiple
+    examples throughout this codebase explicitly state a measured number,
+    the alternative that was rejected and why, and (for several of the
+    power/streaming fixes) the ORIGINAL reasoning for a now-reverted
+    decision alongside why it's being changed. This was deliberately
+    useful during this debugging process itself (re-reading why
+    HTTP/1.0 was originally chosen was exactly what made the later
+    keep-alive fix safe to attempt) and should be useful for exactly this
+    kind of retrospective summary too.
+
+
+================================================================================
+13. KNOWN LIMITATIONS AND RED FLAGS (explicitly, for the paper)
+================================================================================
+
+  1. Thermal readings are NOT radiometric. The sensor only provides an
+     8-bit AGC'd relative luma signal (Section 10.1) — any claim of actual
+     temperature measurement in degrees must be qualified or removed; the
+     current pipeline reports a 0-255 relative scale, not Kelvin/Celsius.
+
+  2. RGB camera intrinsics were NEVER empirically recalibrated. They remain
+     the original placeholder guess (fx=fy=1065, assumed 62-degree HFOV for
+     a "typical" 6mm lens) for the entire life of this project, in contrast
+     to the thermal camera, which WAS recalibrated after a visible
+     misalignment complaint. This is an inconsistency worth explicitly
+     naming: the RGB channel may have a similar undiagnosed error that
+     simply hasn't produced a complaint obvious enough to investigate.
+
+  3. No rotational (rotation_rpy) calibration was ever performed for ANY
+     sensor across the whole project — every extrinsic transform has zero
+     rotation; only translation terms have ever been solved for (and only
+     for the thermal camera). The calibration YAML's own header comment
+     explicitly states "small rotational misalignment matters MORE than
+     translation at range" — meaning this is a known, named, but
+     unaddressed source of potential error, particularly significant at
+     longer ranges where a small angular error produces a large lateral
+     pixel error.
+
+  4. The thermal calibration method (person-as-target, 1-4 poses) is a
+     pragmatic field substitute for a rigorous textbook checkerboard
+     calibration, not a replacement for one — it should be described in
+     the paper as such, with its precision limitations acknowledged (a
+     single human body, imperfectly segmented by two different and
+     imperfectly-matched detection methods across two different sensor
+     modalities, is a much noisier calibration target than a precisely
+     known rigid checkerboard pattern).
+
+  5. All power/current figures reported in Section 11 beyond EXT5V_V
+     (voltage) itself are PROXIES, not direct measurements — the Pi 5's
+     PMIC has no channel for total input current or downstream USB
+     peripheral current at all. Real total current draw at the point of
+     failure is almost certainly somewhat HIGHER than any number quoted in
+     this document, since regulator conversion losses and all USB
+     peripheral draw are both excluded from every current figure given.
+
+  6. The HTTP/1.1 keep-alive fix alone only helped modestly (9.21A -> 8.99A
+     peak). The COMBINED fix (keep-alive + reduced live-mode poll rate/
+     payload) was fully confirmed via a third real-WiFi test: peak current
+     dropped to 4.86A with zero samples above 5A, essentially matching the
+     original loopback-only ceiling. This is a confirmed, not pending,
+     result — but it was only tested on MAINS power (deliberately, so a
+     real crash wouldn't interrupt the test). It has not yet been directly
+     re-confirmed that this specific combination also prevents a crash
+     while running on the Anker 737 itself under otherwise-identical real
+     conditions — that end-to-end confirmation (software fix + battery,
+     together) is the one piece still outstanding, separate from the
+     hardware fix in point 7 below.
+
+  7. The hardware fix (52Pi PD power board) had been selected and ordered
+     but NOT YET received or field-tested as of this document — its actual
+     effectiveness at eliminating the power cutouts entirely remains an
+     open, empirically-unconfirmed question, however strong the underlying
+     electrical-engineering reasoning for why it should help.
+
+  8. Several real, uncontrolled crash-and-reboot cycles occurred DURING the
+     development and debugging process itself — this project's own
+     development history is not a clean, linear narrative but one shaped by
+     live, repeated real-world hardware failures that had to be chased down
+     iteratively. This is worth stating honestly in a methods/limitations
+     section rather than presenting a cleaned-up narrative that implies a
+     smoother process than actually occurred.
+
+  9. No formal accuracy/precision quantification exists anywhere in this
+     project for the fused point cloud's absolute geometric accuracy
+     (e.g., no comparison against any independent ground-truth survey or
+     reference measurement) — all calibration validation performed was
+     relative/qualitative (visual alignment, internal consistency checks),
+     not an absolute accuracy benchmark. This would be a natural, valuable
+     addition for a more rigorous evaluation section of the paper.
+
+
+================================================================================
+14. SUGGESTED FUTURE WORK (for the paper's "future work" section)
+================================================================================
+
+  - Perform an actual checkerboard-based RGB intrinsic calibration (a
+    standard, low-effort fix given a checkerboard target and
+    `ros2 run camera_calibration cameracalibrator` is already referenced
+    in the project's own config comments but was never carried out).
+  - Add rotational (rotation_rpy) extrinsic calibration for at least the
+    thermal camera, given it's explicitly flagged as the more range-
+    significant error source and currently sits at zero by default for
+    every sensor.
+  - Investigate vendor access to a radiometric (raw14/TLinear) mode for the
+    thermal module, if available, to move beyond relative AGC luma toward
+    genuine temperature measurement — the architecture already isolates
+    this concern to a single node (thermal_camera_node.py), so this would
+    not require pipeline-wide changes.
+  - Complete and report the field validation of the HTTP/1.1 keep-alive +
+    reduced live-mode poll-rate fix, and separately the 52Pi PD power board
+    hardware fix, once both are actually tested under the real failure
+    conditions (battery power + active WiFi viewing) rather than relying on
+    the partial/in-progress results captured in this document.
+  - Add a true absolute-accuracy evaluation (e.g., against a surveyed
+    reference target or a second, independently-calibrated sensor) rather
+    than relying solely on relative/visual calibration validation.
+  - Consider whether the live-mode poll-rate reduction (120ms, down from
+    60ms) meaningfully degrades perceived responsiveness in practice, and
+    whether a more targeted fix (e.g., WebSocket push instead of polling,
+    which would eliminate per-update connection/request overhead entirely
+    rather than merely reducing its frequency) might be worth the added
+    implementation complexity for the specific case of battery-powered
+    field deployment.
+
+
+================================================================================
+APPENDIX: KEY FILE INVENTORY
+================================================================================
+
+ROS 2 packages (source of truth: /home/vish/ros2_ws/src/, mirrored to the
+GitHub repository https://github.com/VishAndChips1/PitFusion3D):
+
+  landfill_camera_sim/scripts/
+    sensor_fusion_node.py        — lidar+RGB+thermal time-sync + projection
+    registration_merge_node.py   — ICP windowed merge
+    fusion_web_streamer.py       — HTTP server + browser viewer page
+    calibration_publisher.py     — publishes extrinsics/intrinsics as tf2/CameraInfo
+    cloud_io.py                  — zero-copy PointCloud2 <-> numpy helpers
+    calib_capture_pose.py        — calibration data capture tool (this session)
+    calib_solve.py               — calibration solver (this session)
+  landfill_camera_sim/config/calibration/
+    extrinsics.yaml, intrinsics.yaml
+
+  pitfusion3d_bringup/pitfusion3d_bringup/
+    rgb_camera_node.py           — rpicam-vid capture + saturation correction
+    thermal_camera_node.py       — UVC thermal capture + orientation fix
+    livox_restamp_node.py        — lidar clock-domain re-stamping
+
+  tools/power_monitoring/ (this session, standalone, not a ROS 2 package)
+    power_logger.py, power_summary.py, burst_monitor.py,
+    kernel_log_tail.py, usb_watch.py, post_mortem.py
+
+================================================================================
+END OF DOCUMENT
+================================================================================
