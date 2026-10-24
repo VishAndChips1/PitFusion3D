@@ -70,12 +70,19 @@ class ThermalCameraNode(Node):
         # this raw feed; flip on only for direct thermal-camera debugging.
         self.declare_parameter('publish_preview', False)
         self.declare_parameter('preview_topic', '/landfill/thermal/image_preview')
-        # This module is physically mounted upside down relative to the
-        # RGB camera/rig -- confirmed visually (a person standing upright
-        # in frame appeared head-down, feet-up). A parameter rather than
-        # a hardcoded flip so it's one launch arg to flip back if the
-        # physical mounting ever changes, not a code edit.
+        # This module is physically mounted rotated a full 180 degrees
+        # relative to the RGB camera/rig, not just upside down -- a
+        # vertical-only flip fixed up/down (confirmed visually: a person
+        # standing upright went from head-down/feet-up to upright) but
+        # left/right then came back inverted (walking left in the real
+        # world showed as walking right), which is exactly what a 180
+        # degree in-plane rotation produces when only one axis is
+        # corrected. Flipping both axes is a full rotation, which fixes
+        # both at once. A parameter rather than a hardcoded flip so it's
+        # one launch arg to flip back if the physical mounting ever
+        # changes, not a code edit.
         self.declare_parameter('vflip', True)
+        self.declare_parameter('hflip', True)
 
         self._frame_id = str(self.get_parameter('frame_id').value)
         self._width = int(self.get_parameter('width').value)
@@ -84,6 +91,7 @@ class ThermalCameraNode(Node):
         self._device = str(self.get_parameter('device').value)
         self._publish_preview = bool(self.get_parameter('publish_preview').value)
         self._vflip = bool(self.get_parameter('vflip').value)
+        self._hflip = bool(self.get_parameter('hflip').value)
 
         self._bridge = CvBridge()
         # BEST_EFFORT: see rgb_camera_node.py's comment on the same
@@ -170,6 +178,8 @@ class ThermalCameraNode(Node):
             y = yuyv[:, :, 0]
             if self._vflip:
                 y = np.flipud(y)
+            if self._hflip:
+                y = np.fliplr(y)
             mono16 = (y.astype(np.uint16) << 8)
 
             stamp = self.get_clock().now().to_msg()

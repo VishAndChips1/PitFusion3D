@@ -405,20 +405,43 @@ class _Handler(http.server.BaseHTTPRequestHandler):
     # FusionWebStreamer.__init__ -- see this module's docstring for why
     # these are served locally instead of from a CDN.
     static_assets: dict = None
-    # Deliberately HTTP/1.0 (closes the TCP connection after every
-    # response), not 1.1. HTTP/1.1 keep-alive was tried for the
-    # WiFi-friendliness of not re-handshaking every poll, but a persistent
-    # connection through a NAT'd hotspot (NetworkManager's ipv4.method=
-    # shared) is exactly the kind of link where a middlebox can silently
-    # drop an idle connection's state without either side seeing a clean
-    # FIN/RST -- the browser then reuses a connection that looks fine but
-    # is actually dead, and the request hangs until the OS's own,
-    # much-longer TCP timeout gives up. A fresh connection per poll can
-    # never hit that: it either connects now or fails now. Combined with
-    # the client's own fetch timeout (see poll() in PAGE_HTML), a bad
-    # request costs one missed refresh instead of silently ending every
-    # future one.
-    protocol_version = 'HTTP/1.0'
+    # HTTP/1.1 with keep-alive: a real, measured cost on a Raspberry Pi 5
+    # running off a USB-C power bank. A browser actively viewing this page
+    # polls every 250ms (merged) or 60ms (live) -- with the old HTTP/1.0
+    # behavior (close the TCP connection after every response), *each poll*
+    # tore down and rebuilt a brand-new connection: a full TCP handshake
+    # through the real WiFi driver/radio stack, plus a new OS thread
+    # spawned and destroyed by ThreadingTCPServer for each one -- up to
+    # ~17/s in live mode. None of that happens over loopback (a "connection"
+    # there is nearly free and never touches the WiFi chip), which is
+    # exactly why a loopback-only test never showed it: a controlled
+    # comparison measured peak CPU-core current at 4.2-4.5A simulating this
+    # same poll rate over loopback, but up to 9.2A during actual real-WiFi
+    # viewing from a genuine client device -- more than double, and
+    # specifically correlated with hitting the real network stack, not
+    # with request rate or server-side compute (both of which the loopback
+    # test already exercised equally hard). On a mains-powered Pi that's
+    # invisible; on a USB-C power bank with limited peak current (e.g. one
+    # only offering 5V/3A), spikes this size are a plausible contributor to
+    # the power bank's overcurrent protection tripping.
+    #
+    # This used to be HTTP/1.0 specifically to dodge a different real bug:
+    # a persistent connection through the Pi's own NAT'd hotspot
+    # (NetworkManager's ipv4.method=shared) could go silently dead without
+    # either side seeing a clean FIN/RST, hanging the request until the
+    # OS's own much-longer TCP timeout gave up. That failure mode is now
+    # independently guarded against by the client's own 4-second
+    # AbortController timeout in poll() (added at the same time, see
+    # PAGE_HTML) -- a stale keep-alive connection now costs one missed
+    # refresh, same as any other failed request, not a silent permanent
+    # hang. keepalive=False (set via the 'http_keepalive' launch parameter)
+    # restores the old one-connection-per-request behavior if the hotspot
+    # path ever needs it reverted.
+    protocol_version = 'HTTP/1.1'
+    # Close an idle kept-alive connection (tab closed, device walked out
+    # of range) after this many seconds rather than holding its thread
+    # open forever.
+    timeout = 30
 
     def log_message(self, format_, *args):
         pass
@@ -601,6 +624,12 @@ class FusionWebStreamer(Node):
         # Backward-compat: an explicit input_topic overrides merged_topic,
         # matching the old single-stream parameter name.
         self.declare_parameter('input_topic', '')
+        # Escape hatch back to the old one-connection-per-poll behavior --
+        # see _Handler.protocol_version's comment for why HTTP/1.1
+        # keep-alive is now the default and why it should be safe even on
+        # the NAT'd hotspot, in case that ever needs re-verifying in the
+        # field.
+        self.declare_parameter('http_keepalive', True)
 
         merged_topic = str(self.get_parameter('input_topic').value) or str(self.get_parameter('merged_topic').value)
         live_topic = str(self.get_parameter('live_topic').value)
@@ -608,12 +637,18 @@ class FusionWebStreamer(Node):
         self._max_points_merged = int(self.get_parameter('max_points_merged').value)
         self._max_points_live = int(self.get_parameter('max_points_live').value)
 
+        http_keepalive = bool(self.get_parameter('http_keepalive').value)
+
         self._rng = np.random.default_rng(0)
         self._state = _SharedState()
         static_assets = _load_static_assets()
         handler = type(
             'BoundHandler', (_Handler,),
-            {'shared_state': self._state, 'static_assets': static_assets},
+            {
+                'shared_state': self._state,
+                'static_assets': static_assets,
+                'protocol_version': 'HTTP/1.1' if http_keepalive else 'HTTP/1.0',
+            },
         )
         self._server = _ReusableThreadingTCPServer(('0.0.0.0', self._http_port), handler)
         self._server.daemon_threads = True
@@ -630,8 +665,9 @@ class FusionWebStreamer(Node):
         )
 
         self.get_logger().info(
-            'Serving merged=%s (max %d pts) + live=%s (max %d pts) at http://0.0.0.0:%d/'
-            % (merged_topic, self._max_points_merged, live_topic, self._max_points_live, self._http_port)
+            'Serving merged=%s (max %d pts) + live=%s (max %d pts) at http://0.0.0.0:%d/ (keep-alive: %s)'
+            % (merged_topic, self._max_points_merged, live_topic, self._max_points_live,
+               self._http_port, http_keepalive)
         )
 
     def _on_merged(self, msg):

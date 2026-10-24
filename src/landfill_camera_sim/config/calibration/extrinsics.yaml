@@ -33,7 +33,14 @@ transforms:
     translation: {x: 0.0, y: 0.0, z: 0.0}
     rotation_rpy: {roll: 0.0, pitch: 0.0, yaw: 0.0}
   camera_platform/thermal_optical_frame:
-    translation: {x: 0.0, y: 0.0, z: 0.0}
+    # Solved from a live person-as-target capture (sat ~2.1m out,
+    # centered) in calib_solve.py: matched the lidar body cluster's
+    # projected centroid + spread against the thermal camera's own
+    # detected heat-blob centroid + spread (scripts/calib_*.py,
+    # /tmp scratchpad captures). y came out ~0 (no real lateral offset
+    # within the fit's noise); z is a real, physically plausible small
+    # vertical mounting offset.
+    translation: {x: 0.0, y: -0.003, z: 0.061}
     rotation_rpy: {roll: 0.0, pitch: 0.0, yaw: 0.0}
   camera_platform/lidar_frame:
     translation: {x: 0.0, y: 0.0, z: 0.0}

@@ -14,9 +14,12 @@
 #                     fx/fy assume a ~62 deg horizontal FOV (typical 6mm
 #                     CS-mount lens); the actual lens on this rig may differ.
 #   thermal_camera -- 640x512 UVC thermal module (/dev/video8). fx/fy
-#                     assume a ~25 deg horizontal FOV, typical for a
-#                     640x512 sensor's stock lens; check the module's
-#                     datasheet for the real value.
+#                     solved from a live person-as-target capture (see
+#                     extrinsics.yaml's thermal_optical_frame comment and
+#                     scripts/calib_solve.py) after the ~25 deg HFOV
+#                     guess was confirmed too narrow in person (thermal
+#                     heat blob rendered visibly smaller than the real
+#                     lidar/RGB silhouette) -- real HFOV is closer to 38 deg.
 # Run a proper checkerboard calibration for real numbers, e.g.:
 #   ros2 run camera_calibration cameracalibrator --size 8x6 --square 0.025 \
 #     image:=/landfill/rgb/image_raw camera:=/landfill/rgb
@@ -43,8 +46,8 @@ thermal_camera:
   distortion_model: plumb_bob
   distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
   camera_matrix:
-    fx: 1443.0
-    fy: 1443.0
+    fx: 919.0
+    fy: 919.0
     cx: 320.0
     cy: 256.0
   rectification_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
