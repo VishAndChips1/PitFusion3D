@@ -155,14 +155,43 @@ class RgbCameraNode(Node):
                     break
                 stream_started = True
                 backoff = 1.0  # a good frame proves the stream recovered
-                yuv = np.frombuffer(raw, dtype=np.uint8).reshape(
-                    (self._height * 3 // 2, self._width)
-                )
-                rgb = cv2.cvtColor(yuv, cv2.COLOR_YUV2RGB_I420)
-                msg = self._bridge.cv2_to_imgmsg(rgb, encoding='rgb8')
-                msg.header.stamp = self.get_clock().now().to_msg()
-                msg.header.frame_id = self._frame_id
-                self._publisher.publish(msg)
+                # This runs in a daemon thread, not the main thread rclpy
+                # spins on: an uncaught exception here (a malformed frame,
+                # a shape mismatch) would silently kill *this thread only*
+                # -- Python prints a traceback and the thread just ends,
+                # with no exception reaching rclpy.spin() and no process
+                # exit for systemd's Restart=on-failure to react to. The
+                # node would keep showing as a healthy running process
+                # while never publishing another frame again -- strictly
+                # worse than a clean crash, since neither of this
+                # project's two recovery layers (this loop's own retry,
+                # systemd) would ever notice. Catching here and continuing
+                # to the next frame closes that gap the same way a read
+                # failure already does, just one step later in the loop.
+                # Confirmed via temporary per-stage timing instrumentation
+                # (since removed) that this loop genuinely runs at the full
+                # configured 15Hz -- read+convert+publish summed to the same
+                # ~66.7ms as the measured full-loop time, with no unexplained
+                # gap. The real bottleneck for the externally-observed ~4-6Hz
+                # (vs. 15Hz genuinely published here) was downstream, in the
+                # DDS transport layer: this Pi's kernel socket buffer ceiling
+                # (~208KB) was far too small for a ~2.64MB rgb8 frame's UDP
+                # fragments, causing silent drops under load from the rest of
+                # the pipeline sharing the same transport. Fixed at the
+                # launch level (FASTRTPS_DEFAULT_PROFILES_FILE, see
+                # pitfusion3d_full.launch.py and config/fastdds_large_buffers.xml)
+                # plus a kernel sysctl change -- nothing to fix here.
+                try:
+                    yuv = np.frombuffer(raw, dtype=np.uint8).reshape(
+                        (self._height * 3 // 2, self._width)
+                    )
+                    rgb = cv2.cvtColor(yuv, cv2.COLOR_YUV2RGB_I420)
+                    msg = self._bridge.cv2_to_imgmsg(rgb, encoding='rgb8')
+                    msg.header.stamp = self.get_clock().now().to_msg()
+                    msg.header.frame_id = self._frame_id
+                    self._publisher.publish(msg)
+                except Exception as exc:
+                    self.get_logger().error(f'Failed to process/publish frame, skipping: {exc!r}')
 
             if not self._running or not rclpy.ok():
                 break

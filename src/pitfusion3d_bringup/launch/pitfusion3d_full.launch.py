@@ -51,6 +51,30 @@ def generate_launch_description():
     # client, AP, or unplugged.
     localhost_only_discovery = SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST')
 
+    # Root-cause fix for large topics (RGB images ~2.64MB/frame, also
+    # relevant to thermal frames and point clouds) measuring a fraction
+    # of their genuine publish rate on the subscriber side. Confirmed via
+    # direct per-stage timing instrumentation that rgb_camera_node
+    # publishes a healthy, correct 15Hz internally; an external
+    # subscriber on the same machine was still only seeing ~4-6Hz. Root
+    # cause: this Pi's kernel socket buffer ceiling
+    # (net.core.rmem_max/wmem_max) measured at only ~208KB via sysctl --
+    # far too small to hold the dozens of UDP fragments a multi-MB
+    # message needs, so under any burst from the rest of this pipeline
+    # sharing the same loopback DDS transport, fragments get silently
+    # dropped before reassembly (BEST_EFFORT doesn't retry). This profile
+    # requests much larger buffers from FastDDS; it is necessary but not
+    # sufficient on its own -- the kernel ceiling also needs raising (see
+    # config/fastdds_large_buffers.xml's own header comment for the
+    # sysctl command), since a request larger than the kernel allows is
+    # silently capped back down.
+    dds_large_buffers = SetEnvironmentVariable(
+        'FASTRTPS_DEFAULT_PROFILES_FILE',
+        PathJoinSubstitution([
+            FindPackageShare('pitfusion3d_bringup'), 'config', 'fastdds_large_buffers.xml',
+        ]),
+    )
+
     real_sensors = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -87,6 +111,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         localhost_only_discovery,
+        dds_large_buffers,
         *limit_threads,
         real_sensors,
         sensor_fusion,
