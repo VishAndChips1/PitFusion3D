@@ -14,7 +14,7 @@ hot/cold signal, not literal Kelvin, until a radiometric thermal source
 is available.
 """
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
+from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import PathJoinSubstitution
@@ -109,11 +109,24 @@ def generate_launch_description():
         ),
     )
 
+    # All 8 node processes used to start at once: every one of them
+    # imports numpy/OpenCV/rclpy and stands up a DDS participant in the
+    # same ~1-2s window, which measured as a brief ~8.9A spike on the
+    # VDD_CORE rail alone during a cold launch -- on a weak supply (e.g.
+    # the Anker 737's native 5V/3A rail, before the PD board) this is
+    # enough on its own, with no viewer/streaming load at all, to trip
+    # under-voltage and crash the Pi (confirmed: measured EXT5V sag to
+    # 4.72V and a real reboot during one such test). Staggering node
+    # startup spreads that import/init burst over several seconds instead
+    # of concentrating it in one spike -- same total work, lower peak.
+    sensor_fusion_delayed = TimerAction(period=3.0, actions=[sensor_fusion])
+    web_stream_delayed = TimerAction(period=6.0, actions=[web_stream])
+
     return LaunchDescription([
         localhost_only_discovery,
         dds_large_buffers,
         *limit_threads,
         real_sensors,
-        sensor_fusion,
-        web_stream,
+        sensor_fusion_delayed,
+        web_stream_delayed,
     ])

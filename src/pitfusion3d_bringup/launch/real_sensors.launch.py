@@ -27,7 +27,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import SetEnvironmentVariable
+from launch.actions import SetEnvironmentVariable, TimerAction
 from launch_ros.actions import Node
 
 
@@ -144,12 +144,21 @@ def generate_launch_description():
         }],
     )
 
+    # Staggered for the same reason as pitfusion3d_full.launch.py's outer
+    # groups: each camera node's own device-enumeration (USB/CSI open +
+    # format negotiation) plus numpy/OpenCV import is its own small CPU
+    # burst, and starting all 5 of these at once stacks every burst into
+    # the same instant. Lidar driver + its restamp companion first (the
+    # lidar needs the longest settle time), cameras spread out after.
+    rgb_camera_delayed = TimerAction(period=1.0, actions=[rgb_camera])
+    thermal_camera_delayed = TimerAction(period=2.0, actions=[thermal_camera])
+
     return LaunchDescription([
         localhost_only_discovery,
         *limit_threads,
         livox_driver,
         livox_restamp,
-        rgb_camera,
-        thermal_camera,
+        rgb_camera_delayed,
+        thermal_camera_delayed,
         calibration_publisher,
     ])
