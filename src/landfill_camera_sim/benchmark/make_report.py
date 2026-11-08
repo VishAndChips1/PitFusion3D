@@ -146,9 +146,16 @@ def fig_speedups(payload):
 
 
 def fig_window_budget(payload):
-    """Where the time goes for one 1s merge window, baseline vs optimized."""
+    """Where the time goes for one merge window, baseline vs optimized.
+
+    5 scans and a 0.5s budget match the actually deployed config
+    (pitfusion3d_full.launch.py overrides window_duration to 0.5s against
+    the Livox's real 10Hz publish_freq), not the 1.0s/11-scan figure this
+    used to show.
+    """
     results = payload['results']
-    scans = 11
+    scans = 5
+    budget_ms = 500.0
     base_total = (
         results['window_merge']['baseline']['median_ms']
         + scans * results['fusion_projection']['baseline']['median_ms']
@@ -185,18 +192,20 @@ def fig_window_budget(payload):
         left_b += value_b
         left_o += value_o
 
-    ax.axvline(1000.0, color=INK, linestyle='--', linewidth=1.4)
-    ax.text(1060, 0.62, '1s real-time budget', fontsize=9, color=INK, fontweight='bold')
+    ax.axvline(budget_ms, color=INK, linestyle='--', linewidth=1.4)
+    ax.text(budget_ms * 1.06, 0.62, '%.1fs real-time budget' % (budget_ms / 1000.0),
+            fontsize=9, color=INK, fontweight='bold')
     ax.set_yticks([0, 1])
     ax.set_yticklabels(['Optimized\n%.0f ms' % opt_total, 'Baseline\n%.0f ms' % base_total],
                        fontsize=9)
-    ax.set_xlabel('CPU time to process one 1-second window (ms)', color=MUTED, fontsize=10)
+    ax.set_xlabel('CPU time to process one %.1fs window (ms)' % (budget_ms / 1000.0),
+                  color=MUTED, fontsize=10)
     ax.set_title('Real-time budget for one merge window', color=INK, fontsize=13,
                  fontweight='bold', pad=14)
     style_axes(ax)
     ax.grid(axis='y', visible=False)
     ax.legend(frameon=False, fontsize=9, ncol=3, loc='lower right')
-    ax.set_xlim(0, max(base_total, 1000) * 1.12)
+    ax.set_xlim(0, max(base_total, budget_ms) * 1.12)
     fig.tight_layout()
     return fig
 
