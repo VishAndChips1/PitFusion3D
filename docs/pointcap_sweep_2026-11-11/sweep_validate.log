@@ -1,0 +1,5 @@
+[18:15:22] sweep validate: view=merged caps=[20000, 30000] 45s/step; gates: {'ext5v_min': 4.8, 'est_in_max': 4.5, 'temp_max': 78.0, 'core_abs': 12.0}; throttle baseline 0x0
+[18:16:34] cap 20000: 20000 pts, 1.72 upd/s, 172.3 KB/cloud, 2.429 Mbit/s | CPU pipe 131.2% streamer 14.1% | core A max 9.65 p99 4.10 | est in max 2.00 A (cons 2.85) | EXT5V min 4.926 | fused 10.06 Hz | clients 0-0 | {'points': 20000, 'nn_median_cm': 1.814, 'occ_2cm': 17819, 'occ_5cm': 9696, 'full_points': 105156, 'full_occ_2cm': 65256, 'full_occ_5cm': 17290, 'coverage_2cm_pct': 17.2, 'coverage_5cm_pct': 51.8}
+[18:16:34] baseline VDD_CORE max 9.65 A -> core gate for later steps 12.55 A
+[18:17:46] cap 30000: 30000 pts, 1.92 upd/s, 258.1 KB/cloud, 4.068 Mbit/s | CPU pipe 137.5% streamer 18.0% | core A max 4.52 p99 4.20 | est in max 1.37 A (cons 2.11) | EXT5V min 4.929 | fused 10.03 Hz | clients 0-0 | {'points': 30000, 'nn_median_cm': 1.566, 'occ_2cm': 25365, 'occ_5cm': 11530, 'full_points': 90751, 'full_occ_2cm': 57845, 'full_occ_5cm': 16181, 'coverage_2cm_pct': 24.7, 'coverage_5cm_pct': 62.4}
+[18:18:27] done; abort=None; caps restored to 20000
