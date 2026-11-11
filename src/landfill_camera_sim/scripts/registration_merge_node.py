@@ -12,6 +12,8 @@ keeps per-window cost roughly linear in the number of scans instead of
 growing with the square of the points already merged.
 """
 
+import queue
+import threading
 import time
 
 import numpy as np
@@ -168,6 +170,22 @@ class RegistrationMergeNode(Node):
         self._last_publish_wall_time = None
         self._rng = np.random.default_rng(0)
 
+        # ICP/merge used to run synchronously inside the subscription
+        # callback, so for ~360ms of every 500ms window (measured on the
+        # Pi) this node was not receiving new scans and dropped them,
+        # stretching each window in wall time and capping merged output
+        # at ~1.5Hz. The callback now only accumulates scans; a closed
+        # window is handed to this worker thread (numpy/scipy release the
+        # GIL in the heavy parts, so it genuinely runs on another core).
+        # One window may wait while one is processing; beyond that the
+        # newest window is dropped (and counted) rather than queueing
+        # unbounded latency.
+        self._work_q = queue.Queue(maxsize=1)
+        self._max_window_age = 1.0
+        self._dropped_windows = 0
+        self._worker = threading.Thread(target=self._worker_loop, daemon=True)
+        self._worker.start()
+
         # BEST_EFFORT: matches sensor_fusion_node.py's output QoS (this
         # node's input) and lets fusion_web_streamer.py's subscription to
         # this node's output skip DDS's reliable-delivery bookkeeping too.
@@ -190,6 +208,13 @@ class RegistrationMergeNode(Node):
         points = cloud_io.read_fields(msg, cloud_io.XYZIRT_FIELDS, dtype=np.float32)
         if points.shape[0] == 0:
             return
+        # Defence in depth: fusion already drops non-finite points, but one
+        # NaN reaching ICP/SVD used to discard the whole 5-scan window.
+        finite = np.isfinite(points[:, 0:3]).all(axis=1)
+        if not finite.all():
+            points = points[finite]
+            if points.shape[0] == 0:
+                return
 
         # A sim restart rewinds the clock; without this the window never
         # closes again because stamp_sec stays below the stale start.
@@ -227,24 +252,56 @@ class RegistrationMergeNode(Node):
             # systemd's Restart=on-failure is still there as a backstop,
             # but that's a much slower, more disruptive recovery than
             # just skipping one window and continuing.
+            window, self._buffer = self._buffer, []
+            self._window_start = None
+            item = (time.monotonic(), window)
             try:
-                self._register_and_publish()
+                self._work_q.put_nowait(item)
+            except queue.Full:
+                # Worker is busy AND a window is already waiting: that
+                # waiting one is now stale. Replace it with this fresher
+                # one (real-time: never build a backlog of old data).
+                try:
+                    self._work_q.get_nowait()
+                except queue.Empty:
+                    pass
+                self._dropped_windows += 1
+                if self._dropped_windows % 10 == 1:
+                    self.get_logger().warn(
+                        f'Merge worker behind -- replaced a stale window with the newest '
+                        f'({self._dropped_windows} dropped so far)')
+                try:
+                    self._work_q.put_nowait(item)
+                except queue.Full:
+                    pass
+
+    def _worker_loop(self):
+        while rclpy.ok():
+            try:
+                closed_at, window = self._work_q.get(timeout=0.5)
+            except queue.Empty:
+                continue
+            if time.monotonic() - closed_at > self._max_window_age:
+                self._dropped_windows += 1
+                continue  # too old to be worth publishing in a live view
+            # Same defensive catch as before: one bad window (degenerate
+            # ICP input, a NaN slipping through) must not kill the node.
+            try:
+                self._register_and_publish(window)
             except Exception as exc:
                 self.get_logger().error(f'Window registration/publish failed, skipping: {exc!r}')
-            self._buffer = []
-            self._window_start = None
 
     def _subsample(self, xyz, limit):
         if limit <= 0 or xyz.shape[0] <= limit:
             return xyz
         return xyz[self._rng.choice(xyz.shape[0], size=limit, replace=False)]
 
-    def _register_and_publish(self):
-        if not self._buffer:
+    def _register_and_publish(self, buffer):
+        if not buffer:
             return
-        self._buffer.sort(key=lambda entry: entry[0])
+        buffer.sort(key=lambda entry: entry[0])
 
-        first_stamp, first_xyz, first_rest = self._buffer[0]
+        first_stamp, first_xyz, first_rest = buffer[0]
         merged_xyz = [first_xyz]
         merged_rest = [first_rest]
 
@@ -256,7 +313,7 @@ class RegistrationMergeNode(Node):
         )
         non_converged = 0
 
-        for stamp_sec, xyz, rest in self._buffer[1:]:
+        for stamp_sec, xyz, rest in buffer[1:]:
             source = np.asarray(
                 xyz[voxel_downsample_indices(xyz, self._icp_voxel_size)], dtype=np.float64
             )
@@ -282,7 +339,7 @@ class RegistrationMergeNode(Node):
         if non_converged:
             self.get_logger().warn(
                 '%d of %d scans did not converge; merged without motion compensation'
-                % (non_converged, len(self._buffer) - 1)
+                % (non_converged, len(buffer) - 1)
             )
 
         all_xyz = np.concatenate(merged_xyz, axis=0)
@@ -293,7 +350,7 @@ class RegistrationMergeNode(Node):
         cloud_out[:, 0:3] = all_xyz[keep_idx]
         cloud_out[:, 3:6] = all_rest[keep_idx]
 
-        last_stamp = self._buffer[-1][0]
+        last_stamp = buffer[-1][0]
         ros_header = Header()
         ros_header.stamp.sec = int(last_stamp)
         ros_header.stamp.nanosec = int(round((last_stamp - int(last_stamp)) * 1e9))
@@ -312,7 +369,7 @@ class RegistrationMergeNode(Node):
 
         self.get_logger().info(
             'Published merged cloud: %d pts (%d scans, %d raw pts, %.2fs window) @ %.2f Hz'
-            % (cloud_out.shape[0], len(self._buffer), all_xyz.shape[0],
+            % (cloud_out.shape[0], len(buffer), all_xyz.shape[0],
                last_stamp - first_stamp, publish_hz)
         )
 

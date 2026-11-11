@@ -1,0 +1,14 @@
+Transport benchmark: synthetic traffic at the real sizes/rates (rgb 1280x720@15Hz, thermal 640x512@30Hz, cloud 24000pts@10Hz), 25s per profile, received/sent
+date: Wed Nov 11 14:16:25 AEDT 2026  (live pipeline running concurrently, same load for all three)
+== A. default Fast DDS (no profile)  [BEFORE: what the pipeline would get without any profile]
+  /tb/rgb      sent 15 Hz -> received  3.40 Hz
+  /tb/thermal  sent 30 Hz -> received 18.40 Hz
+  /tb/cloud    sent 10 Hz -> received  6.24 Hz
+== B. original UDP-only profile (4MB request, kernel-capped at 208KB)  [BEFORE: what was deployed]
+  /tb/rgb      sent 15 Hz -> received  3.44 Hz
+  /tb/thermal  sent 30 Hz -> received 17.40 Hz
+  /tb/cloud    sent 10 Hz -> received  5.04 Hz
+== C. shared-memory profile, 64MB segment  [AFTER: what is deployed now]
+  /tb/rgb      sent 15 Hz -> received 14.44 Hz
+  /tb/thermal  sent 30 Hz -> received 28.92 Hz
+  /tb/cloud    sent 10 Hz -> received  9.64 Hz

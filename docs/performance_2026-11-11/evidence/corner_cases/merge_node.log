@@ -1,0 +1,132 @@
+[INFO] [1794366063.484632443] [registration_merge_node]: Merging /landfill/fusion/points_rgbt -> /landfill/fusion/points_merged over 0.50s windows with ICP motion compensation
+[INFO] [1794366068.183356291] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 0.00 Hz
+[INFO] [1794366068.788034369] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.65 Hz
+[INFO] [1794366069.565971184] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.29 Hz
+[INFO] [1794366070.167308494] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.66 Hz
+[INFO] [1794366070.764952038] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.68 Hz
+[INFO] [1794366071.347870001] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.72 Hz
+[INFO] [1794366071.981743682] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.57 Hz
+[INFO] [1794366072.566678525] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.71 Hz
+[INFO] [1794366073.138900041] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.78 Hz
+[INFO] [1794366073.734364330] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.68 Hz
+[INFO] [1794366074.530707984] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.24 Hz
+[INFO] [1794366075.197795717] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.50 Hz
+[INFO] [1794366075.940068346] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.35 Hz
+[INFO] [1794366076.611011083] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.49 Hz
+[INFO] [1794366077.201289886] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.70 Hz
+[INFO] [1794366079.158236464] [registration_merge_node]: Published merged cloud: 41466 pts (5 scans, 113480 raw pts, 1.91s window) @ 0.51 Hz
+[INFO] [1794366079.714641229] [registration_merge_node]: Published merged cloud: 17479 pts (6 scans, 104880 raw pts, 0.50s window) @ 1.80 Hz
+[INFO] [1794366080.508389458] [registration_merge_node]: Published merged cloud: 17479 pts (7 scans, 122360 raw pts, 0.60s window) @ 1.26 Hz
+[INFO] [1794366081.156717970] [registration_merge_node]: Published merged cloud: 17479 pts (7 scans, 122360 raw pts, 0.60s window) @ 1.54 Hz
+[INFO] [1794366081.793609389] [registration_merge_node]: Published merged cloud: 17479 pts (6 scans, 104880 raw pts, 0.50s window) @ 1.57 Hz
+[INFO] [1794366082.478477166] [registration_merge_node]: Published merged cloud: 17479 pts (7 scans, 122360 raw pts, 0.60s window) @ 1.46 Hz
+[INFO] [1794366083.127340637] [registration_merge_node]: Published merged cloud: 17479 pts (7 scans, 122360 raw pts, 0.60s window) @ 1.54 Hz
+[INFO] [1794366083.768033430] [registration_merge_node]: Published merged cloud: 17479 pts (6 scans, 104880 raw pts, 0.50s window) @ 1.56 Hz
+[WARN] [1794366089.986174262] [registration_merge_node]: 1 of 3 scans did not converge; merged without motion compensation
+[INFO] [1794366090.022091845] [registration_merge_node]: Published merged cloud: 17480 pts (4 scans, 52441 raw pts, 6.30s window) @ 0.16 Hz
+[WARN] [1794366090.630005112] [registration_merge_node]: 6 of 6 scans did not converge; merged without motion compensation
+[INFO] [1794366090.632030568] [registration_merge_node]: Published merged cloud: 1 pts (7 scans, 7 raw pts, 0.60s window) @ 1.63 Hz
+[WARN] [1794366091.228010338] [registration_merge_node]: 5 of 5 scans did not converge; merged without motion compensation
+[INFO] [1794366091.230672607] [registration_merge_node]: Published merged cloud: 1 pts (6 scans, 6 raw pts, 0.50s window) @ 1.67 Hz
+[WARN] [1794366091.829810180] [registration_merge_node]: 5 of 5 scans did not converge; merged without motion compensation
+[INFO] [1794366091.832954984] [registration_merge_node]: Published merged cloud: 1 pts (6 scans, 6 raw pts, 0.50s window) @ 1.66 Hz
+[WARN] [1794366092.530573910] [registration_merge_node]: 6 of 6 scans did not converge; merged without motion compensation
+[INFO] [1794366092.534236916] [registration_merge_node]: Published merged cloud: 1 pts (7 scans, 7 raw pts, 0.60s window) @ 1.43 Hz
+[WARN] [1794366094.436263833] [registration_merge_node]: 3 of 3 scans did not converge; merged without motion compensation
+[INFO] [1794366094.442019147] [registration_merge_node]: Published merged cloud: 2 pts (4 scans, 24003 raw pts, 1.80s window) @ 0.52 Hz
+[WARN] [1794366095.183967624] [registration_merge_node]: 6 of 6 scans did not converge; merged without motion compensation
+[INFO] [1794366095.238284237] [registration_merge_node]: Published merged cloud: 1 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.26 Hz
+[WARN] [1794366095.779156911] [registration_merge_node]: 5 of 5 scans did not converge; merged without motion compensation
+[INFO] [1794366095.850361504] [registration_merge_node]: Published merged cloud: 1 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.63 Hz
+[WARN] [1794366096.481157706] [registration_merge_node]: 6 of 6 scans did not converge; merged without motion compensation
+[INFO] [1794366096.602161279] [registration_merge_node]: Published merged cloud: 1 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.33 Hz
+[WARN] [1794366097.215772743] [registration_merge_node]: 6 of 6 scans did not converge; merged without motion compensation
+[INFO] [1794366097.279815619] [registration_merge_node]: Published merged cloud: 1 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.48 Hz
+[WARN] [1794366098.964019795] [registration_merge_node]: 2 of 2 scans did not converge; merged without motion compensation
+[INFO] [1794366099.002402665] [registration_merge_node]: Published merged cloud: 23995 pts (3 scans, 72000 raw pts, 1.70s window) @ 0.58 Hz
+[INFO] [1794366099.939610587] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.07 Hz
+[INFO] [1794366100.507988145] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.74 Hz
+[INFO] [1794366101.179511427] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.49 Hz
+[INFO] [1794366101.733558366] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.81 Hz
+[INFO] [1794366102.498756181] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.32 Hz
+[INFO] [1794366103.185707335] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.44 Hz
+[INFO] [1794366103.873736892] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.46 Hz
+[INFO] [1794366104.612301758] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.35 Hz
+[INFO] [1794366105.139523118] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.90 Hz
+[INFO] [1794366105.861253187] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.39 Hz
+[INFO] [1794366106.437482528] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.73 Hz
+[WARN] [1794366108.431777904] [registration_merge_node]: Timestamps jumped backwards (1794366008.427 < 1794366106.327); resetting merge window
+[INFO] [1794366109.120367934] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 0.37 Hz
+[INFO] [1794366109.978721480] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.17 Hz
+[INFO] [1794366110.687716346] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.41 Hz
+[INFO] [1794366111.384411162] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.43 Hz
+[INFO] [1794366111.948434002] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.77 Hz
+[INFO] [1794366112.609135809] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.51 Hz
+[INFO] [1794366113.347316629] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.36 Hz
+[INFO] [1794366113.995736087] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.53 Hz
+[INFO] [1794366114.581189722] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.71 Hz
+[INFO] [1794366115.350621433] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.31 Hz
+[INFO] [1794366115.997307729] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.54 Hz
+[INFO] [1794366116.713435324] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.40 Hz
+[INFO] [1794366118.716575378] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 0.50 Hz
+[INFO] [1794366119.401105745] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.46 Hz
+[INFO] [1794366119.960929074] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.79 Hz
+[INFO] [1794366120.647801487] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.46 Hz
+[INFO] [1794366121.333318792] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.46 Hz
+[INFO] [1794366122.005201718] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.49 Hz
+[INFO] [1794366122.572527223] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.75 Hz
+[INFO] [1794366123.415764394] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.19 Hz
+[INFO] [1794366124.067642349] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.53 Hz
+[INFO] [1794366124.786073668] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.39 Hz
+[INFO] [1794366125.461017913] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.49 Hz
+[INFO] [1794366126.132765798] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.48 Hz
+[INFO] [1794366128.156044902] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 0.49 Hz
+[INFO] [1794366128.929544009] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.29 Hz
+[INFO] [1794366129.591786219] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.51 Hz
+[INFO] [1794366130.130733889] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.86 Hz
+[INFO] [1794366130.737784305] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.64 Hz
+[INFO] [1794366131.590513434] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.18 Hz
+[INFO] [1794366132.268026774] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.47 Hz
+[INFO] [1794366132.934877113] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.50 Hz
+[INFO] [1794366133.642807421] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.42 Hz
+[INFO] [1794366134.374460851] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.36 Hz
+[INFO] [1794366134.999630183] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.60 Hz
+[INFO] [1794366137.230470213] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 2.10s window) @ 0.45 Hz
+[WARN] [1794366138.573962532] [registration_merge_node]: Merge worker behind -- replaced a stale window with the newest (1 dropped so far)
+[INFO] [1794366138.721677153] [registration_merge_node]: Published merged cloud: 23994 pts (22 scans, 528000 raw pts, 0.53s window) @ 0.67 Hz
+[INFO] [1794366140.154291865] [registration_merge_node]: Published merged cloud: 23994 pts (22 scans, 528000 raw pts, 0.52s window) @ 0.70 Hz
+[INFO] [1794366141.195327110] [registration_merge_node]: Published merged cloud: 23994 pts (21 scans, 504000 raw pts, 0.50s window) @ 0.96 Hz
+[INFO] [1794366142.532540072] [registration_merge_node]: Published merged cloud: 23994 pts (21 scans, 504000 raw pts, 0.50s window) @ 0.76 Hz
+[INFO] [1794366143.922723886] [registration_merge_node]: Published merged cloud: 23994 pts (22 scans, 528000 raw pts, 0.52s window) @ 0.72 Hz
+[INFO] [1794366145.207480339] [registration_merge_node]: Published merged cloud: 23994 pts (22 scans, 528000 raw pts, 0.52s window) @ 0.77 Hz
+[INFO] [1794366146.429756228] [registration_merge_node]: Published merged cloud: 23994 pts (21 scans, 504000 raw pts, 0.51s window) @ 0.82 Hz
+[WARN] [1794366147.676927991] [registration_merge_node]: Merge worker behind -- replaced a stale window with the newest (11 dropped so far)
+[INFO] [1794366147.708025050] [registration_merge_node]: Published merged cloud: 23994 pts (21 scans, 504000 raw pts, 0.50s window) @ 0.79 Hz
+[INFO] [1794366149.031252808] [registration_merge_node]: Published merged cloud: 23994 pts (22 scans, 528000 raw pts, 0.52s window) @ 0.75 Hz
+[INFO] [1794366149.904922988] [registration_merge_node]: Published merged cloud: 23994 pts (21 scans, 504000 raw pts, 0.50s window) @ 1.15 Hz
+[INFO] [1794366150.766916746] [registration_merge_node]: Published merged cloud: 23994 pts (8 scans, 192000 raw pts, 1.68s window) @ 1.16 Hz
+[INFO] [1794366151.399735814] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.58 Hz
+[INFO] [1794366151.959127951] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.79 Hz
+[INFO] [1794366152.578726527] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.61 Hz
+[INFO] [1794366153.165209161] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.70 Hz
+[INFO] [1794366153.911169094] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.34 Hz
+[INFO] [1794366154.507147121] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.68 Hz
+[INFO] [1794366155.185003659] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.47 Hz
+[INFO] [1794366155.858460953] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.49 Hz
+[INFO] [1794366156.452503077] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.68 Hz
+[INFO] [1794366157.180067977] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.37 Hz
+[INFO] [1794366157.802509668] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.61 Hz
+[INFO] [1794366158.555544164] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.33 Hz
+[INFO] [1794366166.000573712] [registration_merge_node]: Published merged cloud: 23994 pts (2 scans, 48000 raw pts, 7.60s window) @ 0.13 Hz
+[INFO] [1794366166.795099703] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.26 Hz
+[INFO] [1794366167.416807480] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.62 Hz
+[INFO] [1794366168.172131495] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.33 Hz
+[INFO] [1794366168.812065801] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.54 Hz
+[INFO] [1794366169.476427354] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.51 Hz
+[INFO] [1794366170.181007432] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.42 Hz
+[INFO] [1794366170.761817609] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.72 Hz
+[INFO] [1794366171.363486934] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.68 Hz
+[INFO] [1794366172.000287970] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.56 Hz
+[INFO] [1794366172.813978517] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.23 Hz
+[INFO] [1794366173.389470784] [registration_merge_node]: Published merged cloud: 23994 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.74 Hz
+[INFO] [1794366173.950302584] [registration_merge_node]: Published merged cloud: 23994 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.79 Hz

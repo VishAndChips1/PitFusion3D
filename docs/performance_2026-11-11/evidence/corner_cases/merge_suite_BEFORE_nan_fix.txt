@@ -1,0 +1,14 @@
+[PASS] P1 normal 24k pts @10Hz, 10s                   outputs= 15 max latency 0.35s alive=True rss=178MB
+[PASS] P2 10% NaN points, 5s                          outputs=  0  alive=True rss=179MB
+[PASS] P3a empty clouds, 3s                           outputs=  0  alive=True rss=179MB
+[PASS] P3b single-point clouds, 3s                    outputs=  4 max latency 0.03s alive=True rss=169MB
+[PASS] P3c 24k identical points (degenerate), 3s      outputs=  5 max latency 0.14s alive=True rss=181MB
+[PASS] P4 recovery after bad data (worker alive?)     outputs= 13 max latency 0.34s alive=True rss=178MB
+[PASS] P5 stamps jump BACK 100s, 8s                   outputs= 12  alive=True rss=185MB
+[PASS] P6 stamps jump FORWARD +200s, 8s               outputs= 12  alive=True rss=179MB
+[PASS] P7 stamps back to real time (clock fixed), 8s  outputs= 12 max latency 0.31s alive=True rss=179MB
+[PASS] P8 OVERLOAD 40Hz (4x) for 12s                  outputs= 12 max latency 1.70s alive=True rss=230MB
+[PASS] P9 right after overload: latency recovered?    outputs= 12 max latency 0.37s alive=True rss=230MB
+[PASS] P10 silence 6s then resume 8s                  outputs= 12 max latency 0.32s alive=True rss=230MB
+[PASS] SIGINT shutdown in 0.5s
+node log: "failed, skipping" count = 9 | "replaced a stale window" = 2 | Tracebacks = 0

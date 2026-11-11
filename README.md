@@ -34,6 +34,15 @@ Requires ROS 2 Jazzy, Gazebo (`gz-sim`) via `ros_gz_sim`/`ros_gz_bridge`, and
 Python's `numpy`, `scipy`, and `cv_bridge` (all standard with a
 `ros-jazzy-desktop` install).
 
+## Performance & robustness results (2026-11-11)
+
+Before/after measurements on the real Raspberry Pi 5 rig, the configuration selected and why, and a corner-case test report:
+**[docs/performance_2026-11-11/](docs/performance_2026-11-11/README.md)** -
+[RESULTS](docs/performance_2026-11-11/RESULTS.md) ·
+[best configuration](docs/performance_2026-11-11/BEST_CONFIGURATION.md) ·
+[corner-case report](docs/performance_2026-11-11/07_corner_case_report.md).
+Headline: RGB reaching fusion 3.6 -> 10 Hz, fused cloud 2.4 -> 10 Hz, merged cloud 0.66 -> 1.5 Hz, nodes respawn after a crash, and the viewer keeps working with the thermal camera down.
+
 ## Real hardware deployment
 
 [`src/pitfusion3d_bringup`](src/pitfusion3d_bringup) replaces the Gazebo

@@ -1,0 +1,8 @@
+restamp    kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000
+calib_pub  kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000
+fusion     kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000
+merge      kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000
+streamer   kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000
+thermal    kill -9 -> respawned in  4s; copies now: 1; viewer live pts: 5000
+rgb        kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000
+livox_drv  kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000

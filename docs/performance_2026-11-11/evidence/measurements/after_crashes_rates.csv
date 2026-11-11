@@ -1,0 +1,21 @@
+timestamp,phase,topic,hz,n_msgs,mean_size,lat_mean_ms
+2026-11-11 13:53:07,after_crashes,/landfill/livox/points,9.978,100,24000.0,27.2
+2026-11-11 13:53:07,after_crashes,/landfill/rgb/image_raw,10.071,84,2764800.0,40.6
+2026-11-11 13:53:07,after_crashes,/landfill/thermal/image_raw,0.000,0,0.0,
+2026-11-11 13:53:07,after_crashes,/landfill/fusion/points_rgbt,10.133,87,24000.0,60.9
+2026-11-11 13:53:07,after_crashes,/landfill/fusion/points_merged,1.572,13,98474.2,319.8
+2026-11-11 13:53:17,after_crashes,/landfill/livox/points,10.032,100,24000.0,15.8
+2026-11-11 13:53:17,after_crashes,/landfill/rgb/image_raw,10.136,101,2764800.0,31.4
+2026-11-11 13:53:17,after_crashes,/landfill/thermal/image_raw,0.000,0,0.0,
+2026-11-11 13:53:17,after_crashes,/landfill/fusion/points_rgbt,10.136,102,24000.0,36.6
+2026-11-11 13:53:17,after_crashes,/landfill/fusion/points_merged,1.586,16,100039.9,241.8
+2026-11-11 13:53:27,after_crashes,/landfill/livox/points,10.004,100,24000.0,16.7
+2026-11-11 13:53:27,after_crashes,/landfill/rgb/image_raw,10.044,100,2764800.0,31.9
+2026-11-11 13:53:27,after_crashes,/landfill/thermal/image_raw,0.000,0,0.0,
+2026-11-11 13:53:27,after_crashes,/landfill/fusion/points_rgbt,10.001,100,24000.0,35.1
+2026-11-11 13:53:27,after_crashes,/landfill/fusion/points_merged,1.495,15,100414.9,246.6
+2026-11-11 13:53:37,after_crashes,/landfill/livox/points,10.018,100,24000.0,18.1
+2026-11-11 13:53:37,after_crashes,/landfill/rgb/image_raw,10.070,100,2764800.0,33.8
+2026-11-11 13:53:37,after_crashes,/landfill/thermal/image_raw,0.000,0,0.0,
+2026-11-11 13:53:37,after_crashes,/landfill/fusion/points_rgbt,10.032,100,24000.0,42.9
+2026-11-11 13:53:37,after_crashes,/landfill/fusion/points_merged,1.559,15,98479.3,267.9

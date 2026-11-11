@@ -42,7 +42,13 @@ import sensor_fusion_node as fusion_opt  # noqa: E402
 GRID_H, GRID_V = 200, 120
 IMAGE_W, IMAGE_H = 1280, 720
 SCAN_POINTS = 24000
-WINDOW_SCANS = 11
+# Real deployed config (pitfusion3d_full.launch.py -> sensor_fusion.launch.py)
+# halves window_duration to 0.5s against the Livox's real 10Hz publish_freq
+# (real_sensors.launch.py), i.e. ~5 scans/window -- not the 1.0s/11-scan
+# figure this benchmark originally shipped with (that was the un-tuned
+# default before the real-time ICP-cost cut documented in
+# registration_merge_node.py's icp_voxel_size/max_icp_iterations comments).
+WINDOW_SCANS = 5
 
 
 def timeit(fn, repeat, warmup=2):
@@ -244,8 +250,13 @@ def bench_merge(rng, repeat, results):
         xyz[:, 1] += 0.01 * i
         scans.append(xyz)
 
-    icp_voxel, out_voxel = 0.15, 0.01
-    max_iter, max_corr, min_corr = 20, 0.5, 200
+    # Matches registration_merge_node.py's current deployed defaults, not
+    # its old pre-real-time-fix defaults (see that file's icp_voxel_size/
+    # max_icp_iterations/max_icp_target_points/max_icp_source_points
+    # comments for why these were cut).
+    icp_voxel, out_voxel = 0.2, 0.01
+    max_iter, max_corr, min_corr = 10, 0.5, 200
+    max_source_pts, max_target_pts = 1500, 10000
 
     def baseline():
         map_xyz = scans[0].astype(np.float64)
@@ -280,7 +291,7 @@ def bench_merge(rng, repeat, results):
             src = np.asarray(
                 xyz32[merge_opt.voxel_downsample_indices(xyz32, icp_voxel)], dtype=np.float64)
             r, t, ok = merge_opt.icp_point_to_point(
-                subsample(src, 3000), subsample(map_ds, 20000),
+                subsample(src, max_source_pts), subsample(map_ds, max_target_pts),
                 max_iter, max_corr, min_corr)
             if not ok:
                 r, t = np.eye(3), np.zeros(3)

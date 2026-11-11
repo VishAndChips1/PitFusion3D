@@ -1,0 +1,17 @@
+[PASS] S1 request BEFORE any data -> valid empty payload              status=200 n=0
+[PASS] S2 viewer page loads                                           14528 bytes
+[PASS] S3 unknown path -> 404                                         status=404
+[PASS] S4 after data: merged capped to 20000 points                   n=20000 seq=1
+[PASS] S5 live capped to 5000 points                                  n=5000
+[PASS] S6 same ETag -> 304 (no re-send)                               status=304
+[PASS] S7 after 30s idle: first request returns NEWEST data (lazy encode) status=200 seq 1->2
+[PASS] S8 16 concurrent clients hammering 10s                         3364 requests, errors=0, streamer cpu=66% of a core, rss=225MB
+[PASS] S9 60 clients that disconnect mid-response                     server alive, later request status=200
+[PASS] S10 garbage / oversized-header / POST requests                 alive, next request status=200
+[PASS] S11 zero-extent cloud (all points identical)                   status=200 n=5000
+[PASS] S12 all-NaN thermal field                                      status=200 n=5000
+[PASS] S13 empty cloud                                                status=200 n=0
+[PASS] S14 recovers to normal data after degenerate clouds            n=20000
+[PASS] S15 SIGINT shutdown                                            0.9s
+node log: Tracebacks = 0 | "failed" errors = 0
+RESULT: 15/15 passed

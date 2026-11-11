@@ -1,0 +1,6 @@
+== fusion fallback timeout = 3.0s, realistic thermal dropouts (6s up / 3s down, 27s, ideal 270 outputs)
+[FAIL] F2b realistic dropouts: 6s up/3s down, 27s (ideal 270)   outputs=180 (need>=230) alive=True rss=200MB
+== fusion fallback timeout = 1.0s, realistic thermal dropouts (6s up / 3s down, 27s, ideal 270 outputs)
+[PASS] F2b realistic dropouts: 6s up/3s down, 27s (ideal 270)   outputs=241 (need>=230) alive=True rss=194MB
+== fusion fallback timeout = 0.5s, realistic thermal dropouts (6s up / 3s down, 27s, ideal 270 outputs)
+[PASS] F2b realistic dropouts: 6s up/3s down, 27s (ideal 270)   outputs=255 (need>=230) alive=True rss=202MB
