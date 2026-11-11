@@ -11,6 +11,8 @@ and republishes them as 'rgb8' so PitFusion3D's sensor_fusion_node.py
 (which packs channel 0/1/2 directly as R/G/B with no encoding check) gets
 the channel order it expects.
 """
+import ctypes
+import signal
 import subprocess
 import threading
 import time
@@ -34,6 +36,16 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
+
+
+def _die_with_parent():
+    # If this node is killed (kill -9, OOM), the kernel sends rpicam-vid a
+    # SIGTERM so it can't be left orphaned holding the camera, which made
+    # the respawned node unable to open it (PR_SET_PDEATHSIG = 1).
+    try:
+        ctypes.CDLL('libc.so.6', use_errno=True).prctl(1, signal.SIGTERM)
+    except Exception:
+        pass
 
 
 class RgbCameraNode(Node):
@@ -112,6 +124,7 @@ class RgbCameraNode(Node):
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             bufsize=self._frame_size * 2,
+            preexec_fn=_die_with_parent,
         )
         self.get_logger().info(
             f'rpicam-vid capture started ({self._width}x{self._height}@{self._framerate}), '
@@ -138,6 +151,8 @@ class RgbCameraNode(Node):
         # publishing nothing forever -- the node itself keeps running (no
         # exception reaches rclpy.spin), so nothing would otherwise notice
         # or restart it.
+        subprocess.run(['pkill', '-x', 'rpicam-vid'], check=False)  # orphan from a previous crash
+        time.sleep(0.5)
         backoff = 1.0
         while self._running and rclpy.ok():
             try:

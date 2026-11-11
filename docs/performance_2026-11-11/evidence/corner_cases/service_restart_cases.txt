@@ -1,0 +1,4 @@
+1. SIGKILL entire service (crash)  live data after 16s, merged after 16s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 135->167
+2. systemctl restart               live data after 17s, merged after 17s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 167->169
+3. stop, then start                live data after 19s, merged after 20s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 169->171
+4. restart again (repeat)          live data after 15s, merged after 15s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 171->173

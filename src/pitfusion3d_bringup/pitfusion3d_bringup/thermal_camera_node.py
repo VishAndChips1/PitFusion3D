@@ -26,6 +26,7 @@ comes back as the original 0-255 Y value -- a relative hot/cold signal,
 not Kelvin. Swap in a radiometric driver later (e.g. once vendor raw16
 mode access is available) without touching anything downstream.
 """
+import os
 import threading
 import time
 
@@ -106,10 +107,52 @@ class ThermalCameraNode(Node):
                 Image, str(self.get_parameter('preview_topic').value), qos_profile_sensor_data
             )
 
+        # Observed 2026-11-11: this camera can come up after (warm) boot
+        # in a state where it enumerates but then fails every read, drops
+        # off the USB bus ("USB disconnect", error -71) and re-enumerates
+        # dozens of times. Reopening it the instant its device node
+        # reappears (mid-enumeration) and again immediately after each
+        # failed streak kept it in that loop for hours; the fusion node
+        # needs thermal frames to sync, so the viewer stayed blank. Wait
+        # for the node to be stable before opening, and cool down for a
+        # growing interval after each failed streak.
+        self.declare_parameter('device_settle_s', 3.0)
+        self.declare_parameter('recovery_cooldown_max_s', 20.0)
+        self._settle_s = float(self.get_parameter('device_settle_s').value)
+        self._cooldown_max = float(self.get_parameter('recovery_cooldown_max_s').value)
+
         self._cap = None
         self._running = True
         self._thread = threading.Thread(target=self._capture_loop, daemon=True)
         self._thread.start()
+
+    def _sleep_while_running(self, seconds):
+        end = time.monotonic() + seconds
+        while self._running and rclpy.ok() and time.monotonic() < end:
+            time.sleep(0.25)
+
+    def _wait_for_device(self):
+        """Block until the device node has existed continuously for
+        device_settle_s (i.e. USB enumeration has finished, not just begun)."""
+        since = None
+        waited_since = time.monotonic()
+        last_note = waited_since
+        while self._running and rclpy.ok():
+            if not os.path.exists(self._device) and time.monotonic() - last_note > 30.0:
+                last_note = time.monotonic()
+                self.get_logger().warn(
+                    f'Thermal camera device {self._device} not present for '
+                    f'{time.monotonic() - waited_since:.0f}s -- waiting (fusion continues without thermal)')
+            if os.path.exists(self._device):
+                now = time.monotonic()
+                if since is None:
+                    since = now
+                elif now - since >= self._settle_s:
+                    return True
+            else:
+                since = None
+            time.sleep(0.25)
+        return False
 
     def _open_capture(self):
         cap = cv2.VideoCapture(self._device, cv2.CAP_V4L2)
@@ -137,8 +180,12 @@ class ThermalCameraNode(Node):
         # its own once the camera is actually available.
         backoff = 1.0
         consecutive_read_failures = 0
+        cooldown = 0.0
+        good_frames = 0
         while self._running and rclpy.ok():
             if self._cap is None:
+                if not self._wait_for_device():
+                    break
                 self._cap = self._open_capture()
                 if self._cap is None:
                     self.get_logger().error(
@@ -156,45 +203,67 @@ class ThermalCameraNode(Node):
                 )
                 backoff = 1.0
                 consecutive_read_failures = 0
+                good_frames = 0
 
             ok, raw = self._cap.read()
             if not ok or raw is None:
                 consecutive_read_failures += 1
-                self.get_logger().warn('Failed to read frame from thermal camera')
+                good_frames = 0
+                if consecutive_read_failures in (1, 10):
+                    self.get_logger().warn(
+                        f'Failed to read frame from thermal camera '
+                        f'({consecutive_read_failures} in a row)')
                 # A handful of isolated drops is normal; many in a row
                 # means the device is actually gone (unplugged, etc.) --
                 # reopen rather than busy-loop calling read() on a dead
                 # capture forever.
                 if consecutive_read_failures >= 10:
-                    self.get_logger().error('Too many consecutive read failures; reopening device')
+                    cooldown = min(max(cooldown * 2.0, 3.0), self._cooldown_max)
+                    self.get_logger().error(
+                        f'Too many consecutive read failures; reopening device '
+                        f'after a {cooldown:.0f}s cool-down')
                     self._cap.release()
                     self._cap = None
+                    self._sleep_while_running(cooldown)
                 else:
                     time.sleep(0.1)
                 continue
             consecutive_read_failures = 0
+            good_frames += 1
+            if good_frames == 30:
+                cooldown = 0.0  # genuinely streaming again -- forget the penalty
 
-            yuyv = raw.reshape(self._height, self._width, 2)
-            y = yuyv[:, :, 0]
-            if self._vflip:
-                y = np.flipud(y)
-            if self._hflip:
-                y = np.fliplr(y)
-            mono16 = (y.astype(np.uint16) << 8)
+            # Same gap/fix as rgb_camera_node.py's capture loop: this runs
+            # in a daemon thread, so an uncaught exception here (e.g. raw
+            # not actually being height*width*2 bytes despite cap.read()
+            # reporting success) would silently kill only this thread --
+            # no exception reaches rclpy.spin(), no process exit for
+            # systemd to react to. The node would look like a healthy
+            # running process while never publishing another frame.
+            try:
+                yuyv = raw.reshape(self._height, self._width, 2)
+                y = yuyv[:, :, 0]
+                if self._vflip:
+                    y = np.flipud(y)
+                if self._hflip:
+                    y = np.fliplr(y)
+                mono16 = (y.astype(np.uint16) << 8)
 
-            stamp = self.get_clock().now().to_msg()
+                stamp = self.get_clock().now().to_msg()
 
-            msg = self._bridge.cv2_to_imgmsg(mono16, encoding='mono16')
-            msg.header.stamp = stamp
-            msg.header.frame_id = self._frame_id
-            self._publisher.publish(msg)
+                msg = self._bridge.cv2_to_imgmsg(mono16, encoding='mono16')
+                msg.header.stamp = stamp
+                msg.header.frame_id = self._frame_id
+                self._publisher.publish(msg)
 
-            if self._preview_publisher is not None:
-                colorized = cv2.applyColorMap(y, cv2.COLORMAP_INFERNO)
-                preview_msg = self._bridge.cv2_to_imgmsg(colorized, encoding='bgr8')
-                preview_msg.header.stamp = stamp
-                preview_msg.header.frame_id = self._frame_id
-                self._preview_publisher.publish(preview_msg)
+                if self._preview_publisher is not None:
+                    colorized = cv2.applyColorMap(y, cv2.COLORMAP_INFERNO)
+                    preview_msg = self._bridge.cv2_to_imgmsg(colorized, encoding='bgr8')
+                    preview_msg.header.stamp = stamp
+                    preview_msg.header.frame_id = self._frame_id
+                    self._preview_publisher.publish(preview_msg)
+            except Exception as exc:
+                self.get_logger().error(f'Failed to process/publish frame, skipping: {exc!r}')
 
     def destroy_node(self):
         self._running = False

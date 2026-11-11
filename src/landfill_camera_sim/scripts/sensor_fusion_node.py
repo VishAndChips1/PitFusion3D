@@ -10,6 +10,10 @@ pinhole projection defined by config/calibration/intrinsics.yaml and the
 rig-to-sensor offsets in config/calibration/extrinsics.yaml.
 """
 
+import csv
+import os
+import time
+
 import numpy as np
 import yaml
 
@@ -129,6 +133,12 @@ class SensorFusionNode(Node):
         self.declare_parameter('thermal_resolution', 0.01)
         self.declare_parameter('sync_slop', 0.15)
         self.declare_parameter('queue_size', 5)
+        # If no thermal frame has arrived for this long, keep publishing
+        # fused clouds from lidar + RGB alone (thermal field = NaN, which
+        # the viewer already draws as grey) instead of going silent. The
+        # 3-way synchroniser below never fires without thermal, so a
+        # flaky/absent thermal USB camera used to blank the whole viewer.
+        self.declare_parameter('thermal_timeout_s', 1.0)
 
         lidar_topic = str(self.get_parameter('lidar_points_topic').value)
         rgb_topic = str(self.get_parameter('rgb_image_topic').value)
@@ -143,6 +153,11 @@ class SensorFusionNode(Node):
         self._thermal_resolution = np.float32(self.get_parameter('thermal_resolution').value)
         sync_slop = float(self.get_parameter('sync_slop').value)
         queue_size = int(self.get_parameter('queue_size').value)
+        self._thermal_timeout = float(self.get_parameter('thermal_timeout_s').value)
+        self._last_full_mono = None  # last time a 3-way (lidar+rgb+thermal) fusion succeeded
+        self._start_mono = time.monotonic()
+        self._degraded = False
+        self._last_fused_stamp = None
 
         self._reference_frame, extrinsics = _load_extrinsics(extrinsics_path)
         self._rgb_intrinsics = _load_camera_intrinsics(intrinsics_path, 'rgb_camera')
@@ -180,9 +195,42 @@ class SensorFusionNode(Node):
             queue_size=queue_size,
             slop=sync_slop,
         )
-        self._sync.registerCallback(self._on_synced)
+        self._sync.registerCallback(self._on_synced_full)
+        self._sync_no_thermal = message_filters.ApproximateTimeSynchronizer(
+            [self._lidar_sub, self._rgb_sub],
+            queue_size=queue_size,
+            slop=sync_slop,
+        )
+        self._sync_no_thermal.registerCallback(self._on_synced_no_thermal)
         self._last_stamp = None
         self._lidar_sub.registerCallback(self._watch_clock)
+
+        # Off by default (PF3D_TIMING env var, per the campaign's own
+        # ground rule that instrumentation must not change default
+        # behaviour): per-stage wall-clock timing of _process_synced,
+        # appended as one CSV row per processed triple. B2-d in the
+        # 2026-11-11 campaign measures this writer's own overhead by
+        # comparing rates/CPU with and without it.
+        self._timing = os.environ.get('PF3D_TIMING') == '1'
+        self._timing_writer = None
+        if self._timing:
+            timing_path = os.environ.get(
+                'PF3D_TIMING_PATH',
+                os.path.join(os.path.expanduser('~'), 'thesis_tests', 'fusion_timing.csv'),
+            )
+            os.makedirs(os.path.dirname(timing_path), exist_ok=True)
+            write_header = not os.path.exists(timing_path)
+            self._timing_file = open(timing_path, 'a', newline='')
+            self._timing_writer = csv.writer(self._timing_file)
+            if write_header:
+                self._timing_writer.writerow([
+                    'wall_time', 'cloud_stamp', 'rgb_stamp', 'thermal_stamp',
+                    'pairing_gap_rgb_ms', 'pairing_gap_thermal_ms',
+                    'sync_wait_ms', 'decode_ms', 'project_ms', 'colour_ms',
+                    'publish_ms', 'total_ms', 'n_points',
+                ])
+                self._timing_file.flush()
+            self.get_logger().info(f'PF3D_TIMING=1 -- writing per-triple stage timing to {timing_path}')
 
         self.get_logger().info(
             'Fusing %s + %s + %s -> %s (slop %.3fs, shared rgb/thermal transform: %s)'
@@ -199,6 +247,7 @@ class SensorFusionNode(Node):
         """
         stamp = cloud_msg.header.stamp.sec + cloud_msg.header.stamp.nanosec * 1e-9
         if self._last_stamp is not None and stamp < self._last_stamp - 1.0:
+            self._last_fused_stamp = None
             self.get_logger().warn(
                 'Timestamps jumped backwards (%.3f < %.3f); clearing sync queues'
                 % (stamp, self._last_stamp)
@@ -206,7 +255,34 @@ class SensorFusionNode(Node):
             with self._sync.lock:
                 for queue in self._sync.queues:
                     queue.clear()
+            with self._sync_no_thermal.lock:
+                for queue in self._sync_no_thermal.queues:
+                    queue.clear()
         self._last_stamp = stamp
+
+    def _on_synced_full(self, cloud_msg, rgb_msg, thermal_msg):
+        self._last_full_mono = time.monotonic()
+        if self._degraded:
+            self._degraded = False
+            self.get_logger().info('Thermal fusion working again -- resuming full RGB+thermal fusion')
+        self._on_synced(cloud_msg, rgb_msg, thermal_msg)
+
+    def _thermal_stale(self):
+        # Keyed on "3-way fusion hasn't succeeded", not on "no thermal frame
+        # arrived": thermal frames that arrive but can't be time-matched to
+        # the lidar (clock skew/step) would otherwise leave the viewer blank.
+        ref = max(self._last_full_mono or 0.0, self._start_mono)
+        return time.monotonic() - ref > self._thermal_timeout
+
+    def _on_synced_no_thermal(self, cloud_msg, rgb_msg):
+        if not self._thermal_stale():
+            return  # normal 3-way path handles it
+        if not self._degraded:
+            self._degraded = True
+            self.get_logger().warn(
+                f'No lidar+RGB+thermal fusion for >{self._thermal_timeout:.0f}s (thermal missing or '
+                f'not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns')
+        self._on_synced(cloud_msg, rgb_msg, None)
 
     def _on_synced(self, cloud_msg, rgb_msg, thermal_msg):
         # Defensive: this callback runs continuously on live sensor data,
@@ -218,12 +294,21 @@ class SensorFusionNode(Node):
         # step (see its comment). systemd's Restart=on-failure is a
         # backstop, but skipping one bad synced triple and continuing is
         # far less disruptive than a full node restart.
+        stamp_s = cloud_msg.header.stamp.sec + cloud_msg.header.stamp.nanosec * 1e-9
+        if self._last_fused_stamp is not None and stamp_s <= self._last_fused_stamp:
+            return  # this scan was already fused via the other path
+        self._last_fused_stamp = stamp_s
         try:
             self._process_synced(cloud_msg, rgb_msg, thermal_msg)
         except Exception as exc:
             self.get_logger().error(f'Fusion of synced triple failed, skipping: {exc!r}')
 
     def _process_synced(self, cloud_msg, rgb_msg, thermal_msg):
+        timing = self._timing
+        if timing:
+            wall_entry = time.time()
+            t_entry = time.perf_counter()
+
         points = cloud_io.read_fields(cloud_msg, cloud_io.XYZI_FIELDS, dtype=np.float32)
         if points.shape[0] == 0:
             return
@@ -250,7 +335,10 @@ class SensorFusionNode(Node):
             return
 
         rgb_img = image_to_array(rgb_msg, 3, np.uint8)
-        thermal_raw = image_to_array(thermal_msg, 1, np.uint16)[:, :, 0]
+        thermal_raw = (None if thermal_msg is None
+                       else image_to_array(thermal_msg, 1, np.uint16)[:, :, 0])
+        if timing:
+            t_decode = time.perf_counter()
 
         rgb_intr = self._rgb_intrinsics
         m, b = self._rgb_transform
@@ -260,7 +348,9 @@ class SensorFusionNode(Node):
         )
 
         thermal_intr = self._thermal_intrinsics
-        if self._shared_transform and thermal_intr == rgb_intr:
+        if thermal_msg is None:
+            ti = tj = valid_thermal = None
+        elif self._shared_transform and thermal_intr == rgb_intr:
             ti, tj, valid_thermal = ui, vi, valid_rgb
         else:
             m, b = self._thermal_transform
@@ -269,6 +359,8 @@ class SensorFusionNode(Node):
                 thermal_intr['cx'], thermal_intr['cy'],
                 thermal_intr['width'], thermal_intr['height'],
             )
+        if timing:
+            t_project = time.perf_counter()
 
         cloud_out = np.empty((n, 6), dtype=np.float32)
         cloud_out[:, 0:3] = xyz
@@ -284,15 +376,38 @@ class SensorFusionNode(Node):
         cloud_out[:, 4] = packed.view(np.float32)
 
         thermal_values = np.full(n, np.nan, dtype=np.float32)
-        sampled_thermal = thermal_raw[tj[valid_thermal], ti[valid_thermal]]
-        thermal_values[valid_thermal] = (
-            sampled_thermal.astype(np.float32) * self._thermal_resolution + self._thermal_min_temp
-        )
+        if thermal_raw is not None:
+            sampled_thermal = thermal_raw[tj[valid_thermal], ti[valid_thermal]]
+            thermal_values[valid_thermal] = (
+                sampled_thermal.astype(np.float32) * self._thermal_resolution + self._thermal_min_temp
+            )
         cloud_out[:, 5] = thermal_values
+        if timing:
+            t_colour = time.perf_counter()
 
         self._publisher.publish(
             cloud_io.make_cloud(cloud_msg.header, cloud_io.XYZIRT_FIELDS, cloud_out)
         )
+
+        if timing:
+            t_publish = time.perf_counter()
+            cloud_stamp = cloud_msg.header.stamp.sec + cloud_msg.header.stamp.nanosec * 1e-9
+            rgb_stamp = rgb_msg.header.stamp.sec + rgb_msg.header.stamp.nanosec * 1e-9
+            thermal_stamp = (float('nan') if thermal_msg is None
+                             else thermal_msg.header.stamp.sec + thermal_msg.header.stamp.nanosec * 1e-9)
+            self._timing_writer.writerow([
+                f'{wall_entry:.6f}', f'{cloud_stamp:.6f}', f'{rgb_stamp:.6f}', f'{thermal_stamp:.6f}',
+                f'{abs(rgb_stamp - cloud_stamp) * 1000:.3f}',
+                f'{abs(thermal_stamp - cloud_stamp) * 1000:.3f}',
+                '',  # sync_wait_ms: needs per-topic arrival time outside this callback; left blank, see B2 README
+                f'{(t_decode - t_entry) * 1000:.3f}',
+                f'{(t_project - t_decode) * 1000:.3f}',
+                f'{(t_colour - t_project) * 1000:.3f}',
+                f'{(t_publish - t_colour) * 1000:.3f}',
+                f'{(t_publish - t_entry) * 1000:.3f}',
+                n,
+            ])
+            self._timing_file.flush()
 
 
 def main():

@@ -1,0 +1,16 @@
+[PASS] F1 all three sensors normal, 8s                          outputs= 80 (need>=40) alive=True rss=172MB
+[FAIL] F2a thermal FLAPPING 1s on/1s off, 20s (ideal 200)       outputs=103 (need>=150) alive=True rss=198MB
+[PASS] F2b realistic dropouts: 6s up/3s down, 27s (ideal 270)   outputs=242 (need>=230) alive=True rss=204MB
+[PASS] F3 thermal gone, 8s                                      outputs= 80 (need>=40) alive=True rss=201MB
+[PASS] F4 thermal arrives but UNSYNCABLE (stamps -30s), 10s     outputs=100 (need>=50) alive=True rss=210MB
+[PASS] F5 thermal back and synced, 8s                           outputs= 80 (need>=50) alive=True rss=210MB
+[PASS] F6a RGB camera missing (lidar+thermal only), 6s          outputs=  0 (need>=0) alive=True rss=210MB
+[PASS] F6b RGB returns, 6s                                      outputs= 60 (need>=40) alive=True rss=210MB
+[PASS] F7a LiDAR 10% NaN + empty clouds, 6s                     outputs= 30 (need>=0) alive=True rss=210MB
+[PASS] F7b normal after bad lidar, 6s                           outputs= 60 (need>=40) alive=True rss=210MB
+[PASS] F8a clock REWIND 100s (all sensors), 8s                  outputs= 79 (need>=30) alive=True rss=189MB
+[PASS] F8b clock jump FORWARD +200s, 8s                         outputs= 80 (need>=30) alive=True rss=189MB
+[PASS] F8c back to real time, 8s                                outputs= 79 (need>=30) alive=True rss=189MB
+[PASS] SIGINT shutdown in 0.4s
+duplicate output stamps (within one clock regime): 0 | Tracebacks: 0 | "failed, skipping": 0
+mode switches logged: degraded x19, recovered x19

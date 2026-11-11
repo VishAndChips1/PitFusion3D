@@ -42,6 +42,8 @@ def generate_launch_description():
             package=PACKAGE_NAME,
             executable='sensor_fusion_node.py',
             name='sensor_fusion_node',
+            respawn=True,
+            respawn_delay=2.0,
             output='screen',
             parameters=[{
                 'lidar_points_topic': LaunchConfiguration('lidar_points_topic'),
@@ -57,6 +59,8 @@ def generate_launch_description():
             package=PACKAGE_NAME,
             executable='registration_merge_node.py',
             name='registration_merge_node',
+            respawn=True,
+            respawn_delay=2.0,
             output='screen',
             parameters=[{
                 'input_topic': LaunchConfiguration('fused_points_topic'),

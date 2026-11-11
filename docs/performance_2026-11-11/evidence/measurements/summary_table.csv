@@ -1,0 +1,11 @@
+run,description,lidar_hz,rgb_hz,fused_hz,fused_lat_ms,merged_hz,merged_lat_ms,pipeline_cpu_pct_of_400,system_cpu_pct_of_400,per_core_pct,soc_temp_c
+baseline,BEFORE: original build,10.0,3.61,2.42,77,0.66,148,76.0,198.5,"[52.7, 47.6, 49.3, 48.9]",63.0
+shm,+ shared-memory transport (128MB segment),9.99,15.05,9.76,49,1.49,321,159.3,323.6,"[85.1, 78.7, 80.2, 79.6]",67.1
+shm64_worker,+ 64MB segment + threaded merge,10.01,15.03,9.75,54,1.5,376,167.3,338.2,"[88.3, 83.1, 83.3, 83.5]",68.2
+tuned_idle,"+ lazy streamer + RGB 10fps, no viewer",10.03,10.06,10.02,46,1.55,276,116.9,269.7,"[71.3, 65.9, 67.0, 65.5]",66.9
+tuned_viewer2,"same, 1 simulated viewer (run 2)",8.34,10.07,8.3,46,1.27,281,109.2,254.2,"[66.7, 62.1, 63.1, 62.3]",67.0
+none_viewer3,"same, unpinned control for pinning test",10.01,10.1,9.74,46,1.5,219,122.1,267.9,"[70.3, 65.6, 66.0, 66.0]",67.2
+roles_viewer3,"same, CPU role-pinned",10.03,10.07,9.78,51,1.5,236,120.4,267.7,"[69.1, 62.7, 67.5, 68.4]",67.7
+soak8min,"same, 8-minute soak",10.01,10.06,9.82,44,1.5,266,122.0,282.3,"[74.1, 68.9, 69.6, 69.7]",68.4
+after_crashes,after 8x kill -9 node-crash test,10.01,10.08,10.08,44,1.55,269,109.3,269.8,"[70.5, 67.3, 65.3, 66.7]",67.0
+final_viewer,"FINAL build, 1 viewer",10.06,10.06,10.03,48,1.53,305,136.9,290.9,"[75.9, 72.1, 70.7, 72.2]",69.2

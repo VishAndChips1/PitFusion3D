@@ -1,0 +1,1 @@
+[INFO] [1794366679.607546472] [fusion_web_streamer]: Serving merged=/landfill/fusion/points_merged (max 20000 pts) + live=/landfill/fusion/points_rgbt (max 5000 pts) at http://0.0.0.0:18080/ (keep-alive: True)

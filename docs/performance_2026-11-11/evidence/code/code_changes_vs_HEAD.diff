@@ -1,0 +1,906 @@
+diff --git a/src/landfill_camera_sim/launch/sensor_fusion.launch.py b/src/landfill_camera_sim/launch/sensor_fusion.launch.py
+index c476ab1..a6cf0e8 100644
+--- a/src/landfill_camera_sim/launch/sensor_fusion.launch.py
++++ b/src/landfill_camera_sim/launch/sensor_fusion.launch.py
+@@ -42,6 +42,8 @@ def generate_launch_description():
+             package=PACKAGE_NAME,
+             executable='sensor_fusion_node.py',
+             name='sensor_fusion_node',
++            respawn=True,
++            respawn_delay=2.0,
+             output='screen',
+             parameters=[{
+                 'lidar_points_topic': LaunchConfiguration('lidar_points_topic'),
+@@ -57,6 +59,8 @@ def generate_launch_description():
+             package=PACKAGE_NAME,
+             executable='registration_merge_node.py',
+             name='registration_merge_node',
++            respawn=True,
++            respawn_delay=2.0,
+             output='screen',
+             parameters=[{
+                 'input_topic': LaunchConfiguration('fused_points_topic'),
+diff --git a/src/landfill_camera_sim/launch/web_stream.launch.py b/src/landfill_camera_sim/launch/web_stream.launch.py
+index 7e7f06b..e092ac0 100644
+--- a/src/landfill_camera_sim/launch/web_stream.launch.py
++++ b/src/landfill_camera_sim/launch/web_stream.launch.py
+@@ -33,13 +33,27 @@ def generate_launch_description():
+             description='Faster per-scan fused PointCloud2 (x,y,z,rgb,thermal) topic.',
+         ),
+         DeclareLaunchArgument('http_port', default_value='8080'),
+-        DeclareLaunchArgument('max_points_merged', default_value='35000'),
+-        DeclareLaunchArgument('max_points_live', default_value='10000'),
++        # 35000/10000 were the original values; measured real-WiFi power
++        # testing (tools/power_monitoring/burst_monitor.py) found
++        # 35000pts peaking at 6.29A on the CPU core rail -- over this
++        # project's hard 5A ceiling (set to avoid tripping a USB-C
++        # battery bank's overcurrent protection, a full unrecoverable
++        # power loss, not a graceful shutdown). These are the
++        # launch-time-overridable defaults; fusion_web_streamer.py's own
++        # declare_parameter defaults (20000/5000) were updated to match
++        # at the same time, so both sources of truth now agree -- see
++        # that file's comment for the full measured reasoning, including
++        # why this needs re-validating with real WiFi viewing (not
++        # loopback) and a thermally-settled Pi if it's ever raised again.
++        DeclareLaunchArgument('max_points_merged', default_value='20000'),
++        DeclareLaunchArgument('max_points_live', default_value='5000'),
+ 
+         Node(
+             package=PACKAGE_NAME,
+             executable='fusion_web_streamer.py',
+             name='fusion_web_streamer',
++            respawn=True,
++            respawn_delay=2.0,
+             output='screen',
+             parameters=[{
+                 'merged_topic': LaunchConfiguration('merged_topic'),
+diff --git a/src/landfill_camera_sim/scripts/fusion_web_streamer.py b/src/landfill_camera_sim/scripts/fusion_web_streamer.py
+index 02e2f24..c640250 100755
+--- a/src/landfill_camera_sim/scripts/fusion_web_streamer.py
++++ b/src/landfill_camera_sim/scripts/fusion_web_streamer.py
+@@ -32,6 +32,7 @@ import http.server
+ import os
+ import socketserver
+ import struct
++import sys
+ import threading
+ 
+ import numpy as np
+@@ -370,6 +371,14 @@ class _ReusableThreadingTCPServer(socketserver.ThreadingTCPServer):
+     # fails to rebind the port for ~a minute while it's in TIME_WAIT.
+     allow_reuse_address = True
+ 
++    def handle_error(self, request, client_address):
++        # A viewer that drops off flaky WiFi / closes its tab mid-request is
++        # routine; socketserver would otherwise print a full traceback each.
++        exc = sys.exc_info()[1]
++        if isinstance(exc, (ConnectionError, TimeoutError)):
++            return
++        super().handle_error(request, client_address)
++
+ 
+ class _StreamState:
+     """One (buffer, sequence number) slot per served point cloud source.
+@@ -383,6 +392,31 @@ class _StreamState:
+         self.lock = threading.Lock()
+         self.buffer = gzip.compress(struct.pack('<II', 0, 0), compresslevel=6)
+         self.seq = 0
++        # Lazy encoding: the ROS callback only remembers the newest cloud;
++        # quantize+gzip happens at most once per cloud, and only when an
++        # HTTP client actually asks for newer data. With no viewer
++        # connected this costs nothing (it used to encode every cloud at
++        # 10Hz regardless -- ~27% of a core measured idle).
++        self.encode_lock = threading.Lock()
++        self.latest_msg = None
++        self.latest_id = 0
++        self.encoded_id = 0
++        self.encoder = None
++
++    def offer(self, msg):
++        self.latest_msg = msg
++        self.latest_id += 1
++
++    def refresh(self):
++        if self.encoder is None or self.latest_id == self.encoded_id:
++            return
++        with self.encode_lock:
++            lid, msg = self.latest_id, self.latest_msg
++            if msg is None or lid == self.encoded_id:
++                return
++            n, payload = self.encoder(msg)
++            self.set_payload(n, payload)
++            self.encoded_id = lid
+ 
+     def set_payload(self, n_points, payload_bytes):
+         # Compressed once here, per actual data update (~1-10Hz), not
+@@ -488,6 +522,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
+         # buys (see _encode_cloud). Content-Encoding: gzip means the
+         # browser decompresses transparently inside fetch(); no client-
+         # side change needed to receive the benefit.
++        try:
++            stream_state.refresh()
++        except Exception:
++            pass  # serve the previous payload rather than fail the request
+         body, seq = stream_state.get_buffer_and_seq()
+         etag = f'"{seq}"'
+         if self.headers.get('If-None-Match') == etag:
+@@ -520,7 +558,11 @@ class _Handler(http.server.BaseHTTPRequestHandler):
+             body, content_type = self.static_assets[self.path]
+             self._serve_bytes(body, content_type)
+         else:
++            # Content-Length is required under HTTP/1.1 keep-alive: without it
++            # the client waits for a body that never comes (every browser's
++            # automatic /favicon.ico request hung until the 30s timeout).
+             self.send_response(404)
++            self.send_header('Content-Length', '0')
+             self.end_headers()
+ 
+ 
+@@ -676,6 +718,9 @@ class FusionWebStreamer(Node):
+ 
+         self._rng = np.random.default_rng(0)
+         self._state = _SharedState()
++        _rng_merged, _rng_live = np.random.default_rng(0), np.random.default_rng(1)
++        self._state.merged.encoder = lambda m: _encode_cloud(m, self._max_points_merged, _rng_merged)
++        self._state.live.encoder = lambda m: _encode_cloud(m, self._max_points_live, _rng_live)
+         static_assets = _load_static_assets()
+         handler = type(
+             'BoundHandler', (_Handler,),
+@@ -713,18 +758,10 @@ class FusionWebStreamer(Node):
+         # kill this entire node -- dropping the web viewer along with it
+         # -- rather than just skipping one update and keeping whatever
+         # was already being served.
+-        try:
+-            n, payload = _encode_cloud(msg, self._max_points_merged, self._rng)
+-            self._state.merged.set_payload(n, payload)
+-        except Exception as exc:
+-            self.get_logger().error(f'Encoding merged cloud failed, skipping: {exc!r}')
++        self._state.merged.offer(msg)
+ 
+     def _on_live(self, msg):
+-        try:
+-            n, payload = _encode_cloud(msg, self._max_points_live, self._rng)
+-            self._state.live.set_payload(n, payload)
+-        except Exception as exc:
+-            self.get_logger().error(f'Encoding live cloud failed, skipping: {exc!r}')
++        self._state.live.offer(msg)
+ 
+     def destroy_node(self):
+         self._server.shutdown()
+diff --git a/src/landfill_camera_sim/scripts/registration_merge_node.py b/src/landfill_camera_sim/scripts/registration_merge_node.py
+index c65e071..0aabb3e 100755
+--- a/src/landfill_camera_sim/scripts/registration_merge_node.py
++++ b/src/landfill_camera_sim/scripts/registration_merge_node.py
+@@ -12,6 +12,8 @@ keeps per-window cost roughly linear in the number of scans instead of
+ growing with the square of the points already merged.
+ """
+ 
++import queue
++import threading
+ import time
+ 
+ import numpy as np
+@@ -168,6 +170,22 @@ class RegistrationMergeNode(Node):
+         self._last_publish_wall_time = None
+         self._rng = np.random.default_rng(0)
+ 
++        # ICP/merge used to run synchronously inside the subscription
++        # callback, so for ~360ms of every 500ms window (measured on the
++        # Pi) this node was not receiving new scans and dropped them,
++        # stretching each window in wall time and capping merged output
++        # at ~1.5Hz. The callback now only accumulates scans; a closed
++        # window is handed to this worker thread (numpy/scipy release the
++        # GIL in the heavy parts, so it genuinely runs on another core).
++        # One window may wait while one is processing; beyond that the
++        # newest window is dropped (and counted) rather than queueing
++        # unbounded latency.
++        self._work_q = queue.Queue(maxsize=1)
++        self._max_window_age = 1.0
++        self._dropped_windows = 0
++        self._worker = threading.Thread(target=self._worker_loop, daemon=True)
++        self._worker.start()
++
+         # BEST_EFFORT: matches sensor_fusion_node.py's output QoS (this
+         # node's input) and lets fusion_web_streamer.py's subscription to
+         # this node's output skip DDS's reliable-delivery bookkeeping too.
+@@ -190,6 +208,13 @@ class RegistrationMergeNode(Node):
+         points = cloud_io.read_fields(msg, cloud_io.XYZIRT_FIELDS, dtype=np.float32)
+         if points.shape[0] == 0:
+             return
++        # Defence in depth: fusion already drops non-finite points, but one
++        # NaN reaching ICP/SVD used to discard the whole 5-scan window.
++        finite = np.isfinite(points[:, 0:3]).all(axis=1)
++        if not finite.all():
++            points = points[finite]
++            if points.shape[0] == 0:
++                return
+ 
+         # A sim restart rewinds the clock; without this the window never
+         # closes again because stamp_sec stays below the stale start.
+@@ -227,24 +252,56 @@ class RegistrationMergeNode(Node):
+             # systemd's Restart=on-failure is still there as a backstop,
+             # but that's a much slower, more disruptive recovery than
+             # just skipping one window and continuing.
++            window, self._buffer = self._buffer, []
++            self._window_start = None
++            item = (time.monotonic(), window)
++            try:
++                self._work_q.put_nowait(item)
++            except queue.Full:
++                # Worker is busy AND a window is already waiting: that
++                # waiting one is now stale. Replace it with this fresher
++                # one (real-time: never build a backlog of old data).
++                try:
++                    self._work_q.get_nowait()
++                except queue.Empty:
++                    pass
++                self._dropped_windows += 1
++                if self._dropped_windows % 10 == 1:
++                    self.get_logger().warn(
++                        f'Merge worker behind -- replaced a stale window with the newest '
++                        f'({self._dropped_windows} dropped so far)')
++                try:
++                    self._work_q.put_nowait(item)
++                except queue.Full:
++                    pass
++
++    def _worker_loop(self):
++        while rclpy.ok():
+             try:
+-                self._register_and_publish()
++                closed_at, window = self._work_q.get(timeout=0.5)
++            except queue.Empty:
++                continue
++            if time.monotonic() - closed_at > self._max_window_age:
++                self._dropped_windows += 1
++                continue  # too old to be worth publishing in a live view
++            # Same defensive catch as before: one bad window (degenerate
++            # ICP input, a NaN slipping through) must not kill the node.
++            try:
++                self._register_and_publish(window)
+             except Exception as exc:
+                 self.get_logger().error(f'Window registration/publish failed, skipping: {exc!r}')
+-            self._buffer = []
+-            self._window_start = None
+ 
+     def _subsample(self, xyz, limit):
+         if limit <= 0 or xyz.shape[0] <= limit:
+             return xyz
+         return xyz[self._rng.choice(xyz.shape[0], size=limit, replace=False)]
+ 
+-    def _register_and_publish(self):
+-        if not self._buffer:
++    def _register_and_publish(self, buffer):
++        if not buffer:
+             return
+-        self._buffer.sort(key=lambda entry: entry[0])
++        buffer.sort(key=lambda entry: entry[0])
+ 
+-        first_stamp, first_xyz, first_rest = self._buffer[0]
++        first_stamp, first_xyz, first_rest = buffer[0]
+         merged_xyz = [first_xyz]
+         merged_rest = [first_rest]
+ 
+@@ -256,7 +313,7 @@ class RegistrationMergeNode(Node):
+         )
+         non_converged = 0
+ 
+-        for stamp_sec, xyz, rest in self._buffer[1:]:
++        for stamp_sec, xyz, rest in buffer[1:]:
+             source = np.asarray(
+                 xyz[voxel_downsample_indices(xyz, self._icp_voxel_size)], dtype=np.float64
+             )
+@@ -282,7 +339,7 @@ class RegistrationMergeNode(Node):
+         if non_converged:
+             self.get_logger().warn(
+                 '%d of %d scans did not converge; merged without motion compensation'
+-                % (non_converged, len(self._buffer) - 1)
++                % (non_converged, len(buffer) - 1)
+             )
+ 
+         all_xyz = np.concatenate(merged_xyz, axis=0)
+@@ -293,7 +350,7 @@ class RegistrationMergeNode(Node):
+         cloud_out[:, 0:3] = all_xyz[keep_idx]
+         cloud_out[:, 3:6] = all_rest[keep_idx]
+ 
+-        last_stamp = self._buffer[-1][0]
++        last_stamp = buffer[-1][0]
+         ros_header = Header()
+         ros_header.stamp.sec = int(last_stamp)
+         ros_header.stamp.nanosec = int(round((last_stamp - int(last_stamp)) * 1e9))
+@@ -312,7 +369,7 @@ class RegistrationMergeNode(Node):
+ 
+         self.get_logger().info(
+             'Published merged cloud: %d pts (%d scans, %d raw pts, %.2fs window) @ %.2f Hz'
+-            % (cloud_out.shape[0], len(self._buffer), all_xyz.shape[0],
++            % (cloud_out.shape[0], len(buffer), all_xyz.shape[0],
+                last_stamp - first_stamp, publish_hz)
+         )
+ 
+diff --git a/src/landfill_camera_sim/scripts/sensor_fusion_node.py b/src/landfill_camera_sim/scripts/sensor_fusion_node.py
+index 36db25d..3c2b2b7 100755
+--- a/src/landfill_camera_sim/scripts/sensor_fusion_node.py
++++ b/src/landfill_camera_sim/scripts/sensor_fusion_node.py
+@@ -10,6 +10,10 @@ pinhole projection defined by config/calibration/intrinsics.yaml and the
+ rig-to-sensor offsets in config/calibration/extrinsics.yaml.
+ """
+ 
++import csv
++import os
++import time
++
+ import numpy as np
+ import yaml
+ 
+@@ -129,6 +133,12 @@ class SensorFusionNode(Node):
+         self.declare_parameter('thermal_resolution', 0.01)
+         self.declare_parameter('sync_slop', 0.15)
+         self.declare_parameter('queue_size', 5)
++        # If no thermal frame has arrived for this long, keep publishing
++        # fused clouds from lidar + RGB alone (thermal field = NaN, which
++        # the viewer already draws as grey) instead of going silent. The
++        # 3-way synchroniser below never fires without thermal, so a
++        # flaky/absent thermal USB camera used to blank the whole viewer.
++        self.declare_parameter('thermal_timeout_s', 1.0)
+ 
+         lidar_topic = str(self.get_parameter('lidar_points_topic').value)
+         rgb_topic = str(self.get_parameter('rgb_image_topic').value)
+@@ -143,6 +153,11 @@ class SensorFusionNode(Node):
+         self._thermal_resolution = np.float32(self.get_parameter('thermal_resolution').value)
+         sync_slop = float(self.get_parameter('sync_slop').value)
+         queue_size = int(self.get_parameter('queue_size').value)
++        self._thermal_timeout = float(self.get_parameter('thermal_timeout_s').value)
++        self._last_full_mono = None  # last time a 3-way (lidar+rgb+thermal) fusion succeeded
++        self._start_mono = time.monotonic()
++        self._degraded = False
++        self._last_fused_stamp = None
+ 
+         self._reference_frame, extrinsics = _load_extrinsics(extrinsics_path)
+         self._rgb_intrinsics = _load_camera_intrinsics(intrinsics_path, 'rgb_camera')
+@@ -180,10 +195,43 @@ class SensorFusionNode(Node):
+             queue_size=queue_size,
+             slop=sync_slop,
+         )
+-        self._sync.registerCallback(self._on_synced)
++        self._sync.registerCallback(self._on_synced_full)
++        self._sync_no_thermal = message_filters.ApproximateTimeSynchronizer(
++            [self._lidar_sub, self._rgb_sub],
++            queue_size=queue_size,
++            slop=sync_slop,
++        )
++        self._sync_no_thermal.registerCallback(self._on_synced_no_thermal)
+         self._last_stamp = None
+         self._lidar_sub.registerCallback(self._watch_clock)
+ 
++        # Off by default (PF3D_TIMING env var, per the campaign's own
++        # ground rule that instrumentation must not change default
++        # behaviour): per-stage wall-clock timing of _process_synced,
++        # appended as one CSV row per processed triple. B2-d in the
++        # 2026-11-11 campaign measures this writer's own overhead by
++        # comparing rates/CPU with and without it.
++        self._timing = os.environ.get('PF3D_TIMING') == '1'
++        self._timing_writer = None
++        if self._timing:
++            timing_path = os.environ.get(
++                'PF3D_TIMING_PATH',
++                os.path.join(os.path.expanduser('~'), 'thesis_tests', 'fusion_timing.csv'),
++            )
++            os.makedirs(os.path.dirname(timing_path), exist_ok=True)
++            write_header = not os.path.exists(timing_path)
++            self._timing_file = open(timing_path, 'a', newline='')
++            self._timing_writer = csv.writer(self._timing_file)
++            if write_header:
++                self._timing_writer.writerow([
++                    'wall_time', 'cloud_stamp', 'rgb_stamp', 'thermal_stamp',
++                    'pairing_gap_rgb_ms', 'pairing_gap_thermal_ms',
++                    'sync_wait_ms', 'decode_ms', 'project_ms', 'colour_ms',
++                    'publish_ms', 'total_ms', 'n_points',
++                ])
++                self._timing_file.flush()
++            self.get_logger().info(f'PF3D_TIMING=1 -- writing per-triple stage timing to {timing_path}')
++
+         self.get_logger().info(
+             'Fusing %s + %s + %s -> %s (slop %.3fs, shared rgb/thermal transform: %s)'
+             % (lidar_topic, rgb_topic, thermal_topic, output_topic, sync_slop,
+@@ -199,6 +247,7 @@ class SensorFusionNode(Node):
+         """
+         stamp = cloud_msg.header.stamp.sec + cloud_msg.header.stamp.nanosec * 1e-9
+         if self._last_stamp is not None and stamp < self._last_stamp - 1.0:
++            self._last_fused_stamp = None
+             self.get_logger().warn(
+                 'Timestamps jumped backwards (%.3f < %.3f); clearing sync queues'
+                 % (stamp, self._last_stamp)
+@@ -206,8 +255,35 @@ class SensorFusionNode(Node):
+             with self._sync.lock:
+                 for queue in self._sync.queues:
+                     queue.clear()
++            with self._sync_no_thermal.lock:
++                for queue in self._sync_no_thermal.queues:
++                    queue.clear()
+         self._last_stamp = stamp
+ 
++    def _on_synced_full(self, cloud_msg, rgb_msg, thermal_msg):
++        self._last_full_mono = time.monotonic()
++        if self._degraded:
++            self._degraded = False
++            self.get_logger().info('Thermal fusion working again -- resuming full RGB+thermal fusion')
++        self._on_synced(cloud_msg, rgb_msg, thermal_msg)
++
++    def _thermal_stale(self):
++        # Keyed on "3-way fusion hasn't succeeded", not on "no thermal frame
++        # arrived": thermal frames that arrive but can't be time-matched to
++        # the lidar (clock skew/step) would otherwise leave the viewer blank.
++        ref = max(self._last_full_mono or 0.0, self._start_mono)
++        return time.monotonic() - ref > self._thermal_timeout
++
++    def _on_synced_no_thermal(self, cloud_msg, rgb_msg):
++        if not self._thermal_stale():
++            return  # normal 3-way path handles it
++        if not self._degraded:
++            self._degraded = True
++            self.get_logger().warn(
++                f'No lidar+RGB+thermal fusion for >{self._thermal_timeout:.0f}s (thermal missing or '
++                f'not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns')
++        self._on_synced(cloud_msg, rgb_msg, None)
++
+     def _on_synced(self, cloud_msg, rgb_msg, thermal_msg):
+         # Defensive: this callback runs continuously on live sensor data,
+         # and nothing here was previously caught -- an unexpected error
+@@ -218,12 +294,21 @@ class SensorFusionNode(Node):
+         # step (see its comment). systemd's Restart=on-failure is a
+         # backstop, but skipping one bad synced triple and continuing is
+         # far less disruptive than a full node restart.
++        stamp_s = cloud_msg.header.stamp.sec + cloud_msg.header.stamp.nanosec * 1e-9
++        if self._last_fused_stamp is not None and stamp_s <= self._last_fused_stamp:
++            return  # this scan was already fused via the other path
++        self._last_fused_stamp = stamp_s
+         try:
+             self._process_synced(cloud_msg, rgb_msg, thermal_msg)
+         except Exception as exc:
+             self.get_logger().error(f'Fusion of synced triple failed, skipping: {exc!r}')
+ 
+     def _process_synced(self, cloud_msg, rgb_msg, thermal_msg):
++        timing = self._timing
++        if timing:
++            wall_entry = time.time()
++            t_entry = time.perf_counter()
++
+         points = cloud_io.read_fields(cloud_msg, cloud_io.XYZI_FIELDS, dtype=np.float32)
+         if points.shape[0] == 0:
+             return
+@@ -250,7 +335,10 @@ class SensorFusionNode(Node):
+             return
+ 
+         rgb_img = image_to_array(rgb_msg, 3, np.uint8)
+-        thermal_raw = image_to_array(thermal_msg, 1, np.uint16)[:, :, 0]
++        thermal_raw = (None if thermal_msg is None
++                       else image_to_array(thermal_msg, 1, np.uint16)[:, :, 0])
++        if timing:
++            t_decode = time.perf_counter()
+ 
+         rgb_intr = self._rgb_intrinsics
+         m, b = self._rgb_transform
+@@ -260,7 +348,9 @@ class SensorFusionNode(Node):
+         )
+ 
+         thermal_intr = self._thermal_intrinsics
+-        if self._shared_transform and thermal_intr == rgb_intr:
++        if thermal_msg is None:
++            ti = tj = valid_thermal = None
++        elif self._shared_transform and thermal_intr == rgb_intr:
+             ti, tj, valid_thermal = ui, vi, valid_rgb
+         else:
+             m, b = self._thermal_transform
+@@ -269,6 +359,8 @@ class SensorFusionNode(Node):
+                 thermal_intr['cx'], thermal_intr['cy'],
+                 thermal_intr['width'], thermal_intr['height'],
+             )
++        if timing:
++            t_project = time.perf_counter()
+ 
+         cloud_out = np.empty((n, 6), dtype=np.float32)
+         cloud_out[:, 0:3] = xyz
+@@ -284,16 +376,39 @@ class SensorFusionNode(Node):
+         cloud_out[:, 4] = packed.view(np.float32)
+ 
+         thermal_values = np.full(n, np.nan, dtype=np.float32)
+-        sampled_thermal = thermal_raw[tj[valid_thermal], ti[valid_thermal]]
+-        thermal_values[valid_thermal] = (
+-            sampled_thermal.astype(np.float32) * self._thermal_resolution + self._thermal_min_temp
+-        )
++        if thermal_raw is not None:
++            sampled_thermal = thermal_raw[tj[valid_thermal], ti[valid_thermal]]
++            thermal_values[valid_thermal] = (
++                sampled_thermal.astype(np.float32) * self._thermal_resolution + self._thermal_min_temp
++            )
+         cloud_out[:, 5] = thermal_values
++        if timing:
++            t_colour = time.perf_counter()
+ 
+         self._publisher.publish(
+             cloud_io.make_cloud(cloud_msg.header, cloud_io.XYZIRT_FIELDS, cloud_out)
+         )
+ 
++        if timing:
++            t_publish = time.perf_counter()
++            cloud_stamp = cloud_msg.header.stamp.sec + cloud_msg.header.stamp.nanosec * 1e-9
++            rgb_stamp = rgb_msg.header.stamp.sec + rgb_msg.header.stamp.nanosec * 1e-9
++            thermal_stamp = (float('nan') if thermal_msg is None
++                             else thermal_msg.header.stamp.sec + thermal_msg.header.stamp.nanosec * 1e-9)
++            self._timing_writer.writerow([
++                f'{wall_entry:.6f}', f'{cloud_stamp:.6f}', f'{rgb_stamp:.6f}', f'{thermal_stamp:.6f}',
++                f'{abs(rgb_stamp - cloud_stamp) * 1000:.3f}',
++                f'{abs(thermal_stamp - cloud_stamp) * 1000:.3f}',
++                '',  # sync_wait_ms: needs per-topic arrival time outside this callback; left blank, see B2 README
++                f'{(t_decode - t_entry) * 1000:.3f}',
++                f'{(t_project - t_decode) * 1000:.3f}',
++                f'{(t_colour - t_project) * 1000:.3f}',
++                f'{(t_publish - t_colour) * 1000:.3f}',
++                f'{(t_publish - t_entry) * 1000:.3f}',
++                n,
++            ])
++            self._timing_file.flush()
++
+ 
+ def main():
+     rclpy.init()
+diff --git a/src/pitfusion3d_bringup/config/fastdds_large_buffers.xml b/src/pitfusion3d_bringup/config/fastdds_large_buffers.xml
+index 21aa9c8..9261182 100644
+--- a/src/pitfusion3d_bringup/config/fastdds_large_buffers.xml
++++ b/src/pitfusion3d_bringup/config/fastdds_large_buffers.xml
+@@ -1,46 +1,43 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!--
+-Root-cause fix for RGB images (and other large BEST_EFFORT messages --
+-point clouds, thermal frames) measuring a fraction of their genuine
+-publish rate on the subscriber side, despite the publishing node itself
+-confirmed (via direct per-stage timing instrumentation) producing frames
+-at the correct rate. A 1280x720 rgb8 frame is ~2.64MB; FastDDS's default
+-UDP transport fragments this into dozens of datagrams, and this Pi's
+-kernel socket buffer ceiling (net.core.rmem_max/wmem_max, confirmed via
+-sysctl at only 212992 bytes -- ~208KB) is far too small to hold more than
+-a handful of those fragments at once. Under any burst from the rest of
+-this pipeline sharing the same loopback DDS transport (lidar point
+-clouds, thermal frames, fused/merged clouds, all simultaneously), the
+-kernel buffer overflows and silently drops fragments before FastDDS can
+-reassemble the message -- BEST_EFFORT means a partially-received message
+-is just dropped, not retried.
++Fast DDS profile for the single-host PitFusion3D pipeline.
+ 
+-This profile requests much larger UDP socket buffers from FastDDS. It
+-only has full effect once the kernel's own ceiling is also raised (see
+-the sysctl command given alongside this file) -- a request larger than
+-the kernel allows is silently capped back down to the kernel maximum, so
+-this profile alone is necessary-but-not-sufficient; both halves are
+-needed together. Builtin transports (including shared memory, used for
+-some same-host traffic) are left enabled -- this only adds a
+-better-sized UDP transport alongside them, not replacing anything.
++Why shared memory: a 1280x720 rgb8 frame is ~2.7MB, a fused cloud ~0.6MB.
++Fast DDS's built-in shared-memory transport has a small default segment, so
++these messages fall back to UDP over loopback, where this Pi's kernel socket
++buffer ceiling (net.core.rmem_max = 212992, not raisable without root)
++silently drops fragments. Measured 2026-11-11 with synthetic traffic at the
++real sizes/rates (15Hz rgb, 30Hz thermal, 10Hz cloud), received rates:
++  default / UDP-4MB profile : rgb ~7Hz,  thermal ~16Hz, cloud ~5-6Hz
++  this profile (SHM 64MB)  : rgb ~14Hz, thermal ~28Hz, cloud ~9.4Hz
++UDP is kept alongside SHM for participant discovery and for any peer that
++doesn't load this profile (those peers still work, but get the lossy UDP path
++for big messages -- so set FASTRTPS_DEFAULT_PROFILES_FILE to this file when
++measuring from a shell, e.g. `ros2 topic hz`, or the numbers will look low).
++Original UDP-only profile: ~/thesis_tests/fastdds_large_buffers.xml.pre_shm_20261111
+ -->
+ <dds xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+   <profiles>
+     <transport_descriptors>
+       <transport_descriptor>
+-        <transport_id>udp_large_buffers</transport_id>
++        <transport_id>shm_big</transport_id>
++        <type>SHM</type>
++        <segment_size>67108864</segment_size>
++      </transport_descriptor>
++      <transport_descriptor>
++        <transport_id>udp_big</transport_id>
+         <type>UDPv4</type>
+         <sendBufferSize>4194304</sendBufferSize>
+         <receiveBufferSize>4194304</receiveBufferSize>
+-        <maxMessageSize>65500</maxMessageSize>
+       </transport_descriptor>
+     </transport_descriptors>
+-    <participant profile_name="pitfusion3d_large_buffers" is_default_profile="true">
++    <participant profile_name="pitfusion3d_shm_large" is_default_profile="true">
+       <rtps>
+         <userTransports>
+-          <transport_id>udp_large_buffers</transport_id>
++          <transport_id>shm_big</transport_id>
++          <transport_id>udp_big</transport_id>
+         </userTransports>
+-        <useBuiltinTransports>true</useBuiltinTransports>
++        <useBuiltinTransports>false</useBuiltinTransports>
+       </rtps>
+     </participant>
+   </profiles>
+diff --git a/src/pitfusion3d_bringup/launch/real_sensors.launch.py b/src/pitfusion3d_bringup/launch/real_sensors.launch.py
+index 73aa1fb..b43c622 100644
+--- a/src/pitfusion3d_bringup/launch/real_sensors.launch.py
++++ b/src/pitfusion3d_bringup/launch/real_sensors.launch.py
+@@ -69,6 +69,8 @@ def generate_launch_description():
+         package='livox_ros2_avia',
+         executable='livox_ros2_avia_node',
+         name='livox_lidar_publisher',
++        respawn=True,
++        respawn_delay=2.0,
+         output='screen',
+         parameters=[{
+             'xfer_format': 0,          # PointCloud2 (matches sensor_fusion_node's XYZI reader)
+@@ -87,6 +89,8 @@ def generate_launch_description():
+         package='pitfusion3d_bringup',
+         executable='livox_restamp_node',
+         name='livox_restamp_node',
++        respawn=True,
++        respawn_delay=2.0,
+         output='screen',
+         parameters=[{
+             'input_topic': 'livox/lidar',
+@@ -98,13 +102,15 @@ def generate_launch_description():
+         package='pitfusion3d_bringup',
+         executable='rgb_camera_node',
+         name='rgb_camera_node',
++        respawn=True,
++        respawn_delay=2.0,
+         output='screen',
+         parameters=[{
+             'topic': '/landfill/rgb/image_raw',
+             'frame_id': 'camera_platform/rgb_optical_frame',
+             'width': 1280,
+             'height': 720,
+-            'framerate': 15,
++            'framerate': 10,  # lidar is 10Hz; frames above that are never fused (was 15)
+         }],
+     )
+ 
+@@ -112,6 +118,8 @@ def generate_launch_description():
+         package='pitfusion3d_bringup',
+         executable='thermal_camera_node',
+         name='thermal_camera_node',
++        respawn=True,
++        respawn_delay=2.0,
+         output='screen',
+         parameters=[{
+             # 'device' deliberately omitted -- falls back to
+@@ -130,6 +138,8 @@ def generate_launch_description():
+         package='landfill_camera_sim',
+         executable='calibration_publisher.py',
+         name='calibration_publisher',
++        respawn=True,
++        respawn_delay=2.0,
+         output='screen',
+         parameters=[{
+             'image_frame_id': 'camera_platform/camera_link',
+diff --git a/src/pitfusion3d_bringup/pitfusion3d_bringup/rgb_camera_node.py b/src/pitfusion3d_bringup/pitfusion3d_bringup/rgb_camera_node.py
+index f3915d0..17bfee7 100644
+--- a/src/pitfusion3d_bringup/pitfusion3d_bringup/rgb_camera_node.py
++++ b/src/pitfusion3d_bringup/pitfusion3d_bringup/rgb_camera_node.py
+@@ -11,6 +11,8 @@ and republishes them as 'rgb8' so PitFusion3D's sensor_fusion_node.py
+ (which packs channel 0/1/2 directly as R/G/B with no encoding check) gets
+ the channel order it expects.
+ """
++import ctypes
++import signal
+ import subprocess
+ import threading
+ import time
+@@ -36,6 +38,16 @@ from rclpy.qos import qos_profile_sensor_data
+ from sensor_msgs.msg import Image
+ 
+ 
++def _die_with_parent():
++    # If this node is killed (kill -9, OOM), the kernel sends rpicam-vid a
++    # SIGTERM so it can't be left orphaned holding the camera, which made
++    # the respawned node unable to open it (PR_SET_PDEATHSIG = 1).
++    try:
++        ctypes.CDLL('libc.so.6', use_errno=True).prctl(1, signal.SIGTERM)
++    except Exception:
++        pass
++
++
+ class RgbCameraNode(Node):
+     def __init__(self):
+         super().__init__('rgb_camera_node')
+@@ -112,6 +124,7 @@ class RgbCameraNode(Node):
+             stdout=subprocess.PIPE,
+             stderr=subprocess.DEVNULL,
+             bufsize=self._frame_size * 2,
++            preexec_fn=_die_with_parent,
+         )
+         self.get_logger().info(
+             f'rpicam-vid capture started ({self._width}x{self._height}@{self._framerate}), '
+@@ -138,6 +151,8 @@ class RgbCameraNode(Node):
+         # publishing nothing forever -- the node itself keeps running (no
+         # exception reaches rclpy.spin), so nothing would otherwise notice
+         # or restart it.
++        subprocess.run(['pkill', '-x', 'rpicam-vid'], check=False)  # orphan from a previous crash
++        time.sleep(0.5)
+         backoff = 1.0
+         while self._running and rclpy.ok():
+             try:
+diff --git a/src/pitfusion3d_bringup/pitfusion3d_bringup/thermal_camera_node.py b/src/pitfusion3d_bringup/pitfusion3d_bringup/thermal_camera_node.py
+index 0c3e44d..9070417 100644
+--- a/src/pitfusion3d_bringup/pitfusion3d_bringup/thermal_camera_node.py
++++ b/src/pitfusion3d_bringup/pitfusion3d_bringup/thermal_camera_node.py
+@@ -26,6 +26,7 @@ comes back as the original 0-255 Y value -- a relative hot/cold signal,
+ not Kelvin. Swap in a radiometric driver later (e.g. once vendor raw16
+ mode access is available) without touching anything downstream.
+ """
++import os
+ import threading
+ import time
+ 
+@@ -106,11 +107,53 @@ class ThermalCameraNode(Node):
+                 Image, str(self.get_parameter('preview_topic').value), qos_profile_sensor_data
+             )
+ 
++        # Observed 2026-11-11: this camera can come up after (warm) boot
++        # in a state where it enumerates but then fails every read, drops
++        # off the USB bus ("USB disconnect", error -71) and re-enumerates
++        # dozens of times. Reopening it the instant its device node
++        # reappears (mid-enumeration) and again immediately after each
++        # failed streak kept it in that loop for hours; the fusion node
++        # needs thermal frames to sync, so the viewer stayed blank. Wait
++        # for the node to be stable before opening, and cool down for a
++        # growing interval after each failed streak.
++        self.declare_parameter('device_settle_s', 3.0)
++        self.declare_parameter('recovery_cooldown_max_s', 20.0)
++        self._settle_s = float(self.get_parameter('device_settle_s').value)
++        self._cooldown_max = float(self.get_parameter('recovery_cooldown_max_s').value)
++
+         self._cap = None
+         self._running = True
+         self._thread = threading.Thread(target=self._capture_loop, daemon=True)
+         self._thread.start()
+ 
++    def _sleep_while_running(self, seconds):
++        end = time.monotonic() + seconds
++        while self._running and rclpy.ok() and time.monotonic() < end:
++            time.sleep(0.25)
++
++    def _wait_for_device(self):
++        """Block until the device node has existed continuously for
++        device_settle_s (i.e. USB enumeration has finished, not just begun)."""
++        since = None
++        waited_since = time.monotonic()
++        last_note = waited_since
++        while self._running and rclpy.ok():
++            if not os.path.exists(self._device) and time.monotonic() - last_note > 30.0:
++                last_note = time.monotonic()
++                self.get_logger().warn(
++                    f'Thermal camera device {self._device} not present for '
++                    f'{time.monotonic() - waited_since:.0f}s -- waiting (fusion continues without thermal)')
++            if os.path.exists(self._device):
++                now = time.monotonic()
++                if since is None:
++                    since = now
++                elif now - since >= self._settle_s:
++                    return True
++            else:
++                since = None
++            time.sleep(0.25)
++        return False
++
+     def _open_capture(self):
+         cap = cv2.VideoCapture(self._device, cv2.CAP_V4L2)
+         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'YUYV'))
+@@ -137,8 +180,12 @@ class ThermalCameraNode(Node):
+         # its own once the camera is actually available.
+         backoff = 1.0
+         consecutive_read_failures = 0
++        cooldown = 0.0
++        good_frames = 0
+         while self._running and rclpy.ok():
+             if self._cap is None:
++                if not self._wait_for_device():
++                    break
+                 self._cap = self._open_capture()
+                 if self._cap is None:
+                     self.get_logger().error(
+@@ -156,45 +203,67 @@ class ThermalCameraNode(Node):
+                 )
+                 backoff = 1.0
+                 consecutive_read_failures = 0
++                good_frames = 0
+ 
+             ok, raw = self._cap.read()
+             if not ok or raw is None:
+                 consecutive_read_failures += 1
+-                self.get_logger().warn('Failed to read frame from thermal camera')
++                good_frames = 0
++                if consecutive_read_failures in (1, 10):
++                    self.get_logger().warn(
++                        f'Failed to read frame from thermal camera '
++                        f'({consecutive_read_failures} in a row)')
+                 # A handful of isolated drops is normal; many in a row
+                 # means the device is actually gone (unplugged, etc.) --
+                 # reopen rather than busy-loop calling read() on a dead
+                 # capture forever.
+                 if consecutive_read_failures >= 10:
+-                    self.get_logger().error('Too many consecutive read failures; reopening device')
++                    cooldown = min(max(cooldown * 2.0, 3.0), self._cooldown_max)
++                    self.get_logger().error(
++                        f'Too many consecutive read failures; reopening device '
++                        f'after a {cooldown:.0f}s cool-down')
+                     self._cap.release()
+                     self._cap = None
++                    self._sleep_while_running(cooldown)
+                 else:
+                     time.sleep(0.1)
+                 continue
+             consecutive_read_failures = 0
++            good_frames += 1
++            if good_frames == 30:
++                cooldown = 0.0  # genuinely streaming again -- forget the penalty
++
++            # Same gap/fix as rgb_camera_node.py's capture loop: this runs
++            # in a daemon thread, so an uncaught exception here (e.g. raw
++            # not actually being height*width*2 bytes despite cap.read()
++            # reporting success) would silently kill only this thread --
++            # no exception reaches rclpy.spin(), no process exit for
++            # systemd to react to. The node would look like a healthy
++            # running process while never publishing another frame.
++            try:
++                yuyv = raw.reshape(self._height, self._width, 2)
++                y = yuyv[:, :, 0]
++                if self._vflip:
++                    y = np.flipud(y)
++                if self._hflip:
++                    y = np.fliplr(y)
++                mono16 = (y.astype(np.uint16) << 8)
++
++                stamp = self.get_clock().now().to_msg()
++
++                msg = self._bridge.cv2_to_imgmsg(mono16, encoding='mono16')
++                msg.header.stamp = stamp
++                msg.header.frame_id = self._frame_id
++                self._publisher.publish(msg)
+ 
+-            yuyv = raw.reshape(self._height, self._width, 2)
+-            y = yuyv[:, :, 0]
+-            if self._vflip:
+-                y = np.flipud(y)
+-            if self._hflip:
+-                y = np.fliplr(y)
+-            mono16 = (y.astype(np.uint16) << 8)
+-
+-            stamp = self.get_clock().now().to_msg()
+-
+-            msg = self._bridge.cv2_to_imgmsg(mono16, encoding='mono16')
+-            msg.header.stamp = stamp
+-            msg.header.frame_id = self._frame_id
+-            self._publisher.publish(msg)
+-
+-            if self._preview_publisher is not None:
+-                colorized = cv2.applyColorMap(y, cv2.COLORMAP_INFERNO)
+-                preview_msg = self._bridge.cv2_to_imgmsg(colorized, encoding='bgr8')
+-                preview_msg.header.stamp = stamp
+-                preview_msg.header.frame_id = self._frame_id
+-                self._preview_publisher.publish(preview_msg)
++                if self._preview_publisher is not None:
++                    colorized = cv2.applyColorMap(y, cv2.COLORMAP_INFERNO)
++                    preview_msg = self._bridge.cv2_to_imgmsg(colorized, encoding='bgr8')
++                    preview_msg.header.stamp = stamp
++                    preview_msg.header.frame_id = self._frame_id
++                    self._preview_publisher.publish(preview_msg)
++            except Exception as exc:
++                self.get_logger().error(f'Failed to process/publish frame, skipping: {exc!r}')
+ 
+     def destroy_node(self):
+         self._running = False
+diff --git a/src/pitfusion3d_bringup/scripts/run_pipeline.sh b/src/pitfusion3d_bringup/scripts/run_pipeline.sh
+index 05c69dd..5811824 100755
+--- a/src/pitfusion3d_bringup/scripts/run_pipeline.sh
++++ b/src/pitfusion3d_bringup/scripts/run_pipeline.sh
+@@ -21,4 +21,6 @@ export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+ source /opt/ros/jazzy/setup.bash
+ source /home/vish/ros2_ws/install/setup.bash
+ 
++# Fast DDS leaves ~0.5GB of shared memory behind per unclean shutdown; clear stale segments before starting.
++python3 /home/vish/ros2_ws/src/pitfusion3d_bringup/scripts/clean_stale_shm.py || true
+ exec ros2 launch pitfusion3d_bringup pitfusion3d_full.launch.py

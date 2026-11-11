@@ -69,6 +69,8 @@ def generate_launch_description():
         package='livox_ros2_avia',
         executable='livox_ros2_avia_node',
         name='livox_lidar_publisher',
+        respawn=True,
+        respawn_delay=2.0,
         output='screen',
         parameters=[{
             'xfer_format': 0,          # PointCloud2 (matches sensor_fusion_node's XYZI reader)
@@ -87,6 +89,8 @@ def generate_launch_description():
         package='pitfusion3d_bringup',
         executable='livox_restamp_node',
         name='livox_restamp_node',
+        respawn=True,
+        respawn_delay=2.0,
         output='screen',
         parameters=[{
             'input_topic': 'livox/lidar',
@@ -98,13 +102,15 @@ def generate_launch_description():
         package='pitfusion3d_bringup',
         executable='rgb_camera_node',
         name='rgb_camera_node',
+        respawn=True,
+        respawn_delay=2.0,
         output='screen',
         parameters=[{
             'topic': '/landfill/rgb/image_raw',
             'frame_id': 'camera_platform/rgb_optical_frame',
             'width': 1280,
             'height': 720,
-            'framerate': 15,
+            'framerate': 10,  # lidar is 10Hz; frames above that are never fused (was 15)
         }],
     )
 
@@ -112,6 +118,8 @@ def generate_launch_description():
         package='pitfusion3d_bringup',
         executable='thermal_camera_node',
         name='thermal_camera_node',
+        respawn=True,
+        respawn_delay=2.0,
         output='screen',
         parameters=[{
             # 'device' deliberately omitted -- falls back to
@@ -130,6 +138,8 @@ def generate_launch_description():
         package='landfill_camera_sim',
         executable='calibration_publisher.py',
         name='calibration_publisher',
+        respawn=True,
+        respawn_delay=2.0,
         output='screen',
         parameters=[{
             'image_frame_id': 'camera_platform/camera_link',

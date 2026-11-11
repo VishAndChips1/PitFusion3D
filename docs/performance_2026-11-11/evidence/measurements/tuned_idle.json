@@ -1,0 +1,260 @@
+{
+ "label": "tuned_idle",
+ "duration_s": 120,
+ "processes": {
+  "livox_driver": {
+   "pid": 52172,
+   "cpu_pct_mean": 17.4,
+   "cpu_pct_max": 20.0,
+   "threads": 17,
+   "top_thread_cpu_pct": [
+    15.2,
+    2.2,
+    0.2
+   ],
+   "cores_used_share": {
+    "1": 100
+   },
+   "vol_ctx_per_s": 0,
+   "invol_ctx_per_s": 0,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "livox_restamp": {
+   "pid": 52173,
+   "cpu_pct_mean": 7.4,
+   "cpu_pct_max": 10.0,
+   "threads": 14,
+   "top_thread_cpu_pct": [
+    6.8,
+    0.6,
+    0.1
+   ],
+   "cores_used_share": {
+    "0": 27,
+    "1": 18,
+    "2": 22,
+    "3": 33
+   },
+   "vol_ctx_per_s": 12,
+   "invol_ctx_per_s": 63,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "calib_pub": {
+   "pid": 52174,
+   "cpu_pct_mean": 0.7,
+   "cpu_pct_max": 3.0,
+   "threads": 14,
+   "top_thread_cpu_pct": [
+    0.5,
+    0.1,
+    0.1
+   ],
+   "cores_used_share": {
+    "0": 18,
+    "1": 26,
+    "2": 21,
+    "3": 35
+   },
+   "vol_ctx_per_s": 2,
+   "invol_ctx_per_s": 3,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "rgb_node": {
+   "pid": 52215,
+   "cpu_pct_mean": 18.6,
+   "cpu_pct_max": 22.0,
+   "threads": 15,
+   "top_thread_cpu_pct": [
+    19.0,
+    0.1,
+    0.1
+   ],
+   "cores_used_share": {
+    "1": 100
+   },
+   "vol_ctx_per_s": 0,
+   "invol_ctx_per_s": 0,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "thermal_node": {
+   "pid": 52252,
+   "cpu_pct_mean": 0.3,
+   "cpu_pct_max": 2.0,
+   "threads": 15,
+   "top_thread_cpu_pct": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "cores_used_share": {
+    "3": 100
+   },
+   "vol_ctx_per_s": 0,
+   "invol_ctx_per_s": 0,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "fusion": {
+   "pid": 52283,
+   "cpu_pct_mean": 28.8,
+   "cpu_pct_max": 33.9,
+   "threads": 14,
+   "top_thread_cpu_pct": [
+    25.6,
+    4.0,
+    0.1
+   ],
+   "cores_used_share": {
+    "0": 28,
+    "1": 22,
+    "2": 32,
+    "3": 18
+   },
+   "vol_ctx_per_s": 18,
+   "invol_ctx_per_s": 194,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "merge": {
+   "pid": 52284,
+   "cpu_pct_mean": 33.8,
+   "cpu_pct_max": 49.7,
+   "threads": 15,
+   "top_thread_cpu_pct": [
+    29.9,
+    3.7,
+    0.8
+   ],
+   "cores_used_share": {
+    "0": 19,
+    "1": 19,
+    "2": 28,
+    "3": 34
+   },
+   "vol_ctx_per_s": 14,
+   "invol_ctx_per_s": 24,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "rpicam_vid": {
+   "pid": 52289,
+   "cpu_pct_mean": 4.2,
+   "cpu_pct_max": 6.0,
+   "threads": 8,
+   "top_thread_cpu_pct": [
+    1.9,
+    1.3,
+    0.6
+   ],
+   "cores_used_share": {
+    "0": 29,
+    "1": 22,
+    "2": 22,
+    "3": 28
+   },
+   "vol_ctx_per_s": 11,
+   "invol_ctx_per_s": 4,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "streamer": {
+   "pid": 52386,
+   "cpu_pct_mean": 5.8,
+   "cpu_pct_max": 8.0,
+   "threads": 15,
+   "top_thread_cpu_pct": [
+    4.6,
+    1.2,
+    0.1
+   ],
+   "cores_used_share": {
+    "0": 17,
+    "1": 20,
+    "2": 35,
+    "3": 28
+   },
+   "vol_ctx_per_s": 13,
+   "invol_ctx_per_s": 31,
+   "affinity": [
+    0,
+    1,
+    2,
+    3
+   ]
+  }
+ },
+ "cores_pct_mean": [
+  71.3,
+  65.9,
+  67.0,
+  65.5
+ ],
+ "soc_temp_c": [
+  65.55,
+  66.89291666666666,
+  68.3
+ ],
+ "cpu_mhz_mean": 1.9266666666666665,
+ "load_desktop_other_cpu_pct": null,
+ "pipeline_total_cpu_pct": 116.9,
+ "whole_system_cpu_pct": 269.7,
+ "other_cpu_pct_desktop_etc": 152.8,
+ "topics": {
+  "/landfill/livox/points": {
+   "hz_mean": 10.03,
+   "lat_mean_ms": 22.4
+  },
+  "/landfill/rgb/image_raw": {
+   "hz_mean": 10.06,
+   "lat_mean_ms": 38.0
+  },
+  "/landfill/thermal/image_raw": {
+   "hz_mean": 0.0,
+   "lat_mean_ms": 37.4
+  },
+  "/landfill/fusion/points_rgbt": {
+   "hz_mean": 10.02,
+   "lat_mean_ms": 46.1
+  },
+  "/landfill/fusion/points_merged": {
+   "hz_mean": 1.55,
+   "lat_mean_ms": 275.8
+  }
+ }
+}

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Root-cause fix for RGB images (and other large BEST_EFFORT messages --
+point clouds, thermal frames) measuring a fraction of their genuine
+publish rate on the subscriber side, despite the publishing node itself
+confirmed (via direct per-stage timing instrumentation) producing frames
+at the correct rate. A 1280x720 rgb8 frame is ~2.64MB; FastDDS's default
+UDP transport fragments this into dozens of datagrams, and this Pi's
+kernel socket buffer ceiling (net.core.rmem_max/wmem_max, confirmed via
+sysctl at only 212992 bytes -- ~208KB) is far too small to hold more than
+a handful of those fragments at once. Under any burst from the rest of
+this pipeline sharing the same loopback DDS transport (lidar point
+clouds, thermal frames, fused/merged clouds, all simultaneously), the
+kernel buffer overflows and silently drops fragments before FastDDS can
+reassemble the message -- BEST_EFFORT means a partially-received message
+is just dropped, not retried.
+
+This profile requests much larger UDP socket buffers from FastDDS. It
+only has full effect once the kernel's own ceiling is also raised (see
+the sysctl command given alongside this file) -- a request larger than
+the kernel allows is silently capped back down to the kernel maximum, so
+this profile alone is necessary-but-not-sufficient; both halves are
+needed together. Builtin transports (including shared memory, used for
+some same-host traffic) are left enabled -- this only adds a
+better-sized UDP transport alongside them, not replacing anything.
+-->
+<dds xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <profiles>
+    <transport_descriptors>
+      <transport_descriptor>
+        <transport_id>udp_large_buffers</transport_id>
+        <type>UDPv4</type>
+        <sendBufferSize>4194304</sendBufferSize>
+        <receiveBufferSize>4194304</receiveBufferSize>
+        <maxMessageSize>65500</maxMessageSize>
+      </transport_descriptor>
+    </transport_descriptors>
+    <participant profile_name="pitfusion3d_large_buffers" is_default_profile="true">
+      <rtps>
+        <userTransports>
+          <transport_id>udp_large_buffers</transport_id>
+        </userTransports>
+        <useBuiltinTransports>true</useBuiltinTransports>
+      </rtps>
+    </participant>
+  </profiles>
+</dds>

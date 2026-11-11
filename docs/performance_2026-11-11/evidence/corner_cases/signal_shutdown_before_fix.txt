@@ -1,0 +1,8 @@
+thermal    SIGINT   -> exited in  0.4s
+merge      SIGINT   -> exited in  0.5s
+streamer   SIGINT   -> exited in  0.5s
+fusion     SIGINT   -> exited in  0.5s
+thermal    SIGTERM  -> exited in  0.5s
+merge      SIGTERM  -> exited in  0.4s
+streamer   SIGTERM  -> exited in  0.5s
+fusion     SIGTERM  -> exited in  0.4s

@@ -21,4 +21,6 @@ export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 source /opt/ros/jazzy/setup.bash
 source /home/vish/ros2_ws/install/setup.bash
 
+# Fast DDS leaves ~0.5GB of shared memory behind per unclean shutdown; clear stale segments before starting.
+python3 /home/vish/ros2_ws/src/pitfusion3d_bringup/scripts/clean_stale_shm.py || true
 exec ros2 launch pitfusion3d_bringup pitfusion3d_full.launch.py

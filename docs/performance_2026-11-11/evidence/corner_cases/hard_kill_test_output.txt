@@ -1,0 +1,5 @@
+=== whole-service hard kill (SIGKILL every process in the cgroup), x2 ===
+crash 1: SIGKILLed 10 processes; merged data back after 26s; service active; nodes 10; rpicam-vid 1; /dev/shm 542MB -> 542MB; NRestarts=1
+crash 2: SIGKILLed 10 processes; merged data back after 25s; service active; nodes 10; rpicam-vid 1; /dev/shm 542MB -> 542MB; NRestarts=2
+precise check after the second crash (note: the 'nodes N' figures above are a loose pgrep that also counts the checking shell; this is the exact count):
+  node types running: 8 / 8; copies of each: {'thermal_camera_node': 2, 'livox_ros2_avia_node': 1, 'livox_restamp_node': 1, 'calibration_publisher': 1, 'rgb_camera_node': 1, 'sensor_fusion_node': 1, 'registration_merge_node': 1, 'fusion_web_streamer': 1}

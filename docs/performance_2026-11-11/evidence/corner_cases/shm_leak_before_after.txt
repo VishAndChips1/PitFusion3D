@@ -1,0 +1,8 @@
+Shared-memory leak after unclean shutdowns (values transcribed from console output during the 2026-11-11 session;
+the live regenerated run is in hard_kill_test_output.txt).
+BEFORE the cleanup script (after the node-crash and restart tests):
+  /dev/shm: 1363 MB in 173 files; 139 files / 821 MB were stale (not mapped by any running process)
+clean_stale_shm.py (dry run): "would remove 107 stale fastrtps shm files (861 MB), kept 64 in use"; run for real: removed 107 files (861 MB)
+  /dev/shm after: 542 MB, available RAM 3190 MB -> 3721 MB, viewer still HTTP 200
+AFTER (cleanup runs from run_pipeline.sh on every start): whole service SIGKILLed twice ->
+  /dev/shm 542 MB -> 542 MB -> 542 MB (flat), 82 files, service auto-restarted each time

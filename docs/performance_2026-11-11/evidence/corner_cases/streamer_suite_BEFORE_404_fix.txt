@@ -1,0 +1,16 @@
+[PASS] S1 request BEFORE any data -> valid empty payload              status=200 n=0
+[PASS] S2 viewer page loads                                           14528 bytes
+Traceback (most recent call last):
+  File "/home/vish/thesis_tests/corner_cases_20261111/t_streamer.py", line 37, in <module>
+    s,_,_=get('/nonexistent'); check('S3 unknown path -> 404', s==404, f'status={s}')
+          ^^^^^^^^^^^^^^^^^^^
+  File "/home/vish/thesis_tests/corner_cases_20261111/t_streamer.py", line 26, in get
+    c.request('GET',path,headers=h); r=c.getresponse(); body=r.read(); return r.status, r.getheader('ETag'), body
+                                                             ^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 497, in read
+    s = self.fp.read()
+        ^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socket.py", line 707, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: timed out

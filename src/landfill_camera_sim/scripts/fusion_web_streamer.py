@@ -32,6 +32,7 @@ import http.server
 import os
 import socketserver
 import struct
+import sys
 import threading
 
 import numpy as np
@@ -370,6 +371,14 @@ class _ReusableThreadingTCPServer(socketserver.ThreadingTCPServer):
     # fails to rebind the port for ~a minute while it's in TIME_WAIT.
     allow_reuse_address = True
 
+    def handle_error(self, request, client_address):
+        # A viewer that drops off flaky WiFi / closes its tab mid-request is
+        # routine; socketserver would otherwise print a full traceback each.
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionError, TimeoutError)):
+            return
+        super().handle_error(request, client_address)
+
 
 class _StreamState:
     """One (buffer, sequence number) slot per served point cloud source.
@@ -383,6 +392,31 @@ class _StreamState:
         self.lock = threading.Lock()
         self.buffer = gzip.compress(struct.pack('<II', 0, 0), compresslevel=6)
         self.seq = 0
+        # Lazy encoding: the ROS callback only remembers the newest cloud;
+        # quantize+gzip happens at most once per cloud, and only when an
+        # HTTP client actually asks for newer data. With no viewer
+        # connected this costs nothing (it used to encode every cloud at
+        # 10Hz regardless -- ~27% of a core measured idle).
+        self.encode_lock = threading.Lock()
+        self.latest_msg = None
+        self.latest_id = 0
+        self.encoded_id = 0
+        self.encoder = None
+
+    def offer(self, msg):
+        self.latest_msg = msg
+        self.latest_id += 1
+
+    def refresh(self):
+        if self.encoder is None or self.latest_id == self.encoded_id:
+            return
+        with self.encode_lock:
+            lid, msg = self.latest_id, self.latest_msg
+            if msg is None or lid == self.encoded_id:
+                return
+            n, payload = self.encoder(msg)
+            self.set_payload(n, payload)
+            self.encoded_id = lid
 
     def set_payload(self, n_points, payload_bytes):
         # Compressed once here, per actual data update (~1-10Hz), not
@@ -488,6 +522,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         # buys (see _encode_cloud). Content-Encoding: gzip means the
         # browser decompresses transparently inside fetch(); no client-
         # side change needed to receive the benefit.
+        try:
+            stream_state.refresh()
+        except Exception:
+            pass  # serve the previous payload rather than fail the request
         body, seq = stream_state.get_buffer_and_seq()
         etag = f'"{seq}"'
         if self.headers.get('If-None-Match') == etag:
@@ -520,7 +558,11 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             body, content_type = self.static_assets[self.path]
             self._serve_bytes(body, content_type)
         else:
+            # Content-Length is required under HTTP/1.1 keep-alive: without it
+            # the client waits for a body that never comes (every browser's
+            # automatic /favicon.ico request hung until the 30s timeout).
             self.send_response(404)
+            self.send_header('Content-Length', '0')
             self.end_headers()
 
 
@@ -676,6 +718,9 @@ class FusionWebStreamer(Node):
 
         self._rng = np.random.default_rng(0)
         self._state = _SharedState()
+        _rng_merged, _rng_live = np.random.default_rng(0), np.random.default_rng(1)
+        self._state.merged.encoder = lambda m: _encode_cloud(m, self._max_points_merged, _rng_merged)
+        self._state.live.encoder = lambda m: _encode_cloud(m, self._max_points_live, _rng_live)
         static_assets = _load_static_assets()
         handler = type(
             'BoundHandler', (_Handler,),
@@ -713,18 +758,10 @@ class FusionWebStreamer(Node):
         # kill this entire node -- dropping the web viewer along with it
         # -- rather than just skipping one update and keeping whatever
         # was already being served.
-        try:
-            n, payload = _encode_cloud(msg, self._max_points_merged, self._rng)
-            self._state.merged.set_payload(n, payload)
-        except Exception as exc:
-            self.get_logger().error(f'Encoding merged cloud failed, skipping: {exc!r}')
+        self._state.merged.offer(msg)
 
     def _on_live(self, msg):
-        try:
-            n, payload = _encode_cloud(msg, self._max_points_live, self._rng)
-            self._state.live.set_payload(n, payload)
-        except Exception as exc:
-            self.get_logger().error(f'Encoding live cloud failed, skipping: {exc!r}')
+        self._state.live.offer(msg)
 
     def destroy_node(self):
         self._server.shutdown()
