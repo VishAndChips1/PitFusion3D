@@ -1,0 +1,41 @@
+[INFO] [1794467772.250649620] [sensor_fusion_node]: Fusing /landfill/livox/points + /landfill/rgb/image_raw + /landfill/thermal/image_raw -> /landfill/fusion/points_rgbt (slop 0.150s, shared rgb/thermal transform: False)
+[WARN] [1794467778.285511754] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467778.305722595] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467787.457416817] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467787.487674346] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467789.472978218] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467789.484847331] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467791.460301407] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467791.494036025] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467793.486052498] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467793.509644357] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467795.452382204] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467795.476313060] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467797.352806639] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467797.495185901] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467799.347850170] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467799.476751869] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467801.349791641] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467801.480527715] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467803.449464387] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467803.483566349] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467805.456471634] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467805.485378911] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467808.649310561] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467808.676534534] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467815.673538625] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467817.684291140] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467824.652209613] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467826.706785678] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467833.652887315] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467857.280955344] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467873.668510885] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467873.710006322] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467880.875069567] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467880.906693254] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467888.070399398] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467888.113119901] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467895.251336707] [sensor_fusion_node]: Timestamps jumped backwards (1794467795.236 < 1794467893.935); clearing sync queues
+[WARN] [1794467904.476119357] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[INFO] [1794467904.496526157] [sensor_fusion_node]: Thermal fusion working again -- resuming full RGB+thermal fusion
+[WARN] [1794467913.646415837] [sensor_fusion_node]: Timestamps jumped backwards (1794467913.638 < 1794468112.337); clearing sync queues

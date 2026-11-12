@@ -1,0 +1,129 @@
+{
+ "wire": {
+  "points_rgbt": {
+   "points": 24000,
+   "ros_msg_bytes": 576000,
+   "wire_uncompressed_bytes": 264016,
+   "bytes_per_point": 11.000666666666667,
+   "ros_to_wire_ratio": 2.181685958426762,
+   "encode_ms": 7.3053240002991515,
+   "extent_m": [
+    3.0250000953674316,
+    2.9489998817443848,
+    2.253999948501587
+   ],
+   "quant_scale_mm": 0.09453124948777258,
+   "position_error_mm": {
+    "mean": 0.03404660891385933,
+    "rms": 0.03877796684746292,
+    "max": 0.07991141364859623,
+    "p99": 0.06993972842931027
+   },
+   "theoretical_max_error_mm": 0.08186646350789575,
+   "rgb_exact_match_frac": 1.0,
+   "thermal_valid_frac": 0.0,
+   "thermal_abs_error_counts": {
+    "mean": 0.0,
+    "rms": 0.0,
+    "max": 0.0,
+    "p99": 0.0
+   },
+   "thermal_sentinel_ok": true,
+   "gzip": {
+    "gzip1": {
+     "bytes": 106726,
+     "ratio": 2.4737739632329516,
+     "ms": 5.738371999996161
+    },
+    "gzip3": {
+     "bytes": 104769,
+     "ratio": 2.519982055760769,
+     "ms": 9.456681000301614
+    },
+    "gzip6": {
+     "bytes": 97888,
+     "ratio": 2.697123242889833,
+     "ms": 21.091126000101212
+    },
+    "gzip9": {
+     "bytes": 96978,
+     "ratio": 2.722431891769267,
+     "ms": 159.70723199961867
+    }
+   },
+   "encode_ms_cap5000": 2.370206999785296,
+   "wire_bytes_cap5000": 55016,
+   "encode_ms_cap20000": 6.628235999869503,
+   "wire_bytes_cap20000": 220016
+  },
+  "points_merged": {
+   "points": 84884,
+   "ros_msg_bytes": 2037216,
+   "wire_uncompressed_bytes": 933740,
+   "bytes_per_point": 11.000188492530983,
+   "ros_to_wire_ratio": 2.1817807955105275,
+   "encode_ms": 37.461449000147695,
+   "extent_m": [
+    3.076418399810791,
+    2.973219394683838,
+    2.3428125381469727
+   ],
+   "quant_scale_mm": 0.09613807924324647,
+   "position_error_mm": {
+    "mean": 0.04621256421719298,
+    "rms": 0.04809678876447134,
+    "max": 0.08199834268958008,
+    "p99": 0.07285665929942257
+   },
+   "theoretical_max_error_mm": 0.08325801889569288,
+   "rgb_exact_match_frac": 1.0,
+   "thermal_valid_frac": 0.0,
+   "thermal_abs_error_counts": {
+    "mean": 0.0,
+    "rms": 0.0,
+    "max": 0.0,
+    "p99": 0.0
+   },
+   "thermal_sentinel_ok": true,
+   "gzip": {
+    "gzip1": {
+     "bytes": 570546,
+     "ratio": 1.6365726865143213,
+     "ms": 30.003458999999566
+    },
+    "gzip3": {
+     "bytes": 559374,
+     "ratio": 1.6692588500716872,
+     "ms": 43.44078099984472
+    },
+    "gzip6": {
+     "bytes": 533426,
+     "ratio": 1.7504583578603217,
+     "ms": 125.29493400006686
+    },
+    "gzip9": {
+     "bytes": 527948,
+     "ratio": 1.7686211520831596,
+     "ms": 1001.4888400000928
+    }
+   },
+   "encode_ms_cap5000": 6.015758000103233,
+   "wire_bytes_cap5000": 55016,
+   "encode_ms_cap20000": 8.6871489997975,
+   "wire_bytes_cap20000": 220016,
+   "encode_ms_cap60000": 26.22372499990888,
+   "wire_bytes_cap60000": 660016
+  }
+ },
+ "restamp_window_jitter_ms": {
+  "n": 40,
+  "mean": 14.45625,
+  "max": 18.95
+ },
+ "restamp_offset_s": {
+  "n": 40,
+  "min": 1794460001.167847,
+  "max": 1794460001.168505
+ },
+ "merge_log_tail": "tration_merge_node.py-7] [INFO] [1794463579.153628248] [registration_merge_node]: Published merged cloud: 75396 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.53 Hz\ntration_merge_node.py-7] [INFO] [1794463579.814257046] [registration_merge_node]: Published merged cloud: 84762 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.51 Hz\ntration_merge_node.py-7] [INFO] [1794463580.395968129] [registration_merge_node]: Published merged cloud: 74968 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.72 Hz\ntration_merge_node.py-7] [INFO] [1794463581.150959120] [registration_merge_node]: Published merged cloud: 84684 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.32 Hz\ntration_merge_node.py-7] [INFO] [1794463581.712554356] [registration_merge_node]: Published merged cloud: 75725 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.78 Hz\ntration_merge_node.py-7] [INFO] [1794463582.349428971] [registration_merge_node]: Published merged cloud: 74817 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.57 Hz\ntration_merge_node.py-7] [INFO] [1794463582.911986218] [registration_merge_node]: Published merged cloud: 75368 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.78 Hz\ntration_merge_node.py-7] [INFO] [1794463583.515465164] [registration_merge_node]: Published merged cloud: 74163 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.66 Hz\ntration_merge_node.py-7] [INFO] [1794463584.210099334] [registration_merge_node]: Published merged cloud: 85662 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.44 Hz\ntration_merge_node.py-7] [INFO] [1794463584.937884587] [registration_merge_node]: Published merged cloud: 85208 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.37 Hz\ntration_merge_node.py-7] [INFO] [1794463585.608051631] [registration_merge_node]: Published merged cloud: 84884 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.49 Hz\ntration_merge_node.py-7] [INFO] [1794463586.193345626] [registration_merge_node]: Published merged cloud: 74395 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.71 Hz\ntration_merge_node.py-7] [INFO] [1794463586.795680101] [registration_merge_node]: Published merged cloud: 74991 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.66 Hz\ntration_merge_node.py-7] [INFO] [1794463587.536532128] [registration_merge_node]: Published merged cloud: 84294 pts (7 scans, 168000 raw pts, 0.60s window) @ 1.35 Hz\ntration_merge_node.py-7] [INFO] [1794463588.107531746] [registration_merge_node]: Published merged cloud: 74665 pts (6 scans, 144000 raw pts, 0.50s window) @ 1.75 Hz\n"
+}

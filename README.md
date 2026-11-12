@@ -44,6 +44,8 @@ Before/after measurements on the real Raspberry Pi 5 rig, the configuration sele
 
 **[docs/pipeline_audit_2026-11-12/](docs/pipeline_audit_2026-11-12/README.md)** - full pipeline audit, corner-case results, fixes (clock-step, merge buffer, thermal shutdown) and thermal-camera findings.
 
+**[docs/final_campaign_2026-11-12/](docs/final_campaign_2026-11-12/README.md)** - the full measurement campaign: [results report](docs/final_campaign_2026-11-12/FULL_RESULTS_REPORT.md), [code reference](docs/final_campaign_2026-11-12/CODE_REFERENCE.md), 20 [thesis figures](docs/final_campaign_2026-11-12/thesis_figures/CAPTIONS.md), and [LiDAR low-power control](docs/final_campaign_2026-11-12/LIDAR_POWER_MODE.md) (tool in `tools/lidar_ctl/`); thermal-camera watchdog in `tools/thermal_fix/`.
+
 Headline: RGB reaching fusion 3.6 -> 10 Hz, fused cloud 2.4 -> 10 Hz, merged cloud 0.66 -> 1.5 Hz, nodes respawn after a crash, and the viewer keeps working with the thermal camera down.
 
 ## Real hardware deployment

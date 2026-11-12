@@ -1,0 +1,3155 @@
+{
+ "totals": {
+  "files": 20,
+  "lines": 4104,
+  "code": 3110,
+  "comment": 478,
+  "blank": 516,
+  "functions": 134,
+  "classes": 21,
+  "params": 86
+ },
+ "other": {
+  "yaml": {
+   "files": 5,
+   "lines": 420
+  },
+  "xml": {
+   "files": 6,
+   "lines": 188
+  },
+  "json": {
+   "files": 4,
+   "lines": 209
+  },
+  "sh": {
+   "files": 4,
+   "lines": 189
+  },
+  "html": {
+   "files": 0,
+   "lines": 0
+  },
+  "md": {
+   "files": 7,
+   "lines": 881
+  },
+  "cfg": {
+   "files": 1,
+   "lines": 4
+  },
+  "txt": {
+   "files": 4,
+   "lines": 241
+  },
+  "cpp_vendor_driver": {
+   "files": 72,
+   "lines": 29134
+  }
+ },
+ "files": {
+  "landfill_camera_sim/scripts/calib_capture_pose.py": {
+   "path": "landfill_camera_sim/scripts/calib_capture_pose.py",
+   "lines": 83,
+   "code": 67,
+   "comment": 1,
+   "blank": 15,
+   "doc": "One-shot capture for thermal/lidar calibration: run once per pose.",
+   "classes": [
+    {
+     "name": "CalibCaptureNode",
+     "line": 24,
+     "methods": [
+      "__init__",
+      "_on_lidar",
+      "_on_thermal",
+      "_check_done"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "main",
+     "line": 55,
+     "length": 25,
+     "args": [],
+     "complexity": 6,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 25,
+     "length": 13,
+     "args": [
+      "self",
+      "duration"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CalibCaptureNode"
+    },
+    {
+     "name": "_on_lidar",
+     "line": 39,
+     "length": 4,
+     "args": [
+      "self",
+      "msg"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CalibCaptureNode"
+    },
+    {
+     "name": "_on_thermal",
+     "line": 44,
+     "length": 5,
+     "args": [
+      "self",
+      "msg"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CalibCaptureNode"
+    },
+    {
+     "name": "_check_done",
+     "line": 50,
+     "length": 3,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CalibCaptureNode"
+    }
+   ],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": [
+     {
+      "topic": "/landfill/livox/points",
+      "type": "PointCloud2",
+      "line": 30
+     },
+     {
+      "topic": "/landfill/thermal/image_raw",
+      "type": "Image",
+      "line": 33
+     }
+    ]
+   },
+   "threads": [],
+   "imports": [
+    "cloud_io",
+    "numpy",
+    "rclpy",
+    "sensor_msgs",
+    "sys",
+    "time"
+   ],
+   "qos_uses": 3,
+   "max_complexity": 6,
+   "mean_complexity": 2.6
+  },
+  "landfill_camera_sim/scripts/calib_solve.py": {
+   "path": "landfill_camera_sim/scripts/calib_solve.py",
+   "lines": 218,
+   "code": 161,
+   "comment": 26,
+   "blank": 31,
+   "doc": "Solve thermal-camera extrinsics/intrinsics from captured calibration poses.",
+   "classes": [],
+   "functions": [
+    {
+     "name": "_downsample",
+     "line": 38,
+     "length": 5,
+     "args": [
+      "points",
+      "cap"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "lidar_person_centroid",
+     "line": 45,
+     "length": 27,
+     "args": [
+      "baseline_xyz",
+      "pose_xyz",
+      "dist_thresh"
+     ],
+     "complexity": 5,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "thermal_person_centroid",
+     "line": 74,
+     "length": 38,
+     "args": [
+      "baseline_img",
+      "pose_img",
+      "percentile",
+      "min_blob",
+      "static_hot_percentile"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "project",
+     "line": 114,
+     "length": 7,
+     "args": [
+      "xyz",
+      "t",
+      "fx",
+      "fy",
+      "cx",
+      "cy"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "residuals",
+     "line": 123,
+     "length": 4,
+     "args": [
+      "params",
+      "lidar_pts",
+      "thermal_uv"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 129,
+     "length": 58,
+     "args": [],
+     "complexity": 8,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "_apply",
+     "line": 189,
+     "length": 26,
+     "args": [
+      "tx",
+      "ty",
+      "tz",
+      "fx",
+      "fy"
+     ],
+     "complexity": 13,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    }
+   ],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "glob",
+    "numpy",
+    "os",
+    "re",
+    "scipy",
+    "sys"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 13,
+   "mean_complexity": 4.71
+  },
+  "landfill_camera_sim/scripts/calibration_publisher.py": {
+   "path": "landfill_camera_sim/scripts/calibration_publisher.py",
+   "lines": 168,
+   "code": 142,
+   "comment": 1,
+   "blank": 25,
+   "doc": "",
+   "classes": [
+    {
+     "name": "CalibrationPublisher",
+     "line": 91,
+     "methods": [
+      "__init__",
+      "_build_transform",
+      "_on_timer"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "_package_path",
+     "line": 15,
+     "length": 2,
+     "args": [
+      "relative"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "load_extrinsics",
+     "line": 19,
+     "length": 24,
+     "args": [
+      "path"
+     ],
+     "complexity": 5,
+     "doc": "Read config/calibration/extrinsics.yaml.",
+     "doc_full": "Read config/calibration/extrinsics.yaml. Returns (reference_frame, [(child_frame, (x, y, z), (roll, pitch, yaw)), ...]).",
+     "parent": null
+    },
+    {
+     "name": "load_camera_intrinsics",
+     "line": 45,
+     "length": 30,
+     "args": [
+      "path",
+      "camera_key"
+     ],
+     "complexity": 6,
+     "doc": "Read one camera's block (rgb_camera/thermal_camera) from intrinsics.yaml.",
+     "doc_full": "Read one camera's block (rgb_camera/thermal_camera) from intrinsics.yaml.",
+     "parent": null
+    },
+    {
+     "name": "make_camera_info",
+     "line": 77,
+     "length": 12,
+     "args": [
+      "intrinsics",
+      "frame_id"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 154,
+     "length": 11,
+     "args": [],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 92,
+     "length": 38,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CalibrationPublisher"
+    },
+    {
+     "name": "_build_transform",
+     "line": 132,
+     "length": 13,
+     "args": [
+      "parent_frame",
+      "child_frame",
+      "x",
+      "y",
+      "z",
+      "roll",
+      "pitch",
+      "yaw"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CalibrationPublisher"
+    },
+    {
+     "name": "_on_timer",
+     "line": 146,
+     "length": 6,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CalibrationPublisher"
+    }
+   ],
+   "params": [
+    {
+     "name": "extrinsics_path",
+     "default": "_package_path('config/calibration/extrinsics.yaml')",
+     "line": 95
+    },
+    {
+     "name": "intrinsics_path",
+     "default": "_package_path('config/calibration/intrinsics.yaml')",
+     "line": 96
+    },
+    {
+     "name": "image_frame_id",
+     "default": "camera_platform/camera_link",
+     "line": 97
+    },
+    {
+     "name": "rgb_camera_info_topic",
+     "default": "/landfill/rgb/camera_info",
+     "line": 98
+    },
+    {
+     "name": "thermal_camera_info_topic",
+     "default": "/landfill/thermal/camera_info",
+     "line": 99
+    },
+    {
+     "name": "publish_rate",
+     "default": 30.0,
+     "line": 100
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "rgb_topic",
+      "type": "CameraInfo",
+      "line": 121
+     },
+     {
+      "topic": "thermal_topic",
+      "type": "CameraInfo",
+      "line": 122
+     }
+    ],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "ament_index_python",
+    "geometry_msgs",
+    "rclpy",
+    "scipy",
+    "sensor_msgs",
+    "tf2_ros",
+    "yaml"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 6,
+   "mean_complexity": 2.5
+  },
+  "landfill_camera_sim/scripts/cloud_io.py": {
+   "path": "landfill_camera_sim/scripts/cloud_io.py",
+   "lines": 110,
+   "code": 94,
+   "comment": 2,
+   "blank": 14,
+   "doc": "Zero-copy PointCloud2 <-> numpy helpers.",
+   "classes": [],
+   "functions": [
+    {
+     "name": "structured_view",
+     "line": 28,
+     "length": 23,
+     "args": [
+      "msg"
+     ],
+     "complexity": 5,
+     "doc": "View msg.data as a structured array honouring the real field offsets.",
+     "doc_full": "View msg.data as a structured array honouring the real field offsets. Zero-copy: padded layouts (e.g. gz-sim's 32-byte stride) are described by the dtype's itemsize rather than being repacked.",
+     "parent": null
+    },
+    {
+     "name": "read_fields",
+     "line": 53,
+     "length": 38,
+     "args": [
+      "msg",
+      "field_names",
+      "dtype"
+     ],
+     "complexity": 10,
+     "doc": "Return an (N, len(field_names)) array of the requested fields.",
+     "doc_full": "Return an (N, len(field_names)) array of the requested fields. When the fields are consecutive float32 values (the layout every cloud in this package uses) the whole block is taken as one strided slice, which costs a single bulk copy instead of one gather per field.",
+     "parent": null
+    },
+    {
+     "name": "make_cloud",
+     "line": 93,
+     "length": 18,
+     "args": [
+      "header",
+      "field_names",
+      "payload"
+     ],
+     "complexity": 2,
+     "doc": "Build a dense PointCloud2 from an (N, F) float32 array.",
+     "doc_full": "Build a dense PointCloud2 from an (N, F) float32 array.",
+     "parent": null
+    }
+   ],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "numpy",
+    "sensor_msgs"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 10,
+   "mean_complexity": 5.67
+  },
+  "landfill_camera_sim/scripts/fusion_web_streamer.py": {
+   "path": "landfill_camera_sim/scripts/fusion_web_streamer.py",
+   "lines": 802,
+   "code": 598,
+   "comment": 132,
+   "blank": 72,
+   "doc": "Serve the fused RGB+thermal point cloud to any browser on the network.",
+   "classes": [
+    {
+     "name": "_ReusableThreadingTCPServer",
+     "line": 370,
+     "methods": [
+      "handle_error"
+     ],
+     "doc": ""
+    },
+    {
+     "name": "_StreamState",
+     "line": 384,
+     "methods": [
+      "__init__",
+      "offer",
+      "refresh",
+      "set_payload",
+      "get_buffer_and_seq"
+     ],
+     "doc": "One (buffer, sequence number) slot per served point cloud source."
+    },
+    {
+     "name": "_SharedState",
+     "line": 440,
+     "methods": [
+      "__init__"
+     ],
+     "doc": ""
+    },
+    {
+     "name": "_Handler",
+     "line": 446,
+     "methods": [
+      "log_message",
+      "_serve_bytes",
+      "_serve_cloud",
+      "do_GET"
+     ],
+     "doc": ""
+    },
+    {
+     "name": "FusionWebStreamer",
+     "line": 652,
+     "methods": [
+      "__init__",
+      "_on_param_change",
+      "_on_merged",
+      "_on_live",
+      "destroy_node"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "_encode_cloud",
+     "line": 573,
+     "length": 56,
+     "args": [
+      "msg",
+      "max_points",
+      "rng"
+     ],
+     "complexity": 3,
+     "doc": "Pack a cloud into a compact quantized wire format.",
+     "doc_full": "Pack a cloud into a compact quantized wire format. Was 7 x float32 = 28 bytes/point. Over a real WiFi link (hotspot or a router-mediated LAN), transfer time of that payload -- not the pipeline's own production rate -- turned out to be the actual bottleneck on the viewer's observed refresh rate (measured: pipeline producing merged clouds at ~1.4Hz internally, browser only seeing ~0.7Hz). Point position only needs to b",
+     "parent": null
+    },
+    {
+     "name": "_load_static_assets",
+     "line": 634,
+     "length": 16,
+     "args": [],
+     "complexity": 3,
+     "doc": "Read three.min.js/OrbitControls.js off disk once at startup.",
+     "doc_full": "Read three.min.js/OrbitControls.js off disk once at startup. See this module's docstring for why these are files here instead of CDN URLs in the page.",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 788,
+     "length": 11,
+     "args": [],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "handle_error",
+     "line": 375,
+     "length": 7,
+     "args": [
+      "self",
+      "request",
+      "client_address"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_ReusableThreadingTCPServer"
+    },
+    {
+     "name": "__init__",
+     "line": 392,
+     "length": 14,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_StreamState"
+    },
+    {
+     "name": "offer",
+     "line": 407,
+     "length": 3,
+     "args": [
+      "self",
+      "msg"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_StreamState"
+    },
+    {
+     "name": "refresh",
+     "line": 411,
+     "length": 10,
+     "args": [
+      "self"
+     ],
+     "complexity": 6,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_StreamState"
+    },
+    {
+     "name": "set_payload",
+     "line": 422,
+     "length": 12,
+     "args": [
+      "self",
+      "n_points",
+      "payload_bytes"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_StreamState"
+    },
+    {
+     "name": "get_buffer_and_seq",
+     "line": 435,
+     "length": 3,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_StreamState"
+    },
+    {
+     "name": "__init__",
+     "line": 441,
+     "length": 3,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_SharedState"
+    },
+    {
+     "name": "log_message",
+     "line": 490,
+     "length": 2,
+     "args": [
+      "self",
+      "format_"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_Handler"
+    },
+    {
+     "name": "_serve_bytes",
+     "line": 493,
+     "length": 11,
+     "args": [
+      "self",
+      "body",
+      "content_type"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_Handler"
+    },
+    {
+     "name": "_serve_cloud",
+     "line": 505,
+     "length": 45,
+     "args": [
+      "self",
+      "stream_state"
+     ],
+     "complexity": 4,
+     "doc": "Conditional GET keyed on the stream's sequence number.",
+     "doc_full": "Conditional GET keyed on the stream's sequence number. Point clouds only actually change at ~1-10Hz while browsers poll faster than that (to catch an update quickly once it lands), so most polls would otherwise re-download an unchanged multi-hundred- KB payload for nothing -- fatal to reliability on a real WiFi link (this is the difference between the viewer being unusable and smooth from another room). Standard HTTP",
+     "parent": "_Handler"
+    },
+    {
+     "name": "do_GET",
+     "line": 551,
+     "length": 17,
+     "args": [
+      "self"
+     ],
+     "complexity": 6,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_Handler"
+    },
+    {
+     "name": "__init__",
+     "line": 653,
+     "length": 104,
+     "args": [
+      "self"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": "FusionWebStreamer"
+    },
+    {
+     "name": "_on_param_change",
+     "line": 758,
+     "length": 11,
+     "args": [
+      "self",
+      "params"
+     ],
+     "complexity": 8,
+     "doc": "",
+     "doc_full": "",
+     "parent": "FusionWebStreamer"
+    },
+    {
+     "name": "_on_merged",
+     "line": 770,
+     "length": 9,
+     "args": [
+      "self",
+      "msg"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "FusionWebStreamer"
+    },
+    {
+     "name": "_on_live",
+     "line": 780,
+     "length": 2,
+     "args": [
+      "self",
+      "msg"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "FusionWebStreamer"
+    },
+    {
+     "name": "destroy_node",
+     "line": 783,
+     "length": 3,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "FusionWebStreamer"
+    }
+   ],
+   "params": [
+    {
+     "name": "merged_topic",
+     "default": "/landfill/fusion/points_merged",
+     "line": 656
+    },
+    {
+     "name": "live_topic",
+     "default": "/landfill/fusion/points_rgbt",
+     "line": 657
+    },
+    {
+     "name": "http_port",
+     "default": 8080,
+     "line": 658
+    },
+    {
+     "name": "max_points_merged",
+     "default": 20000,
+     "line": 700
+    },
+    {
+     "name": "max_points_live",
+     "default": 5000,
+     "line": 701
+    },
+    {
+     "name": "input_topic",
+     "default": "",
+     "line": 704
+    },
+    {
+     "name": "http_keepalive",
+     "default": true,
+     "line": 710
+    }
+   ],
+   "topics": {
+    "pub": [],
+    "sub": [
+     {
+      "topic": "merged_topic",
+      "type": "PointCloud2",
+      "line": 745
+     },
+     {
+      "topic": "live_topic",
+      "type": "PointCloud2",
+      "line": 748
+     }
+    ]
+   },
+   "threads": [
+    {
+     "kind": "threading.Thread",
+     "line": 740,
+     "target": "self._server.serve_forever"
+    }
+   ],
+   "imports": [
+    "gzip",
+    "http",
+    "numpy",
+    "os",
+    "rcl_interfaces",
+    "rclpy",
+    "sensor_msgs",
+    "sensor_msgs_py",
+    "socketserver",
+    "struct",
+    "sys",
+    "threading"
+   ],
+   "qos_uses": 3,
+   "max_complexity": 8,
+   "mean_complexity": 2.68
+  },
+  "landfill_camera_sim/scripts/livox_pattern_filter.py": {
+   "path": "landfill_camera_sim/scripts/livox_pattern_filter.py",
+   "lines": 342,
+   "code": 276,
+   "comment": 15,
+   "blank": 51,
+   "doc": "Resample a gz-sim gpu_lidar grid into the real Livox Avia scan pattern.",
+   "classes": [
+    {
+     "name": "LivoxPatternFilter",
+     "line": 81,
+     "methods": [
+      "__init__",
+      "_angle_to_grid_coord",
+      "_detect_row_direction",
+      "_on_points",
+      "_sample_range"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "_pattern_cache_path",
+     "line": 44,
+     "length": 5,
+     "args": [
+      "csv_path"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "_load_scan_pattern",
+     "line": 51,
+     "length": 28,
+     "args": [
+      "csv_path"
+     ],
+     "complexity": 9,
+     "doc": "Load (azimuth, zenith) radians from a Livox-SDK scan_mode CSV.",
+     "doc_full": "Load (azimuth, zenith) radians from a Livox-SDK scan_mode CSV. The Avia table is ~960k rows / 34 MB; parsing it costs seconds, so the converted array is cached as .npy and reused whenever it is newer than the CSV.",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 328,
+     "length": 11,
+     "args": [],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 82,
+     "length": 101,
+     "args": [
+      "self"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": "LivoxPatternFilter"
+    },
+    {
+     "name": "_angle_to_grid_coord",
+     "line": 185,
+     "length": 6,
+     "args": [
+      "angle",
+      "min_angle",
+      "max_angle",
+      "sample_count"
+     ],
+     "complexity": 3,
+     "doc": "Map an angle to a fractional grid coordinate in [0, sample_count-1].",
+     "doc_full": "Map an angle to a fractional grid coordinate in [0, sample_count-1].",
+     "parent": "LivoxPatternFilter"
+    },
+    {
+     "name": "_detect_row_direction",
+     "line": 192,
+     "length": 14,
+     "args": [
+      "self",
+      "ranges",
+      "grid_z"
+     ],
+     "complexity": 4,
+     "doc": "Determine whether grid row 0 is the bottom or the top of the FOV.",
+     "doc_full": "Determine whether grid row 0 is the bottom or the top of the FOV.",
+     "parent": "LivoxPatternFilter"
+    },
+    {
+     "name": "_on_points",
+     "line": 207,
+     "length": 67,
+     "args": [
+      "self",
+      "cloud_msg"
+     ],
+     "complexity": 8,
+     "doc": "",
+     "doc_full": "",
+     "parent": "LivoxPatternFilter"
+    },
+    {
+     "name": "_sample_range",
+     "line": 275,
+     "length": 51,
+     "args": [
+      "self",
+      "ranges",
+      "col_f",
+      "row_f"
+     ],
+     "complexity": 1,
+     "doc": "Bilinearly interpolate the range image at fractional grid coords.",
+     "doc_full": "Bilinearly interpolate the range image at fractional grid coords.",
+     "parent": "LivoxPatternFilter"
+    }
+   ],
+   "params": [
+    {
+     "name": "input_points_topic",
+     "default": "/landfill/livox/raw_scan/points",
+     "line": 94
+    },
+    {
+     "name": "output_points_topic",
+     "default": "/landfill/livox/points",
+     "line": 95
+    },
+    {
+     "name": "frame_id",
+     "default": "camera_platform/camera_link",
+     "line": 96
+    },
+    {
+     "name": "horizontal_samples",
+     "default": 200,
+     "line": 97
+    },
+    {
+     "name": "vertical_samples",
+     "default": 120,
+     "line": 98
+    },
+    {
+     "name": "points_per_scan",
+     "default": 24000,
+     "line": 99
+    },
+    {
+     "name": "downsample",
+     "default": 1,
+     "line": 100
+    },
+    {
+     "name": "horizontal_min_angle",
+     "default": -0.614356,
+     "line": 101
+    },
+    {
+     "name": "horizontal_max_angle",
+     "default": 0.614356,
+     "line": 102
+    },
+    {
+     "name": "vertical_min_angle",
+     "default": -0.673697,
+     "line": 103
+    },
+    {
+     "name": "vertical_max_angle",
+     "default": 0.673697,
+     "line": 104
+    },
+    {
+     "name": "range_min",
+     "default": 0.1,
+     "line": 105
+    },
+    {
+     "name": "range_max",
+     "default": 200.0,
+     "line": 106
+    },
+    {
+     "name": "scan_pattern_csv",
+     "default": "default_csv",
+     "line": 107
+    },
+    {
+     "name": "interpolation_depth_tolerance",
+     "default": 0.5,
+     "line": 111
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "self.output_points_topic",
+      "type": "PointCloud2",
+      "line": 164
+     }
+    ],
+    "sub": [
+     {
+      "topic": "self.input_points_topic",
+      "type": "PointCloud2",
+      "line": 165
+     }
+    ]
+   },
+   "threads": [],
+   "imports": [
+    "ament_index_python",
+    "cloud_io",
+    "hashlib",
+    "math",
+    "numpy",
+    "os",
+    "pathlib",
+    "rclpy",
+    "sensor_msgs"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 9,
+   "mean_complexity": 4.0
+  },
+  "landfill_camera_sim/scripts/platform_motion_controller.py": {
+   "path": "landfill_camera_sim/scripts/platform_motion_controller.py",
+   "lines": 86,
+   "code": 67,
+   "comment": 1,
+   "blank": 18,
+   "doc": "",
+   "classes": [
+    {
+     "name": "PlatformMotionController",
+     "line": 11,
+     "methods": [
+      "__init__",
+      "_publish_command"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "main",
+     "line": 69,
+     "length": 14,
+     "args": [],
+     "complexity": 4,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 12,
+     "length": 35,
+     "args": [
+      "self"
+     ],
+     "complexity": 5,
+     "doc": "",
+     "doc_full": "",
+     "parent": "PlatformMotionController"
+    },
+    {
+     "name": "_publish_command",
+     "line": 48,
+     "length": 19,
+     "args": [
+      "self"
+     ],
+     "complexity": 5,
+     "doc": "",
+     "doc_full": "",
+     "parent": "PlatformMotionController"
+    }
+   ],
+   "params": [
+    {
+     "name": "cmd_topic",
+     "default": "/landfill/platform/cmd_vel",
+     "line": 15
+    },
+    {
+     "name": "axis",
+     "default": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "line": 16
+    },
+    {
+     "name": "travel_distance",
+     "default": 8.0,
+     "line": 17
+    },
+    {
+     "name": "linear_speed",
+     "default": 0.35,
+     "line": 18
+    },
+    {
+     "name": "angular_speed",
+     "default": 0.18,
+     "line": 19
+    },
+    {
+     "name": "update_rate",
+     "default": 20.0,
+     "line": 20
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "self.cmd_topic",
+      "type": "Twist",
+      "line": 40
+     }
+    ],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "geometry_msgs",
+    "math",
+    "rclpy"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 5,
+   "mean_complexity": 4.67
+  },
+  "landfill_camera_sim/scripts/registration_merge_node.py": {
+   "path": "landfill_camera_sim/scripts/registration_merge_node.py",
+   "lines": 403,
+   "code": 294,
+   "comment": 53,
+   "blank": 56,
+   "doc": "Merge a rolling window of fused (RGB+thermal-colored) lidar scans.",
+   "classes": [
+    {
+     "name": "RegistrationMergeNode",
+     "line": 115,
+     "methods": [
+      "__init__",
+      "_on_cloud",
+      "_finite_points",
+      "_reset_window_if_clock_rewound",
+      "_window_is_complete",
+      "_submit_window",
+      "_worker_loop",
+      "_subsample",
+      "_register_and_publish"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "voxel_downsample_indices",
+     "line": 32,
+     "length": 22,
+     "args": [
+      "xyz",
+      "voxel_size"
+     ],
+     "complexity": 4,
+     "doc": "Indices of one representative point per voxel.",
+     "doc_full": "Indices of one representative point per voxel. Hashes the 3 integer voxel coordinates into a single int64 key so the dedupe is a 1-D sort; np.unique(..., axis=0) instead lexsorts an (N, 3) array, which is markedly slower for the ~1e5-point clouds seen here.",
+     "parent": null
+    },
+    {
+     "name": "_kabsch",
+     "line": 56,
+     "length": 13,
+     "args": [
+      "source",
+      "target"
+     ],
+     "complexity": 1,
+     "doc": "Rigid R, t minimizing ||target - (source @ R.T + t)||^2.",
+     "doc_full": "Rigid R, t minimizing ||target - (source @ R.T + t)||^2.",
+     "parent": null
+    },
+    {
+     "name": "icp_point_to_point",
+     "line": 76,
+     "length": 37,
+     "args": [
+      "source_xyz",
+      "target_xyz",
+      "max_iterations",
+      "max_correspondence_dist",
+      "min_correspondences",
+      "workers"
+     ],
+     "complexity": 9,
+     "doc": "Point-to-point ICP. Returns (R, t, converged) aligning source onto target.",
+     "doc_full": "Point-to-point ICP. Returns (R, t, converged) aligning source onto target.",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 389,
+     "length": 11,
+     "args": [],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 116,
+     "length": 91,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RegistrationMergeNode"
+    },
+    {
+     "name": "_on_cloud",
+     "line": 208,
+     "length": 13,
+     "args": [
+      "self",
+      "msg"
+     ],
+     "complexity": 4,
+     "doc": "Accumulate one fused scan; hand the window to the worker when it is complete.",
+     "doc_full": "Accumulate one fused scan; hand the window to the worker when it is complete.",
+     "parent": "RegistrationMergeNode"
+    },
+    {
+     "name": "_finite_points",
+     "line": 223,
+     "length": 13,
+     "args": [
+      "msg"
+     ],
+     "complexity": 4,
+     "doc": "Return the cloud's (N, 6) array without non-finite points, or None if nothing is left.",
+     "doc_full": "Return the cloud's (N, 6) array without non-finite points, or None if nothing is left. Defence in depth: fusion already drops non-finite points, but one NaN reaching ICP/SVD used to discard the whole 5-scan window.",
+     "parent": "RegistrationMergeNode"
+    },
+    {
+     "name": "_reset_window_if_clock_rewound",
+     "line": 237,
+     "length": 16,
+     "args": [
+      "self",
+      "stamp_sec"
+     ],
+     "complexity": 3,
+     "doc": "Start a fresh window if stamps jumped backwards by more than 1 s.",
+     "doc_full": "Start a fresh window if stamps jumped backwards by more than 1 s. A sim restart rewinds the clock; without this the window never closes again because stamp_sec stays below the stale start. The 1 s tolerance (matching sensor_fusion_node.py) is deliberate: this Pi has no battery-backed RTC, so NTP steps the clock after every boot, and small backward jitter used to reset the window every few seconds, tanking the merged ",
+     "parent": "RegistrationMergeNode"
+    },
+    {
+     "name": "_window_is_complete",
+     "line": 254,
+     "length": 4,
+     "args": [
+      "self",
+      "stamp_sec"
+     ],
+     "complexity": 2,
+     "doc": "A window closes when its scans span window_duration, or at the safety scan cap.",
+     "doc_full": "A window closes when its scans span window_duration, or at the safety scan cap.",
+     "parent": "RegistrationMergeNode"
+    },
+    {
+     "name": "_submit_window",
+     "line": 259,
+     "length": 30,
+     "args": [
+      "self"
+     ],
+     "complexity": 5,
+     "doc": "Hand the closed window to the worker thread, replacing a stale waiting one.",
+     "doc_full": "Hand the closed window to the worker thread, replacing a stale waiting one. Registration is real numerical code with edge cases (degenerate or NaN input); it runs in the worker inside a try/except so one bad window never kills the node (systemd's restart is only a much slower backstop).",
+     "parent": "RegistrationMergeNode"
+    },
+    {
+     "name": "_worker_loop",
+     "line": 290,
+     "length": 15,
+     "args": [
+      "self"
+     ],
+     "complexity": 5,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RegistrationMergeNode"
+    },
+    {
+     "name": "_subsample",
+     "line": 306,
+     "length": 4,
+     "args": [
+      "self",
+      "xyz",
+      "limit"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RegistrationMergeNode"
+    },
+    {
+     "name": "_register_and_publish",
+     "line": 311,
+     "length": 76,
+     "args": [
+      "self",
+      "buffer"
+     ],
+     "complexity": 7,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RegistrationMergeNode"
+    }
+   ],
+   "params": [
+    {
+     "name": "input_topic",
+     "default": "/landfill/fusion/points_rgbt",
+     "line": 119
+    },
+    {
+     "name": "output_topic",
+     "default": "/landfill/fusion/points_merged",
+     "line": 120
+    },
+    {
+     "name": "window_duration",
+     "default": 1.0,
+     "line": 121
+    },
+    {
+     "name": "icp_voxel_size",
+     "default": 0.2,
+     "line": 140
+    },
+    {
+     "name": "max_icp_iterations",
+     "default": 10,
+     "line": 141
+    },
+    {
+     "name": "max_correspondence_distance",
+     "default": 0.5,
+     "line": 142
+    },
+    {
+     "name": "min_correspondences",
+     "default": 200,
+     "line": 143
+    },
+    {
+     "name": "output_voxel_size",
+     "default": 0.01,
+     "line": 147
+    },
+    {
+     "name": "max_icp_target_points",
+     "default": 10000,
+     "line": 150
+    },
+    {
+     "name": "max_icp_source_points",
+     "default": 1500,
+     "line": 154
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "output_topic",
+      "type": "PointCloud2",
+      "line": 196
+     }
+    ],
+    "sub": [
+     {
+      "topic": "input_topic",
+      "type": "PointCloud2",
+      "line": 199
+     }
+    ]
+   },
+   "threads": [
+    {
+     "kind": "threading.Thread",
+     "line": 190,
+     "target": "self._worker_loop"
+    }
+   ],
+   "imports": [
+    "cloud_io",
+    "numpy",
+    "queue",
+    "rclpy",
+    "scipy",
+    "sensor_msgs",
+    "std_msgs",
+    "threading",
+    "time"
+   ],
+   "qos_uses": 3,
+   "max_complexity": 9,
+   "mean_complexity": 3.92
+  },
+  "landfill_camera_sim/scripts/scene_traffic_controller.py": {
+   "path": "landfill_camera_sim/scripts/scene_traffic_controller.py",
+   "lines": 131,
+   "code": 100,
+   "comment": 6,
+   "blank": 25,
+   "doc": "Drive the scene's background vehicles around looping routes.",
+   "classes": [
+    {
+     "name": "Vehicle",
+     "line": 41,
+     "methods": [
+      "__init__",
+      "step"
+     ],
+     "doc": "Dead-reckoned pose plus a turn-then-drive route follower."
+    },
+    {
+     "name": "SceneTrafficController",
+     "line": 85,
+     "methods": [
+      "__init__",
+      "_on_timer"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "_wrap_to_pi",
+     "line": 37,
+     "length": 2,
+     "args": [
+      "angle"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 117,
+     "length": 11,
+     "args": [],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 49,
+     "length": 9,
+     "args": [
+      "self",
+      "name",
+      "route",
+      "speed",
+      "turn_rate",
+      "publisher",
+      "yaw"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "Vehicle"
+    },
+    {
+     "name": "step",
+     "line": 59,
+     "length": 24,
+     "args": [
+      "self",
+      "dt",
+      "arrival_radius"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": "Vehicle"
+    },
+    {
+     "name": "__init__",
+     "line": 86,
+     "length": 25,
+     "args": [
+      "self"
+     ],
+     "complexity": 5,
+     "doc": "",
+     "doc_full": "",
+     "parent": "SceneTrafficController"
+    },
+    {
+     "name": "_on_timer",
+     "line": 112,
+     "length": 3,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "SceneTrafficController"
+    }
+   ],
+   "params": [
+    {
+     "name": "update_rate",
+     "default": 20.0,
+     "line": 88
+    },
+    {
+     "name": "topic_template",
+     "default": "/model/{name}/cmd_vel",
+     "line": 89
+    },
+    {
+     "name": "vehicles",
+     "default": "[row[0] for row in DEFAULT_ROUTES]",
+     "line": 90
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "topic",
+      "type": "Twist",
+      "line": 101
+     }
+    ],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "geometry_msgs",
+    "math",
+    "rclpy"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 5,
+   "mean_complexity": 2.5
+  },
+  "landfill_camera_sim/scripts/sensor_fusion_node.py": {
+   "path": "landfill_camera_sim/scripts/sensor_fusion_node.py",
+   "lines": 427,
+   "code": 330,
+   "comment": 50,
+   "blank": 47,
+   "doc": "Colorize lidar points with time-synced RGB + thermal camera samples.",
+   "classes": [
+    {
+     "name": "SensorFusionNode",
+     "line": 119,
+     "methods": [
+      "__init__",
+      "_watch_clock",
+      "_on_synced_full",
+      "_thermal_stale",
+      "_on_synced_no_thermal",
+      "_on_synced",
+      "_process_synced"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "_package_path",
+     "line": 32,
+     "length": 2,
+     "args": [
+      "relative"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "_load_extrinsics",
+     "line": 36,
+     "length": 21,
+     "args": [
+      "path"
+     ],
+     "complexity": 5,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "_load_camera_intrinsics",
+     "line": 59,
+     "length": 13,
+     "args": [
+      "path",
+      "camera_key"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "lidar_to_camera_transform",
+     "line": 74,
+     "length": 12,
+     "args": [
+      "extrinsic_frames",
+      "lidar_frame",
+      "camera_frame"
+     ],
+     "complexity": 1,
+     "doc": "Collapse rig-frame hops into one (M, b) so points map with xyz @ M + b.",
+     "doc_full": "Collapse rig-frame hops into one (M, b) so points map with xyz @ M + b. extrinsic_frames maps child_frame -> (R, t) with p_reference = R @ p_child + t, so p_camera = R_cam.T @ (R_lidar @ p_lidar + t_lidar - t_cam), which is the same as p_lidar @ (R_lidar.T @ R_cam) + (t_lidar - t_cam) @ R_cam.",
+     "parent": null
+    },
+    {
+     "name": "project_to_pixels",
+     "line": 88,
+     "length": 15,
+     "args": [
+      "points_camera_frame",
+      "fx",
+      "fy",
+      "cx",
+      "cy",
+      "width",
+      "height"
+     ],
+     "complexity": 1,
+     "doc": "Rig/robot axis convention (x forward, y left, z up) -> pixel coords.",
+     "doc_full": "Rig/robot axis convention (x forward, y left, z up) -> pixel coords.",
+     "parent": null
+    },
+    {
+     "name": "image_to_array",
+     "line": 105,
+     "length": 12,
+     "args": [
+      "msg",
+      "channels",
+      "dtype"
+     ],
+     "complexity": 5,
+     "doc": "View an Image message's buffer without copying, honouring msg.step.",
+     "doc_full": "View an Image message's buffer without copying, honouring msg.step.",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 413,
+     "length": 11,
+     "args": [],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 120,
+     "length": 120,
+     "args": [
+      "self"
+     ],
+     "complexity": 4,
+     "doc": "",
+     "doc_full": "",
+     "parent": "SensorFusionNode"
+    },
+    {
+     "name": "_watch_clock",
+     "line": 241,
+     "length": 21,
+     "args": [
+      "self",
+      "cloud_msg"
+     ],
+     "complexity": 7,
+     "doc": "Drop cached messages when the clock rewinds.",
+     "doc_full": "Drop cached messages when the clock rewinds. Restarting the simulator resets sim time; the synchronizer would otherwise keep matching against queued messages stamped in the future and never emit again.",
+     "parent": "SensorFusionNode"
+    },
+    {
+     "name": "_on_synced_full",
+     "line": 263,
+     "length": 6,
+     "args": [
+      "self",
+      "cloud_msg",
+      "rgb_msg",
+      "thermal_msg"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "SensorFusionNode"
+    },
+    {
+     "name": "_thermal_stale",
+     "line": 270,
+     "length": 6,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "SensorFusionNode"
+    },
+    {
+     "name": "_on_synced_no_thermal",
+     "line": 277,
+     "length": 9,
+     "args": [
+      "self",
+      "cloud_msg",
+      "rgb_msg"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": "SensorFusionNode"
+    },
+    {
+     "name": "_on_synced",
+     "line": 287,
+     "length": 18,
+     "args": [
+      "self",
+      "cloud_msg",
+      "rgb_msg",
+      "thermal_msg"
+     ],
+     "complexity": 4,
+     "doc": "",
+     "doc_full": "",
+     "parent": "SensorFusionNode"
+    },
+    {
+     "name": "_process_synced",
+     "line": 306,
+     "length": 105,
+     "args": [
+      "self",
+      "cloud_msg",
+      "rgb_msg",
+      "thermal_msg"
+     ],
+     "complexity": 15,
+     "doc": "",
+     "doc_full": "",
+     "parent": "SensorFusionNode"
+    }
+   ],
+   "params": [
+    {
+     "name": "lidar_points_topic",
+     "default": "/landfill/livox/points",
+     "line": 123
+    },
+    {
+     "name": "rgb_image_topic",
+     "default": "/landfill/rgb/image_raw",
+     "line": 124
+    },
+    {
+     "name": "thermal_image_topic",
+     "default": "/landfill/thermal/image_raw",
+     "line": 125
+    },
+    {
+     "name": "output_topic",
+     "default": "/landfill/fusion/points_rgbt",
+     "line": 126
+    },
+    {
+     "name": "extrinsics_path",
+     "default": "_package_path('config/calibration/extrinsics.yaml')",
+     "line": 127
+    },
+    {
+     "name": "intrinsics_path",
+     "default": "_package_path('config/calibration/intrinsics.yaml')",
+     "line": 128
+    },
+    {
+     "name": "lidar_frame",
+     "default": "camera_platform/lidar_frame",
+     "line": 129
+    },
+    {
+     "name": "rgb_frame",
+     "default": "camera_platform/rgb_optical_frame",
+     "line": 130
+    },
+    {
+     "name": "thermal_frame",
+     "default": "camera_platform/thermal_optical_frame",
+     "line": 131
+    },
+    {
+     "name": "thermal_min_temp",
+     "default": 253.15,
+     "line": 132
+    },
+    {
+     "name": "thermal_resolution",
+     "default": 0.01,
+     "line": 133
+    },
+    {
+     "name": "sync_slop",
+     "default": 0.15,
+     "line": 134
+    },
+    {
+     "name": "queue_size",
+     "default": 5,
+     "line": 135
+    },
+    {
+     "name": "thermal_timeout_s",
+     "default": 1.0,
+     "line": 141
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "output_topic",
+      "type": "PointCloud2",
+      "line": 183
+     }
+    ],
+    "sub": [
+     {
+      "topic": "lidar_topic",
+      "type": "PointCloud2",
+      "line": 184,
+      "via": "message_filters"
+     },
+     {
+      "topic": "rgb_topic",
+      "type": "Image",
+      "line": 187,
+      "via": "message_filters"
+     },
+     {
+      "topic": "thermal_topic",
+      "type": "Image",
+      "line": 190,
+      "via": "message_filters"
+     }
+    ]
+   },
+   "threads": [],
+   "imports": [
+    "ament_index_python",
+    "cloud_io",
+    "csv",
+    "message_filters",
+    "numpy",
+    "os",
+    "rclpy",
+    "scipy",
+    "sensor_msgs",
+    "time",
+    "yaml"
+   ],
+   "qos_uses": 5,
+   "max_complexity": 15,
+   "mean_complexity": 4.0
+  },
+  "pitfusion3d_bringup/launch/pitfusion3d_full.launch.py": {
+   "path": "pitfusion3d_bringup/launch/pitfusion3d_full.launch.py",
+   "lines": 132,
+   "code": 68,
+   "comment": 52,
+   "blank": 12,
+   "doc": "One-shot launch for the whole real-hardware PitFusion3D pipeline:",
+   "classes": [],
+   "functions": [
+    {
+     "name": "generate_launch_description",
+     "line": 23,
+     "length": 110,
+     "args": [],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    }
+   ],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "launch",
+    "launch_ros"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 1,
+   "mean_complexity": 1.0
+  },
+  "pitfusion3d_bringup/launch/real_sensors.launch.py": {
+   "path": "pitfusion3d_bringup/launch/real_sensors.launch.py",
+   "lines": 174,
+   "code": 129,
+   "comment": 29,
+   "blank": 16,
+   "doc": "Bring up the physical sensor rig: Livox Avia + RPi RGB camera + UVC thermal camera.",
+   "classes": [],
+   "functions": [
+    {
+     "name": "generate_launch_description",
+     "line": 34,
+     "length": 141,
+     "args": [],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    }
+   ],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "ament_index_python",
+    "launch",
+    "launch_ros",
+    "os"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 2,
+   "mean_complexity": 2.0
+  },
+  "pitfusion3d_bringup/pitfusion3d_bringup/__init__.py": {
+   "path": "pitfusion3d_bringup/pitfusion3d_bringup/__init__.py",
+   "lines": 0,
+   "code": 0,
+   "comment": 0,
+   "blank": 0,
+   "doc": "",
+   "classes": [],
+   "functions": [],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [],
+   "qos_uses": 0,
+   "max_complexity": 0,
+   "mean_complexity": 0.0
+  },
+  "pitfusion3d_bringup/pitfusion3d_bringup/camera_viewer.py": {
+   "path": "pitfusion3d_bringup/pitfusion3d_bringup/camera_viewer.py",
+   "lines": 91,
+   "code": 71,
+   "comment": 4,
+   "blank": 16,
+   "doc": "Debug tool: side-by-side RGB + thermal preview with sync-offset readout.",
+   "classes": [
+    {
+     "name": "CameraViewer",
+     "line": 21,
+     "methods": [
+      "__init__",
+      "synced_callback",
+      "destroy_node"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "main",
+     "line": 77,
+     "length": 11,
+     "args": [
+      "args"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 22,
+     "length": 21,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CameraViewer"
+    },
+    {
+     "name": "synced_callback",
+     "line": 44,
+     "length": 27,
+     "args": [
+      "self",
+      "rgb_msg",
+      "thermal_msg"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CameraViewer"
+    },
+    {
+     "name": "destroy_node",
+     "line": 72,
+     "length": 3,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "CameraViewer"
+    }
+   ],
+   "params": [
+    {
+     "name": "rgb_topic",
+     "default": "/landfill/rgb/image_raw",
+     "line": 24
+    },
+    {
+     "name": "thermal_topic",
+     "default": "/landfill/thermal/image_raw",
+     "line": 25
+    }
+   ],
+   "topics": {
+    "pub": [],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "cv2",
+    "cv_bridge",
+    "message_filters",
+    "numpy",
+    "rclpy",
+    "sensor_msgs"
+   ],
+   "qos_uses": 3,
+   "max_complexity": 3,
+   "mean_complexity": 1.5
+  },
+  "pitfusion3d_bringup/pitfusion3d_bringup/livox_restamp_node.py": {
+   "path": "pitfusion3d_bringup/pitfusion3d_bringup/livox_restamp_node.py",
+   "lines": 149,
+   "code": 123,
+   "comment": 9,
+   "blank": 17,
+   "doc": "Re-stamp the Livox driver's PointCloud2 into the host's clock domain.",
+   "classes": [
+    {
+     "name": "LivoxRestampNode",
+     "line": 50,
+     "methods": [
+      "__init__",
+      "_estimate",
+      "_on_cloud"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "main",
+     "line": 135,
+     "length": 11,
+     "args": [
+      "args"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 51,
+     "length": 38,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "LivoxRestampNode"
+    },
+    {
+     "name": "_estimate",
+     "line": 90,
+     "length": 27,
+     "args": [
+      "self",
+      "arrival_ns",
+      "device_ns"
+     ],
+     "complexity": 4,
+     "doc": "Update the offset estimate for one scan; returns the corrected stamp (ns).",
+     "doc_full": "Update the offset estimate for one scan; returns the corrected stamp (ns). Pure function of its inputs plus the filter state, so it can be unit-tested without a running clock.",
+     "parent": "LivoxRestampNode"
+    },
+    {
+     "name": "_on_cloud",
+     "line": 118,
+     "length": 15,
+     "args": [
+      "self",
+      "msg"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "LivoxRestampNode"
+    }
+   ],
+   "params": [
+    {
+     "name": "input_topic",
+     "default": "livox/lidar",
+     "line": 53
+    },
+    {
+     "name": "output_topic",
+     "default": "/landfill/livox/points",
+     "line": 54
+    },
+    {
+     "name": "offset_window",
+     "default": 200,
+     "line": 55
+    },
+    {
+     "name": "log_period",
+     "default": 50,
+     "line": 56
+    },
+    {
+     "name": "clock_step_threshold_s",
+     "default": 0.1,
+     "line": 57
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "str(self.get_parameter('output_topic').value)",
+      "type": "PointCloud2",
+      "line": 77
+     }
+    ],
+    "sub": [
+     {
+      "topic": "str(self.get_parameter('input_topic').value)",
+      "type": "PointCloud2",
+      "line": 80
+     }
+    ]
+   },
+   "threads": [],
+   "imports": [
+    "collections",
+    "rclpy",
+    "sensor_msgs"
+   ],
+   "qos_uses": 3,
+   "max_complexity": 4,
+   "mean_complexity": 2.5
+  },
+  "pitfusion3d_bringup/pitfusion3d_bringup/rgb_camera_node.py": {
+   "path": "pitfusion3d_bringup/pitfusion3d_bringup/rgb_camera_node.py",
+   "lines": 234,
+   "code": 153,
+   "comment": 54,
+   "blank": 27,
+   "doc": "Publish the Raspberry Pi (imx477) camera as sensor_msgs/Image.",
+   "classes": [
+    {
+     "name": "RgbCameraNode",
+     "line": 51,
+     "methods": [
+      "__init__",
+      "_spawn",
+      "_read_exact",
+      "_publish_frame",
+      "_capture_loop",
+      "_terminate_process",
+      "destroy_node"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "_die_with_parent",
+     "line": 41,
+     "length": 8,
+     "args": [],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 220,
+     "length": 11,
+     "args": [
+      "args"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 52,
+     "length": 59,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RgbCameraNode"
+    },
+    {
+     "name": "_spawn",
+     "line": 112,
+     "length": 21,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RgbCameraNode"
+    },
+    {
+     "name": "_read_exact",
+     "line": 134,
+     "length": 10,
+     "args": [
+      "self",
+      "n"
+     ],
+     "complexity": 4,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RgbCameraNode"
+    },
+    {
+     "name": "_publish_frame",
+     "line": 145,
+     "length": 17,
+     "args": [
+      "self",
+      "raw",
+      "stamp"
+     ],
+     "complexity": 2,
+     "doc": "Convert one yuv420 frame to rgb8 and publish it with the given stamp.",
+     "doc_full": "Convert one yuv420 frame to rgb8 and publish it with the given stamp. This runs in a daemon thread, so an uncaught exception (a malformed frame, a shape mismatch) would silently kill only this thread: no exception reaches rclpy.spin(), no process exits for systemd to notice, and the node would look healthy while never publishing again. Catch and skip the frame instead.",
+     "parent": "RgbCameraNode"
+    },
+    {
+     "name": "_capture_loop",
+     "line": 163,
+     "length": 42,
+     "args": [
+      "self"
+     ],
+     "complexity": 10,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RgbCameraNode"
+    },
+    {
+     "name": "_terminate_process",
+     "line": 206,
+     "length": 7,
+     "args": [
+      "self"
+     ],
+     "complexity": 4,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RgbCameraNode"
+    },
+    {
+     "name": "destroy_node",
+     "line": 214,
+     "length": 4,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "RgbCameraNode"
+    }
+   ],
+   "params": [
+    {
+     "name": "topic",
+     "default": "/landfill/rgb/image_raw",
+     "line": 55
+    },
+    {
+     "name": "frame_id",
+     "default": "camera_platform/rgb_optical_frame",
+     "line": 56
+    },
+    {
+     "name": "width",
+     "default": 1280,
+     "line": 57
+    },
+    {
+     "name": "height",
+     "default": 720,
+     "line": 58
+    },
+    {
+     "name": "framerate",
+     "default": 15,
+     "line": 64
+    },
+    {
+     "name": "saturation",
+     "default": 1.8,
+     "line": 86
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "str(self.get_parameter('topic').value)",
+      "type": "Image",
+      "line": 102
+     }
+    ],
+    "sub": []
+   },
+   "threads": [
+    {
+     "kind": "threading.Thread",
+     "line": 109,
+     "target": "self._capture_loop"
+    },
+    {
+     "kind": "subprocess.Popen",
+     "line": 113,
+     "target": null
+    }
+   ],
+   "imports": [
+    "ctypes",
+    "cv2",
+    "cv_bridge",
+    "numpy",
+    "rclpy",
+    "sensor_msgs",
+    "signal",
+    "subprocess",
+    "threading",
+    "time"
+   ],
+   "qos_uses": 2,
+   "max_complexity": 10,
+   "mean_complexity": 3.11
+  },
+  "pitfusion3d_bringup/pitfusion3d_bringup/thermal_camera_node.py": {
+   "path": "pitfusion3d_bringup/pitfusion3d_bringup/thermal_camera_node.py",
+   "lines": 314,
+   "code": 238,
+   "comment": 41,
+   "blank": 35,
+   "doc": "Publish the UVC thermal camera (640x512 YUYV) as sensor_msgs/Image.",
+   "classes": [
+    {
+     "name": "_CaptureHealth",
+     "line": 49,
+     "methods": [
+      "__init__",
+      "on_opened",
+      "on_good_frame"
+     ],
+     "doc": "Retry/back-off bookkeeping for ThermalCameraNode's capture loop."
+    },
+    {
+     "name": "ThermalCameraNode",
+     "line": 70,
+     "methods": [
+      "__init__",
+      "_sleep_while_running",
+      "_wait_for_device",
+      "_open_capture",
+      "_capture_loop",
+      "_connect",
+      "_read_frame",
+      "_on_read_failure",
+      "_publish_frame",
+      "_publish_image",
+      "destroy_node"
+     ],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "main",
+     "line": 300,
+     "length": 11,
+     "args": [
+      "args"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 52,
+     "length": 5,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_CaptureHealth"
+    },
+    {
+     "name": "on_opened",
+     "line": 58,
+     "length": 4,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_CaptureHealth"
+    },
+    {
+     "name": "on_good_frame",
+     "line": 63,
+     "length": 5,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "_CaptureHealth"
+    },
+    {
+     "name": "__init__",
+     "line": 71,
+     "length": 78,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_sleep_while_running",
+     "line": 150,
+     "length": 4,
+     "args": [
+      "self",
+      "seconds"
+     ],
+     "complexity": 3,
+     "doc": "",
+     "doc_full": "",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_wait_for_device",
+     "line": 155,
+     "length": 22,
+     "args": [
+      "self"
+     ],
+     "complexity": 8,
+     "doc": "Block until the device node has existed continuously for",
+     "doc_full": "Block until the device node has existed continuously for device_settle_s (i.e. USB enumeration has finished, not just begun).",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_open_capture",
+     "line": 178,
+     "length": 11,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_capture_loop",
+     "line": 190,
+     "length": 16,
+     "args": [
+      "self"
+     ],
+     "complexity": 6,
+     "doc": "Self-healing capture loop: wait for the device, open it, read, publish, recover.",
+     "doc_full": "Self-healing capture loop: wait for the device, open it, read, publish, recover. On boot (systemd/lingering, nobody watching) this USB device can take seconds to enumerate, and a cable hiccup in the field must not need a human. The loop therefore retries instead of raising: an exception would kill only this thread (or, if raised in __init__, the node's process, which ros2 launch does not propagate), leaving a healthy",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_connect",
+     "line": 207,
+     "length": 18,
+     "args": [
+      "self",
+      "health"
+     ],
+     "complexity": 3,
+     "doc": "Wait for the device and open it. Returns True once streaming; False means retry/shutdown.",
+     "doc_full": "Wait for the device and open it. Returns True once streaming; False means retry/shutdown.",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_read_frame",
+     "line": 226,
+     "length": 8,
+     "args": [
+      "self",
+      "health"
+     ],
+     "complexity": 3,
+     "doc": "Read one raw frame, or None after handling a failed read.",
+     "doc_full": "Read one raw frame, or None after handling a failed read.",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_on_read_failure",
+     "line": 235,
+     "length": 22,
+     "args": [
+      "self",
+      "health"
+     ],
+     "complexity": 3,
+     "doc": "Count a failed read; after 10 in a row release the device and cool down.",
+     "doc_full": "Count a failed read; after 10 in a row release the device and cool down. A handful of isolated drops is normal; many in a row means the device is gone or misbehaving. Reopen after a growing cool-down (3 s doubling to the configured maximum) rather than busy-looping on a dead capture: reopening instantly was observed to keep a faulty camera in a reset loop for hours.",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_publish_frame",
+     "line": 258,
+     "length": 21,
+     "args": [
+      "self",
+      "raw"
+     ],
+     "complexity": 5,
+     "doc": "Convert a raw YUYV frame to rotated mono16 and publish it.",
+     "doc_full": "Convert a raw YUYV frame to rotated mono16 and publish it. Runs in a daemon thread, so an uncaught exception (e.g. raw not actually being height*width*2 bytes although read() reported success) would silently kill only this thread; catch and skip the frame instead.",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "_publish_image",
+     "line": 280,
+     "length": 5,
+     "args": [
+      "self",
+      "publisher",
+      "array",
+      "encoding",
+      "stamp"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "ThermalCameraNode"
+    },
+    {
+     "name": "destroy_node",
+     "line": 286,
+     "length": 12,
+     "args": [
+      "self"
+     ],
+     "complexity": 4,
+     "doc": "",
+     "doc_full": "",
+     "parent": "ThermalCameraNode"
+    }
+   ],
+   "params": [
+    {
+     "name": "topic",
+     "default": "/landfill/thermal/image_raw",
+     "line": 74
+    },
+    {
+     "name": "frame_id",
+     "default": "camera_platform/thermal_optical_frame",
+     "line": 75
+    },
+    {
+     "name": "device",
+     "default": "/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0",
+     "line": 76
+    },
+    {
+     "name": "width",
+     "default": 640,
+     "line": 80
+    },
+    {
+     "name": "height",
+     "default": 512,
+     "line": 81
+    },
+    {
+     "name": "framerate",
+     "default": 30,
+     "line": 89
+    },
+    {
+     "name": "publish_preview",
+     "default": false,
+     "line": 93
+    },
+    {
+     "name": "preview_topic",
+     "default": "/landfill/thermal/image_preview",
+     "line": 94
+    },
+    {
+     "name": "vflip",
+     "default": true,
+     "line": 106
+    },
+    {
+     "name": "hflip",
+     "default": true,
+     "line": 107
+    },
+    {
+     "name": "device_settle_s",
+     "default": 3.0,
+     "line": 140
+    },
+    {
+     "name": "recovery_cooldown_max_s",
+     "default": 20.0,
+     "line": 141
+    }
+   ],
+   "topics": {
+    "pub": [
+     {
+      "topic": "str(self.get_parameter('topic').value)",
+      "type": "Image",
+      "line": 122
+     },
+     {
+      "topic": "str(self.get_parameter('preview_topic').value)",
+      "type": "Image",
+      "line": 127
+     }
+    ],
+    "sub": []
+   },
+   "threads": [
+    {
+     "kind": "threading.Thread",
+     "line": 147,
+     "target": "self._capture_loop"
+    }
+   ],
+   "imports": [
+    "cv2",
+    "cv_bridge",
+    "numpy",
+    "os",
+    "rclpy",
+    "sensor_msgs",
+    "threading",
+    "time"
+   ],
+   "qos_uses": 3,
+   "max_complexity": 8,
+   "mean_complexity": 3.13
+  },
+  "pitfusion3d_bringup/scripts/clean_stale_shm.py": {
+   "path": "pitfusion3d_bringup/scripts/clean_stale_shm.py",
+   "lines": 46,
+   "code": 43,
+   "comment": 1,
+   "blank": 2,
+   "doc": "Remove Fast DDS shared-memory files in /dev/shm that no running process\nhas mapped/open. Fast DDS only deletes its segments on a clean exit, so a\ncrash / kill -9 / OOM leaves one segment per participant behind; with the\n64MB segments used here that is ~0.5GB of RAM per unclean shutdown.\nOnly touches this user's fastrtps files and never a file a live process\nuses (so it is safe even if another ROS tool is running).\nUsage: clean_stale_shm.py [--dry-run]",
+   "classes": [],
+   "functions": [],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "glob",
+    "os",
+    "psutil",
+    "sys",
+    "time"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 0,
+   "mean_complexity": 0.0
+  },
+  "pitfusion3d_bringup/scripts/thermal_view.py": {
+   "path": "pitfusion3d_bringup/scripts/thermal_view.py",
+   "lines": 161,
+   "code": 126,
+   "comment": 1,
+   "blank": 34,
+   "doc": "Thermal-camera-only viewer.",
+   "classes": [
+    {
+     "name": "LatestFrame",
+     "line": 40,
+     "methods": [
+      "__init__",
+      "set",
+      "touch",
+      "wanted",
+      "get"
+     ],
+     "doc": "Thread-safe holder for the newest thermal frame (ROS thread writes, HTTP threads read)."
+    },
+    {
+     "name": "Handler",
+     "line": 92,
+     "methods": [
+      "log_message",
+      "_reply",
+      "_stream",
+      "do_GET"
+     ],
+     "doc": ""
+    },
+    {
+     "name": "Server",
+     "line": 129,
+     "methods": [],
+     "doc": ""
+    }
+   ],
+   "functions": [
+    {
+     "name": "no_signal_picture",
+     "line": 72,
+     "length": 7,
+     "args": [],
+     "complexity": 1,
+     "doc": "A 640x512 black picture explaining that the camera is not delivering frames.",
+     "doc_full": "A 640x512 black picture explaining that the camera is not delivering frames.",
+     "parent": null
+    },
+    {
+     "name": "encode_jpeg",
+     "line": 81,
+     "length": 9,
+     "args": [],
+     "complexity": 2,
+     "doc": "Colourise the newest frame (INFERNO palette) and return it as JPEG bytes.",
+     "doc_full": "Colourise the newest frame (INFERNO palette) and return it as JPEG bytes.",
+     "parent": null
+    },
+    {
+     "name": "on_image",
+     "line": 134,
+     "length": 3,
+     "args": [
+      "msg"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "main",
+     "line": 139,
+     "length": 19,
+     "args": [],
+     "complexity": 6,
+     "doc": "",
+     "doc_full": "",
+     "parent": null
+    },
+    {
+     "name": "__init__",
+     "line": 43,
+     "length": 5,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "",
+     "doc_full": "",
+     "parent": "LatestFrame"
+    },
+    {
+     "name": "set",
+     "line": 49,
+     "length": 3,
+     "args": [
+      "self",
+      "image"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "LatestFrame"
+    },
+    {
+     "name": "touch",
+     "line": 53,
+     "length": 3,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "Record that a client asked for a picture (keeps the ROS subscription alive).",
+     "doc_full": "Record that a client asked for a picture (keeps the ROS subscription alive).",
+     "parent": "LatestFrame"
+    },
+    {
+     "name": "wanted",
+     "line": 57,
+     "length": 3,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "True while a client has asked for a picture recently.",
+     "doc_full": "True while a client has asked for a picture recently.",
+     "parent": "LatestFrame"
+    },
+    {
+     "name": "get",
+     "line": 61,
+     "length": 6,
+     "args": [
+      "self"
+     ],
+     "complexity": 4,
+     "doc": "Return the newest frame, or None if there is none or it is stale.",
+     "doc_full": "Return the newest frame, or None if there is none or it is stale.",
+     "parent": "LatestFrame"
+    },
+    {
+     "name": "log_message",
+     "line": 93,
+     "length": 2,
+     "args": [
+      "self"
+     ],
+     "complexity": 1,
+     "doc": "Silence the default per-request logging.",
+     "doc_full": "Silence the default per-request logging.",
+     "parent": "Handler"
+    },
+    {
+     "name": "_reply",
+     "line": 96,
+     "length": 7,
+     "args": [
+      "self",
+      "status",
+      "content_type",
+      "body"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "Handler"
+    },
+    {
+     "name": "_stream",
+     "line": 104,
+     "length": 10,
+     "args": [
+      "self"
+     ],
+     "complexity": 2,
+     "doc": "",
+     "doc_full": "",
+     "parent": "Handler"
+    },
+    {
+     "name": "do_GET",
+     "line": 115,
+     "length": 12,
+     "args": [
+      "self"
+     ],
+     "complexity": 5,
+     "doc": "",
+     "doc_full": "",
+     "parent": "Handler"
+    },
+    {
+     "name": "manage_subscription",
+     "line": 144,
+     "length": 7,
+     "args": [],
+     "complexity": 5,
+     "doc": "Subscribe while someone is watching, unsubscribe when nobody has asked for a while.",
+     "doc_full": "Subscribe while someone is watching, unsubscribe when nobody has asked for a while.",
+     "parent": null
+    }
+   ],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": [
+     {
+      "topic": "TOPIC",
+      "type": "Image",
+      "line": 147
+     }
+    ]
+   },
+   "threads": [
+    {
+     "kind": "threading.Thread",
+     "line": 153,
+     "target": "Server(('0.0.0.0', PORT), Handler).serve"
+    }
+   ],
+   "imports": [
+    "cv2",
+    "http",
+    "numpy",
+    "rclpy",
+    "sensor_msgs",
+    "socketserver",
+    "threading",
+    "time"
+   ],
+   "qos_uses": 2,
+   "max_complexity": 6,
+   "mean_complexity": 2.5
+  },
+  "pitfusion3d_bringup/setup.py": {
+   "path": "pitfusion3d_bringup/setup.py",
+   "lines": 33,
+   "code": 30,
+   "comment": 0,
+   "blank": 3,
+   "doc": "",
+   "classes": [],
+   "functions": [],
+   "params": [],
+   "topics": {
+    "pub": [],
+    "sub": []
+   },
+   "threads": [],
+   "imports": [
+    "glob",
+    "os",
+    "setuptools"
+   ],
+   "qos_uses": 0,
+   "max_complexity": 0,
+   "mean_complexity": 0.0
+  }
+ }
+}

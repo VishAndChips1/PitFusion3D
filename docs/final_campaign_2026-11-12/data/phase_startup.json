@@ -1,0 +1,25 @@
+{
+ "viewer_first_merged_data_s": 12.83951210975647,
+ "first_message_s_after_start": {
+  "/livox/lidar": 4.6583251953125,
+  "/landfill/livox/points": 7.132113695144653,
+  "/landfill/rgb/image_raw": 9.26365351676941,
+  "/landfill/fusion/points_rgbt": 10.33630084991455,
+  "/landfill/fusion/points_merged": 11.121958494186401,
+  "/landfill/thermal/image_raw": 38.117626667022705
+ },
+ "message_counts_100s": {
+  "/livox/lidar": 935,
+  "/landfill/livox/points": 907,
+  "/landfill/rgb/image_raw": 886,
+  "/landfill/thermal/image_raw": 2,
+  "/landfill/fusion/points_rgbt": 856,
+  "/landfill/fusion/points_merged": 132
+ },
+ "t_start": 1794462328.3985946,
+ "nodes_up": 9,
+ "camera_after": {
+  "thermal_hz": 0.0,
+  "usb_present": true
+ }
+}

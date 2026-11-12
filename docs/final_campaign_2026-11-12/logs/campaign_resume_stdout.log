@@ -1,0 +1,17 @@
+[20:32:10] campaign start; phases=['thermal_supplement', 'timing', 'recovery', 'restart_timing', 'bench', 'final']; power sampler running
+[20:32:10] === PHASE thermal_supplement begin
+[20:35:56] thermal_supplement thermal done
+[20:37:32] thermal_supplement fused done
+[20:38:30] thermal_supplement merged done
+[20:42:33] === PHASE thermal_supplement end
+[20:42:33] === PHASE timing begin
+[20:44:04] === PHASE timing end
+[20:44:04] === PHASE recovery begin
+[20:46:28] === PHASE recovery end
+[20:46:28] === PHASE restart_timing begin
+[20:50:48] === PHASE restart_timing end
+[20:50:48] === PHASE bench begin
+[20:52:10] === PHASE bench end
+[20:52:10] === PHASE final begin
+[20:52:28] === PHASE final end
+[20:52:30] CAMPAIGN COMPLETE

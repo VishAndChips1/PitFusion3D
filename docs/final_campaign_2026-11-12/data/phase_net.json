@@ -1,0 +1,62 @@
+{
+ "iwconfig": "wlan0     IEEE 802.11  ESSID:\"Patelnet\"  \n          Mode:Managed  Frequency:2.462 GHz  Access Point: 14:3F:C3:85:8A:35   \n          Bit Rate=72.2 Mb/s   Tx-Power=31 dBm   \n          Retry short limit:7   RTS thr:off   Fragment thr:off\n          Power Management:on\n          Link Quality=43/70  Signal level=-67 dBm  \n          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0\n          Tx excessive retries:0  Invalid misc:0   Missed beacon:0\n\n",
+ "bitrate_mbps": "72.2",
+ "signal_dbm": "-67",
+ "link_quality": "43/70",
+ "tx_power_dbm": "31",
+ "excessive_retries": "0",
+ "freq_ghz": "2.462",
+ "power_save": "on",
+ "gateway": "192.168.1.1",
+ "ping_gateway_200": {
+  "sent": 200,
+  "received": 200,
+  "loss_pct": 0.0,
+  "rtt_min": 1.917,
+  "rtt_avg": 553.085,
+  "rtt_max": 4428.771,
+  "rtt_mdev": 1149.948
+ },
+ "ping_1.1.1.1_50": {
+  "sent": 50,
+  "received": 49,
+  "loss_pct": 2.0,
+  "rtt_min": 5.08,
+  "rtt_avg": 23.469,
+  "rtt_max": 63.885,
+  "rtt_mdev": 14.608
+ },
+ "ping_8.8.8.8_50": {
+  "sent": 50,
+  "received": 50,
+  "loss_pct": 0.0,
+  "rtt_min": 6.528,
+  "rtt_avg": 288.839,
+  "rtt_max": 1626.124,
+  "rtt_mdev": 556.717
+ },
+ "dns_ms": 179.396390914917,
+ "download": {
+  "cloudflare_25MB": {
+   "mbit_s": 0.106832,
+   "bytes": 400619.0,
+   "secs": 29.999688,
+   "http": "200"
+  },
+  "cachefly_10MB": {
+   "mbit_s": 0.37632,
+   "bytes": 1411259.0,
+   "secs": 30.000757,
+   "http": "200"
+  }
+ },
+ "upload": {
+  "cloudflare_8MB": {
+   "mbit_s": 2.973496,
+   "bytes": 8000000.0,
+   "secs": 21.52343,
+   "http": "200"
+  }
+ },
+ "iwconfig_after": "          Bit Rate=72.2 Mb/s   Tx-Power=31 dBm   \n          Link Quality=44/70  Signal level=-66 dBm  \n"
+}

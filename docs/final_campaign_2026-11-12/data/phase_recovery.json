@@ -1,0 +1,9 @@
+{
+ "crash_recovery_sigkill_all_but_thermal": "restamp    kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000\ncalib_pub  kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000\nfusion     kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000\nmerge      kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000\nstreamer   kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000\nrgb        kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000\nlivox_drv  kill -9 -> respawned in  2s; copies now: 1; viewer live pts: 5000\n",
+ "rpicam_after_crash": "1",
+ "restart_cases": "2. systemctl restart               live data after 12s, merged after 12s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 96->82\n3. stop, then start                live data after 14s, merged after 14s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 82->82\n4. restart again (repeat)          live data after 12s, merged after 12s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 82->82\n",
+ "camera": {
+  "thermal_hz": 25.0,
+  "usb_present": true
+ }
+}

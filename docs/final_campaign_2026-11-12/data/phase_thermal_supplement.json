@@ -1,0 +1,1820 @@
+{
+ "camera_start": {
+  "thermal_hz": 27.25,
+  "usb_present": true
+ },
+ "topics_thermal": {
+  "/landfill/thermal/image_raw": {
+   "n": 1179,
+   "hz": 29.475,
+   "interval_ms": {
+    "mean": 33.2660154899636,
+    "std": 4.8528232249845855,
+    "p50": 33.42103958129883,
+    "p95": 40.514421463012695,
+    "p99": 46.43217325210572,
+    "max": 63.69304656982422
+   },
+   "stamp_interval_ms": {
+    "mean": 33.27714648028181,
+    "std": 1.6182331465564033,
+    "p50": 33.33902359008789,
+    "p95": 34.86231565475464,
+    "max": 38.965702056884766,
+    "min": 9.89842414855957
+   },
+   "stamp_age_ms": {
+    "mean": 7.658875322220586,
+    "p50": 6.453752517700195,
+    "p95": 14.107823371887205,
+    "max": 30.85470199584961,
+    "min": 4.374504089355469
+   },
+   "gaps_over_2x_nominal": 0,
+   "msg_bytes_mean": 655360.0,
+   "points_or_pixels_mean": 327680.0,
+   "width": 640,
+   "height": 512,
+   "encoding": "mono16"
+  }
+ },
+ "topics_rgb": {
+  "/landfill/rgb/image_raw": {
+   "n": 276,
+   "hz": 9.2,
+   "interval_ms": {
+    "mean": 98.14547365361993,
+    "std": 79.00586145692594,
+    "p50": 41.097164154052734,
+    "p95": 196.227240562439,
+    "p99": 207.5356101989746,
+    "max": 208.89043807983398
+   },
+   "stamp_interval_ms": {
+    "mean": 99.38308802517977,
+    "std": 73.9165306759942,
+    "p50": 48.47264289855957,
+    "p95": 180.90941905975342,
+    "max": 190.399169921875,
+    "min": 17.655372619628906
+   },
+   "stamp_age_ms": {
+    "mean": 34.51867120853369,
+    "p50": 28.310656547546387,
+    "p95": 49.077749252319336,
+    "max": 370.0582981109619,
+    "min": 17.18425750732422
+   },
+   "gaps_over_2x_nominal": 135,
+   "msg_bytes_mean": 2764800.0,
+   "points_or_pixels_mean": 921600.0,
+   "width": 1280,
+   "height": 720,
+   "encoding": "rgb8"
+  }
+ },
+ "topics_lidar_fused_merged": {
+  "/landfill/livox/points": {
+   "n": 540,
+   "hz": 9.0,
+   "interval_ms": {
+    "mean": 109.59629579023881,
+    "std": 35.73572879008659,
+    "p50": 100.09288787841797,
+    "p95": 200.2351999282837,
+    "p99": 295.46725273132324,
+    "max": 417.89984703063965
+   },
+   "stamp_interval_ms": {
+    "mean": 109.59613876130453,
+    "std": 34.75060049604833,
+    "p50": 99.84230995178223,
+    "p95": 199.7262716293335,
+    "max": 400.12526512145996,
+    "min": 98.97637367248535
+   },
+   "stamp_age_ms": {
+    "mean": 5.870641602410211,
+    "p50": 4.816174507141113,
+    "p95": 11.102724075317376,
+    "max": 34.715890884399414,
+    "min": 3.0727386474609375
+   },
+   "gaps_over_2x_nominal": 28,
+   "msg_bytes_mean": 432000.0,
+   "points_or_pixels_mean": 24000.0,
+   "width": 0,
+   "height": 0,
+   "encoding": ""
+  },
+  "/landfill/fusion/points_rgbt": {
+   "n": 550,
+   "hz": 9.166666666666666,
+   "interval_ms": {
+    "mean": 107.48052466762522,
+    "std": 58.52767095689336,
+    "p50": 126.13773345947266,
+    "p95": 176.64079666137698,
+    "p99": 237.62844085693337,
+    "max": 369.962215423584
+   },
+   "stamp_interval_ms": {
+    "mean": 107.78023506122861,
+    "std": 29.490061460241595,
+    "p50": 99.84159469604492,
+    "p95": 199.68905448913574,
+    "max": 300.339937210083,
+    "min": 98.97637367248535
+   },
+   "stamp_age_ms": {
+    "mean": 49.8902398889715,
+    "p50": 31.17060661315918,
+    "p95": 93.07183027267455,
+    "max": 289.0660762786865,
+    "min": 17.050981521606445
+   },
+   "gaps_over_2x_nominal": 5,
+   "msg_bytes_mean": 576000.0,
+   "points_or_pixels_mean": 24000.0,
+   "width": 0,
+   "height": 0,
+   "encoding": ""
+  },
+  "/landfill/fusion/points_merged": {
+   "n": 85,
+   "hz": 1.4166666666666667,
+   "interval_ms": {
+    "mean": 696.8702021099273,
+    "std": 110.63916659464314,
+    "p50": 688.1633996963501,
+    "p95": 869.0736532211303,
+    "p99": 1006.9402194023133,
+    "max": 1036.7751121520996
+   },
+   "stamp_interval_ms": {
+    "mean": 696.0925232796442,
+    "std": 67.88060186362296,
+    "p50": 699.601411819458,
+    "p95": 799.5674967765808,
+    "max": 899.9769687652588,
+    "min": 599.8375415802002
+   },
+   "stamp_age_ms": {
+    "mean": 275.84941246930293,
+    "p50": 266.4954662322998,
+    "p95": 347.5372791290283,
+    "max": 418.4556007385254,
+    "min": 164.84451293945312
+   },
+   "gaps_over_2x_nominal": 0,
+   "msg_bytes_mean": 2947990.588235294,
+   "points_or_pixels_mean": 122832.94117647059,
+   "width": 0,
+   "height": 0,
+   "encoding": ""
+  }
+ },
+ "sensor": {
+  "thermal": {
+   "frames": 1152,
+   "rate_hz": 28.8,
+   "resolution": [
+    640,
+    512
+   ],
+   "encoding": "mono16",
+   "dynamic_range_8bit": {
+    "min": 1.0,
+    "max": 254.0,
+    "mean": 106.19937133789062,
+    "std_spatial": 101.66360473632812
+   },
+   "temporal_std_per_pixel": {
+    "p10": 0.0,
+    "median": 2.7650818824768066,
+    "p90": 67.78445358276369,
+    "note": "includes scene motion; p10 approximates sensor noise floor (8-bit AGC counts)"
+   },
+   "stuck_pixel_frac": 0.0,
+   "unique_frame_frac": 0.9435763888888888,
+   "interarrival_ms": {
+    "mean": 33.39135346466515,
+    "std": 5.489573566743399,
+    "min": 10.483503341674805,
+    "max": 92.09871292114258,
+    "p5": 25.48229694366455,
+    "p50": 33.13803672790527,
+    "p95": 42.16146469116211
+   },
+   "stamp_age_at_arrival_ms": {
+    "mean": 7.9406321876578865,
+    "std": 3.5493576630849772,
+    "min": 4.760026931762695,
+    "max": 31.602859497070312,
+    "p5": 5.1001787185668945,
+    "p50": 6.44075870513916,
+    "p95": 15.063631534576418
+   }
+  },
+  "fused": {
+   "fused_clouds": 682,
+   "fused_rate_hz": 7.5777777777777775,
+   "lidar_in_rate_hz": 7.322222222222222,
+   "rgb_rate_hz": 9.933333333333334,
+   "thermal_rate_hz": 30.0,
+   "fused_per_lidar_scan": 1.0349013657056145,
+   "dt_fused_to_nearest_rgb_ms": {
+    "mean": 40.40780654750611,
+    "std": 44.13591973683234,
+    "min": 20.30801773071289,
+    "max": 735.4190349578857,
+    "p5": 27.21254825592041,
+    "p50": 34.371376037597656,
+    "p95": 49.29226636886597
+   },
+   "dt_fused_to_nearest_thermal_ms": {
+    "mean": 2.2015050709072796,
+    "std": 1.8592971876183262,
+    "min": 0.0059604644775390625,
+    "max": 28.523683547973633,
+    "p5": 0.15772581100463873,
+    "p50": 2.203702926635742,
+    "p95": 5.016589164733886
+   },
+   "points_per_fused_cloud": {
+    "mean": 24000.0,
+    "std": 0.0,
+    "min": 24000.0,
+    "max": 24000.0,
+    "p5": 24000.0,
+    "p50": 24000.0,
+    "p95": 24000.0
+   },
+   "valid_rgb_frac": {
+    "mean": 0.5907094330400782,
+    "std": 0.00500985951696872,
+    "min": 0.579375,
+    "max": 0.5995,
+    "p5": 0.5828333333333333,
+    "p50": 0.5915416666666666,
+    "p95": 0.5972479166666667
+   },
+   "valid_thermal_frac": {
+    "mean": 0.4102115713587487,
+    "std": 0.005110172464922492,
+    "min": 0.402375,
+    "max": 0.4206666666666667,
+    "p5": 0.4040854166666667,
+    "p50": 0.40885416666666663,
+    "p95": 0.41870833333333335
+   },
+   "both_valid_frac": {
+    "mean": 0.410198985826002,
+    "std": 0.005111162136197309,
+    "min": 0.402375,
+    "max": 0.4206666666666667,
+    "p5": 0.40408333333333335,
+    "p50": 0.4088333333333333,
+    "p95": 0.41870625
+   },
+   "mean_range_m": {
+    "mean": 3.2634605990826557,
+    "std": 0.02375380609213248,
+    "min": 3.206735372543335,
+    "max": 3.3098909854888916,
+    "p5": 3.2236825823783875,
+    "p50": 3.263125777244568,
+    "p95": 3.301433563232422
+   },
+   "note": "valid_* = fraction of LiDAR points that project inside that camera image (FOV overlap), not a quality score"
+  },
+  "merged": {
+   "merged_clouds": 62,
+   "merged_rate_hz": 1.3777777777777778,
+   "points_per_merged_cloud": {
+    "mean": 113966.70967741935,
+    "std": 15579.15579971655,
+    "min": 61292.0,
+    "max": 133419.0,
+    "p5": 97361.05,
+    "p50": 115369.0,
+    "p95": 132620.9
+   },
+   "bytes_per_merged_cloud": {
+    "mean": 2735201.0322580645,
+    "std": 373899.73919319717,
+    "min": 1471008.0,
+    "max": 3202056.0,
+    "p5": 2336665.2,
+    "p50": 2768856.0,
+    "p95": 3182901.6
+   },
+   "interarrival_s": {
+    "mean": 0.7125398800021312,
+    "std": 0.12861965931719194,
+    "min": 0.49590039253234863,
+    "max": 0.9904537200927734,
+    "p5": 0.5144643783569336,
+    "p50": 0.7104024887084961,
+    "p95": 0.9147398471832275
+   },
+   "stamp_age_at_arrival_s": {
+    "mean": 0.23527716436693746,
+    "std": 0.042169206971844043,
+    "min": 0.10772967338562012,
+    "max": 0.30964159965515137,
+    "p5": 0.16102215051651,
+    "p50": 0.23522746562957764,
+    "p95": 0.2944141149520874
+   },
+   "extent_m": [
+    4.87125825881958,
+    3.73852801322937,
+    2.888087272644043
+   ],
+   "quantisation_step_mm_at_this_extent": 0.15222682058811188,
+   "consecutive_merged_clouds_icp": {
+    "translation_mm": {
+     "mean": 6.872758509762764,
+     "std": 2.9097063090348985,
+     "min": 1.317231645490487,
+     "max": 16.672817314016267,
+     "p5": 2.4832912082869085,
+     "p50": 6.861046828102415,
+     "p95": 11.414407755795379
+    },
+    "rotation_deg": {
+     "mean": 0.1385260637317364,
+     "std": 0.05837487345186672,
+     "min": 0.024905088925903027,
+     "max": 0.3138193677031047,
+     "p5": 0.04038730549229654,
+     "p50": 0.1385089088905511,
+     "p95": 0.2301457106131499
+    },
+    "n": 61,
+    "converged_frac": 1.0,
+    "note": "residual motion between consecutive merged clouds; ~0 for a static rig, grows if the platform moves"
+   }
+  }
+ },
+ "lidar_loss": [
+  {
+   "secs": 25.007630348205566,
+   "scans_received": 190,
+   "rx_rate_hz": 7.597681081911607,
+   "expected_scans_from_stamp_span": 248.99811659999932,
+   "scans_missing_pct": 23.694201950441375,
+   "stamp_gap_over_150ms": 41,
+   "stamp_gap_max_ms": 599.8224999999593,
+   "udp_datagrams": 85309,
+   "udp_rcvbuf_errors": 1472,
+   "udp_drop_pct": 1.696223827796407
+  },
+  {
+   "secs": 25.010626554489136,
+   "scans_received": 197,
+   "rx_rate_hz": 7.876651933161612,
+   "expected_scans_from_stamp_span": 241.99819499999967,
+   "scans_missing_pct": 18.594434144436377,
+   "stamp_gap_over_150ms": 34,
+   "stamp_gap_max_ms": 400.1633000000311,
+   "udp_datagrams": 89225,
+   "udp_rcvbuf_errors": 1546,
+   "udp_drop_pct": 1.7031871412675854
+  }
+ ],
+ "threads": {
+  "secs": 60.05241298675537,
+  "processes": {
+   "livox_driver": {
+    "pid": 1691,
+    "n_threads": 17,
+    "total_cpu_pct": 12.2,
+    "busiest_thread": {
+     "tid": "1754",
+     "name": "livox_ros2_avia",
+     "user_pct": 5.61,
+     "sys_pct": 4.93,
+     "total_pct": 10.54,
+     "last_core": 2,
+     "vol_ctx_per_s": 2093.7,
+     "invol_ctx_per_s": 28.7
+    },
+    "threads": [
+     {
+      "tid": "1754",
+      "name": "livox_ros2_avia",
+      "user_pct": 5.61,
+      "sys_pct": 4.93,
+      "total_pct": 10.54,
+      "last_core": 2,
+      "vol_ctx_per_s": 2093.7,
+      "invol_ctx_per_s": 28.7
+     },
+     {
+      "tid": "1723",
+      "name": "livox_ros2_avia",
+      "user_pct": 1.38,
+      "sys_pct": 0.05,
+      "total_pct": 1.43,
+      "last_core": 1,
+      "vol_ctx_per_s": 12.0,
+      "invol_ctx_per_s": 1.9
+     },
+     {
+      "tid": "1722",
+      "name": "livox_ros2_avia",
+      "user_pct": 0.15,
+      "sys_pct": 0.05,
+      "total_pct": 0.2,
+      "last_core": 1,
+      "vol_ctx_per_s": 21.1,
+      "invol_ctx_per_s": 0.4
+     },
+     {
+      "tid": "1712",
+      "name": "dds.ev.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.03,
+      "total_pct": 0.03,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.7,
+      "invol_ctx_per_s": 0.8
+     },
+     {
+      "tid": "1713",
+      "name": "dds.udp.7410",
+      "user_pct": 0.02,
+      "sys_pct": 0.02,
+      "total_pct": 0.03,
+      "last_core": 3,
+      "vol_ctx_per_s": 7.5,
+      "invol_ctx_per_s": 0.3
+     },
+     {
+      "tid": "1691",
+      "name": "livox_ros2_avia",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1694",
+      "name": "livox_ros2_-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1695",
+      "name": "livox_ros2_-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1705",
+      "name": "livox_ros2_avia",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.2,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1706",
+      "name": "livox_ros2_avia",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1710",
+      "name": "dds.shm.wdog",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1716",
+      "name": "dds.shm.7411",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.1
+     },
+     {
+      "tid": "1717",
+      "name": "dds.udp.7411",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1718",
+      "name": "dds.asyn.0.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1719",
+      "name": "dds.shm.7000",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1720",
+      "name": "dds.udp.7000",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1721",
+      "name": "livox_ros2_avia",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   },
+   "restamp": {
+    "pid": 1692,
+    "n_threads": 14,
+    "total_cpu_pct": 5.3,
+    "busiest_thread": {
+     "tid": "1692",
+     "name": "livox_restamp_n",
+     "user_pct": 2.71,
+     "sys_pct": 2.05,
+     "total_pct": 4.76,
+     "last_core": 0,
+     "vol_ctx_per_s": 10.1,
+     "invol_ctx_per_s": 7.9
+    },
+    "threads": [
+     {
+      "tid": "1692",
+      "name": "livox_restamp_n",
+      "user_pct": 2.71,
+      "sys_pct": 2.05,
+      "total_pct": 4.76,
+      "last_core": 0,
+      "vol_ctx_per_s": 10.1,
+      "invol_ctx_per_s": 7.9
+     },
+     {
+      "tid": "1733",
+      "name": "dds.shm.7413",
+      "user_pct": 0.33,
+      "sys_pct": 0.07,
+      "total_pct": 0.4,
+      "last_core": 2,
+      "vol_ctx_per_s": 19.0,
+      "invol_ctx_per_s": 0.6
+     },
+     {
+      "tid": "1731",
+      "name": "dds.ev.0",
+      "user_pct": 0.02,
+      "sys_pct": 0.05,
+      "total_pct": 0.07,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.9,
+      "invol_ctx_per_s": 0.6
+     },
+     {
+      "tid": "1732",
+      "name": "dds.udp.7412",
+      "user_pct": 0.03,
+      "sys_pct": 0.03,
+      "total_pct": 0.07,
+      "last_core": 0,
+      "vol_ctx_per_s": 8.1,
+      "invol_ctx_per_s": 0.2
+     },
+     {
+      "tid": "1736",
+      "name": "dds.shm.7001",
+      "user_pct": 0.0,
+      "sys_pct": 0.02,
+      "total_pct": 0.02,
+      "last_core": 2,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.1
+     },
+     {
+      "tid": "1703",
+      "name": "livox_resta-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1704",
+      "name": "livox_resta-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1727",
+      "name": "livox_restamp_n",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.2,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1728",
+      "name": "livox_restamp_n",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1729",
+      "name": "dds.shm.wdog",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1734",
+      "name": "dds.udp.7413",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1735",
+      "name": "dds.asyn.0.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1737",
+      "name": "dds.udp.7001",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1738",
+      "name": "livox_restamp_n",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   },
+   "calibration": {
+    "pid": 1693,
+    "n_threads": 14,
+    "total_cpu_pct": 0.5,
+    "busiest_thread": {
+     "tid": "1693",
+     "name": "python3",
+     "user_pct": 0.32,
+     "sys_pct": 0.02,
+     "total_pct": 0.33,
+     "last_core": 2,
+     "vol_ctx_per_s": 2.0,
+     "invol_ctx_per_s": 0.2
+    },
+    "threads": [
+     {
+      "tid": "1693",
+      "name": "python3",
+      "user_pct": 0.32,
+      "sys_pct": 0.02,
+      "total_pct": 0.33,
+      "last_core": 2,
+      "vol_ctx_per_s": 2.0,
+      "invol_ctx_per_s": 0.2
+     },
+     {
+      "tid": "1779",
+      "name": "dds.ev.0",
+      "user_pct": 0.02,
+      "sys_pct": 0.07,
+      "total_pct": 0.08,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.7,
+      "invol_ctx_per_s": 1.6
+     },
+     {
+      "tid": "1780",
+      "name": "dds.udp.7414",
+      "user_pct": 0.02,
+      "sys_pct": 0.03,
+      "total_pct": 0.05,
+      "last_core": 2,
+      "vol_ctx_per_s": 7.9,
+      "invol_ctx_per_s": 0.3
+     },
+     {
+      "tid": "1771",
+      "name": "dds.shm.wdog",
+      "user_pct": 0.0,
+      "sys_pct": 0.02,
+      "total_pct": 0.02,
+      "last_core": 0,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1784",
+      "name": "dds.shm.7002",
+      "user_pct": 0.02,
+      "sys_pct": 0.0,
+      "total_pct": 0.02,
+      "last_core": 2,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1701",
+      "name": "python3-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1702",
+      "name": "python3-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1768",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.2,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1769",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1781",
+      "name": "dds.shm.7415",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1782",
+      "name": "dds.udp.7415",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1783",
+      "name": "dds.asyn.0.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1785",
+      "name": "dds.udp.7002",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1786",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   },
+   "rgb_camera": {
+    "pid": 1741,
+    "n_threads": 15,
+    "total_cpu_pct": 16.7,
+    "busiest_thread": {
+     "tid": "2086",
+     "name": "rgb_camera_node",
+     "user_pct": 13.42,
+     "sys_pct": 3.08,
+     "total_pct": 16.5,
+     "last_core": 3,
+     "vol_ctx_per_s": 56.2,
+     "invol_ctx_per_s": 59.4
+    },
+    "threads": [
+     {
+      "tid": "2086",
+      "name": "rgb_camera_node",
+      "user_pct": 13.42,
+      "sys_pct": 3.08,
+      "total_pct": 16.5,
+      "last_core": 3,
+      "vol_ctx_per_s": 56.2,
+      "invol_ctx_per_s": 59.4
+     },
+     {
+      "tid": "2074",
+      "name": "dds.ev.0",
+      "user_pct": 0.02,
+      "sys_pct": 0.03,
+      "total_pct": 0.05,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.7,
+      "invol_ctx_per_s": 1.2
+     },
+     {
+      "tid": "2075",
+      "name": "dds.udp.7422",
+      "user_pct": 0.02,
+      "sys_pct": 0.03,
+      "total_pct": 0.05,
+      "last_core": 3,
+      "vol_ctx_per_s": 7.6,
+      "invol_ctx_per_s": 0.4
+     },
+     {
+      "tid": "2062",
+      "name": "dds.shm.wdog",
+      "user_pct": 0.0,
+      "sys_pct": 0.03,
+      "total_pct": 0.03,
+      "last_core": 2,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2076",
+      "name": "dds.shm.7423",
+      "user_pct": 0.0,
+      "sys_pct": 0.02,
+      "total_pct": 0.02,
+      "last_core": 2,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.1
+     },
+     {
+      "tid": "2079",
+      "name": "dds.shm.7006",
+      "user_pct": 0.0,
+      "sys_pct": 0.02,
+      "total_pct": 0.02,
+      "last_core": 2,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1741",
+      "name": "rgb_camera_node",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2034",
+      "name": "rgb_camera_-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2035",
+      "name": "rgb_camera_-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2060",
+      "name": "rgb_camera_node",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.2,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2061",
+      "name": "rgb_camera_node",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2077",
+      "name": "dds.udp.7423",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2078",
+      "name": "dds.asyn.0.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2080",
+      "name": "dds.udp.7006",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2081",
+      "name": "rgb_camera_node",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   },
+   "thermal_camera": {
+    "pid": 1761,
+    "n_threads": 15,
+    "total_cpu_pct": 11.3,
+    "busiest_thread": {
+     "tid": "2085",
+     "name": "thermal_camera_",
+     "user_pct": 10.62,
+     "sys_pct": 0.53,
+     "total_pct": 11.16,
+     "last_core": 2,
+     "vol_ctx_per_s": 31.1,
+     "invol_ctx_per_s": 27.1
+    },
+    "threads": [
+     {
+      "tid": "2085",
+      "name": "thermal_camera_",
+      "user_pct": 10.62,
+      "sys_pct": 0.53,
+      "total_pct": 11.16,
+      "last_core": 2,
+      "vol_ctx_per_s": 31.1,
+      "invol_ctx_per_s": 27.1
+     },
+     {
+      "tid": "2066",
+      "name": "dds.ev.0",
+      "user_pct": 0.02,
+      "sys_pct": 0.05,
+      "total_pct": 0.07,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.7,
+      "invol_ctx_per_s": 0.8
+     },
+     {
+      "tid": "2067",
+      "name": "dds.udp.7420",
+      "user_pct": 0.02,
+      "sys_pct": 0.02,
+      "total_pct": 0.03,
+      "last_core": 3,
+      "vol_ctx_per_s": 7.7,
+      "invol_ctx_per_s": 0.1
+     },
+     {
+      "tid": "2071",
+      "name": "dds.shm.7005",
+      "user_pct": 0.02,
+      "sys_pct": 0.02,
+      "total_pct": 0.03,
+      "last_core": 1,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2068",
+      "name": "dds.shm.7421",
+      "user_pct": 0.0,
+      "sys_pct": 0.02,
+      "total_pct": 0.02,
+      "last_core": 1,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.1
+     },
+     {
+      "tid": "1761",
+      "name": "thermal_camera_",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2037",
+      "name": "thermal_cam-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2038",
+      "name": "thermal_cam-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2057",
+      "name": "thermal_camera_",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.2,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2058",
+      "name": "thermal_camera_",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2059",
+      "name": "dds.shm.wdog",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2069",
+      "name": "dds.udp.7421",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2070",
+      "name": "dds.asyn.0.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2072",
+      "name": "dds.udp.7005",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2073",
+      "name": "thermal_camera_",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   },
+   "fusion": {
+    "pid": 1819,
+    "n_threads": 14,
+    "total_cpu_pct": 34.8,
+    "busiest_thread": {
+     "tid": "1819",
+     "name": "python3",
+     "user_pct": 28.59,
+     "sys_pct": 0.83,
+     "total_pct": 29.42,
+     "last_core": 0,
+     "vol_ctx_per_s": 40.1,
+     "invol_ctx_per_s": 70.2
+    },
+    "threads": [
+     {
+      "tid": "1819",
+      "name": "python3",
+      "user_pct": 28.59,
+      "sys_pct": 0.83,
+      "total_pct": 29.42,
+      "last_core": 0,
+      "vol_ctx_per_s": 40.1,
+      "invol_ctx_per_s": 70.2
+     },
+     {
+      "tid": "1926",
+      "name": "dds.shm.7417",
+      "user_pct": 3.78,
+      "sys_pct": 0.57,
+      "total_pct": 4.35,
+      "last_core": 2,
+      "vol_ctx_per_s": 230.9,
+      "invol_ctx_per_s": 9.5
+     },
+     {
+      "tid": "1927",
+      "name": "dds.udp.7417",
+      "user_pct": 0.27,
+      "sys_pct": 0.55,
+      "total_pct": 0.82,
+      "last_core": 1,
+      "vol_ctx_per_s": 106.3,
+      "invol_ctx_per_s": 0.8
+     },
+     {
+      "tid": "1924",
+      "name": "dds.ev.0",
+      "user_pct": 0.02,
+      "sys_pct": 0.08,
+      "total_pct": 0.1,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.7,
+      "invol_ctx_per_s": 1.5
+     },
+     {
+      "tid": "1925",
+      "name": "dds.udp.7416",
+      "user_pct": 0.02,
+      "sys_pct": 0.03,
+      "total_pct": 0.05,
+      "last_core": 3,
+      "vol_ctx_per_s": 7.7,
+      "invol_ctx_per_s": 0.4
+     },
+     {
+      "tid": "1932",
+      "name": "dds.shm.7003",
+      "user_pct": 0.02,
+      "sys_pct": 0.02,
+      "total_pct": 0.03,
+      "last_core": 3,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.1
+     },
+     {
+      "tid": "1920",
+      "name": "dds.shm.wdog",
+      "user_pct": 0.0,
+      "sys_pct": 0.02,
+      "total_pct": 0.02,
+      "last_core": 0,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1849",
+      "name": "python3-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1850",
+      "name": "python3-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1918",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.2,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1919",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1928",
+      "name": "dds.asyn.0.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1933",
+      "name": "dds.udp.7003",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1934",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   },
+   "merge": {
+    "pid": 1820,
+    "n_threads": 15,
+    "total_cpu_pct": 31.8,
+    "busiest_thread": {
+     "tid": "1997",
+     "name": "python3",
+     "user_pct": 23.7,
+     "sys_pct": 3.56,
+     "total_pct": 27.26,
+     "last_core": 3,
+     "vol_ctx_per_s": 6.7,
+     "invol_ctx_per_s": 38.5
+    },
+    "threads": [
+     {
+      "tid": "1997",
+      "name": "python3",
+      "user_pct": 23.7,
+      "sys_pct": 3.56,
+      "total_pct": 27.26,
+      "last_core": 3,
+      "vol_ctx_per_s": 6.7,
+      "invol_ctx_per_s": 38.5
+     },
+     {
+      "tid": "1820",
+      "name": "python3",
+      "user_pct": 3.61,
+      "sys_pct": 0.15,
+      "total_pct": 3.76,
+      "last_core": 3,
+      "vol_ctx_per_s": 12.1,
+      "invol_ctx_per_s": 11.6
+     },
+     {
+      "tid": "1960",
+      "name": "dds.shm.7419",
+      "user_pct": 0.62,
+      "sys_pct": 0.12,
+      "total_pct": 0.73,
+      "last_core": 2,
+      "vol_ctx_per_s": 23.7,
+      "invol_ctx_per_s": 2.6
+     },
+     {
+      "tid": "1958",
+      "name": "dds.ev.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.03,
+      "total_pct": 0.03,
+      "last_core": 1,
+      "vol_ctx_per_s": 2.1,
+      "invol_ctx_per_s": 0.7
+     },
+     {
+      "tid": "1959",
+      "name": "dds.udp.7418",
+      "user_pct": 0.02,
+      "sys_pct": 0.02,
+      "total_pct": 0.03,
+      "last_core": 2,
+      "vol_ctx_per_s": 7.9,
+      "invol_ctx_per_s": 0.4
+     },
+     {
+      "tid": "1931",
+      "name": "dds.shm.wdog",
+      "user_pct": 0.0,
+      "sys_pct": 0.02,
+      "total_pct": 0.02,
+      "last_core": 3,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1887",
+      "name": "python3-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1888",
+      "name": "python3-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1929",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.2,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1930",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1961",
+      "name": "dds.udp.7419",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1962",
+      "name": "dds.asyn.0.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1969",
+      "name": "dds.shm.7004",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1970",
+      "name": "dds.udp.7004",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "1971",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   },
+   "streamer": {
+    "pid": 2091,
+    "n_threads": 15,
+    "total_cpu_pct": 4.7,
+    "busiest_thread": {
+     "tid": "2091",
+     "name": "python3",
+     "user_pct": 3.25,
+     "sys_pct": 0.32,
+     "total_pct": 3.56,
+     "last_core": 2,
+     "vol_ctx_per_s": 10.6,
+     "invol_ctx_per_s": 16.5
+    },
+    "threads": [
+     {
+      "tid": "2091",
+      "name": "python3",
+      "user_pct": 3.25,
+      "sys_pct": 0.32,
+      "total_pct": 3.56,
+      "last_core": 2,
+      "vol_ctx_per_s": 10.6,
+      "invol_ctx_per_s": 16.5
+     },
+     {
+      "tid": "2122",
+      "name": "dds.shm.7425",
+      "user_pct": 0.92,
+      "sys_pct": 0.12,
+      "total_pct": 1.03,
+      "last_core": 3,
+      "vol_ctx_per_s": 42.6,
+      "invol_ctx_per_s": 3.9
+     },
+     {
+      "tid": "2121",
+      "name": "dds.udp.7424",
+      "user_pct": 0.03,
+      "sys_pct": 0.02,
+      "total_pct": 0.05,
+      "last_core": 2,
+      "vol_ctx_per_s": 7.8,
+      "invol_ctx_per_s": 0.1
+     },
+     {
+      "tid": "2120",
+      "name": "dds.ev.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.03,
+      "total_pct": 0.03,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.7,
+      "invol_ctx_per_s": 0.8
+     },
+     {
+      "tid": "2102",
+      "name": "python3-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2103",
+      "name": "python3-ust",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2115",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.2,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2116",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2117",
+      "name": "dds.shm.wdog",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2123",
+      "name": "dds.udp.7425",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2124",
+      "name": "dds.asyn.0.0",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2125",
+      "name": "dds.shm.7007",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 3.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2126",
+      "name": "dds.udp.7007",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 0,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2127",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2140",
+      "name": "python3",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 2,
+      "vol_ctx_per_s": 2.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   },
+   "rpicam_vid": {
+    "pid": 2105,
+    "n_threads": 8,
+    "total_cpu_pct": 4.2,
+    "busiest_thread": {
+     "tid": "2134",
+     "name": "rpicam-vid",
+     "user_pct": 0.07,
+     "sys_pct": 1.96,
+     "total_pct": 2.03,
+     "last_core": 2,
+     "vol_ctx_per_s": 217.2,
+     "invol_ctx_per_s": 7.4
+    },
+    "threads": [
+     {
+      "tid": "2134",
+      "name": "rpicam-vid",
+      "user_pct": 0.07,
+      "sys_pct": 1.96,
+      "total_pct": 2.03,
+      "last_core": 2,
+      "vol_ctx_per_s": 217.2,
+      "invol_ctx_per_s": 7.4
+     },
+     {
+      "tid": "2118",
+      "name": "CameraManager",
+      "user_pct": 0.38,
+      "sys_pct": 0.82,
+      "total_pct": 1.2,
+      "last_core": 1,
+      "vol_ctx_per_s": 58.4,
+      "invol_ctx_per_s": 2.2
+     },
+     {
+      "tid": "2135",
+      "name": "IPAProxyRPi",
+      "user_pct": 0.57,
+      "sys_pct": 0.02,
+      "total_pct": 0.58,
+      "last_core": 3,
+      "vol_ctx_per_s": 10.0,
+      "invol_ctx_per_s": 1.0
+     },
+     {
+      "tid": "2133",
+      "name": "rpicam-vid",
+      "user_pct": 0.03,
+      "sys_pct": 0.2,
+      "total_pct": 0.23,
+      "last_core": 0,
+      "vol_ctx_per_s": 10.3,
+      "invol_ctx_per_s": 1.0
+     },
+     {
+      "tid": "2129",
+      "name": "CameraManager",
+      "user_pct": 0.07,
+      "sys_pct": 0.02,
+      "total_pct": 0.08,
+      "last_core": 1,
+      "vol_ctx_per_s": 1.0,
+      "invol_ctx_per_s": 0.0
+     },
+     {
+      "tid": "2105",
+      "name": "rpicam-vid",
+      "user_pct": 0.02,
+      "sys_pct": 0.02,
+      "total_pct": 0.03,
+      "last_core": 3,
+      "vol_ctx_per_s": 10.1,
+      "invol_ctx_per_s": 1.4
+     },
+     {
+      "tid": "2130",
+      "name": "CameraManager",
+      "user_pct": 0.03,
+      "sys_pct": 0.0,
+      "total_pct": 0.03,
+      "last_core": 1,
+      "vol_ctx_per_s": 0.8,
+      "invol_ctx_per_s": 0.1
+     },
+     {
+      "tid": "2138",
+      "name": "rpicam-vid",
+      "user_pct": 0.0,
+      "sys_pct": 0.0,
+      "total_pct": 0.0,
+      "last_core": 3,
+      "vol_ctx_per_s": 0.0,
+      "invol_ctx_per_s": 0.0
+     }
+    ]
+   }
+  }
+ },
+ "camera_end": {
+  "thermal_hz": 20.25,
+  "usb_present": true
+ },
+ "usb_drops_during": 0
+}

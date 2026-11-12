@@ -1,0 +1,47 @@
+{
+ "runs": [
+  {
+   "run": 0,
+   "viewer_data_s": 12.575443029403687,
+   "first_message_s": {
+    "/landfill/thermal/image_raw": -0.3555130958557129,
+    "/landfill/fusion/points_rgbt": -0.33492350578308105,
+    "/landfill/livox/points": -0.308837890625,
+    "/landfill/fusion/points_merged": -0.0273284912109375,
+    "/livox/lidar": 4.138897180557251,
+    "/landfill/rgb/image_raw": 8.68654179573059
+   },
+   "nodes_up": 9
+  },
+  {
+   "run": 1,
+   "viewer_data_s": 12.564375877380371,
+   "first_message_s": {
+    "/landfill/thermal/image_raw": -0.5621569156646729,
+    "/livox/lidar": -0.5395336151123047,
+    "/landfill/livox/points": -0.5337338447570801,
+    "/landfill/fusion/points_rgbt": -0.5191605091094971,
+    "/landfill/fusion/points_merged": -0.25632643699645996,
+    "/landfill/rgb/image_raw": 9.08887004852295
+   },
+   "nodes_up": 9
+  },
+  {
+   "run": 2,
+   "viewer_data_s": 12.613786220550537,
+   "first_message_s": {
+    "/livox/lidar": -0.47267961502075195,
+    "/landfill/livox/points": -0.4677722454071045,
+    "/landfill/thermal/image_raw": -0.46169066429138184,
+    "/landfill/fusion/points_rgbt": -0.4479835033416748,
+    "/landfill/fusion/points_merged": -0.3630857467651367,
+    "/landfill/rgb/image_raw": -0.32598423957824707
+   },
+   "nodes_up": 9
+  }
+ ],
+ "camera": {
+  "thermal_hz": 30.25,
+  "usb_present": true
+ }
+}

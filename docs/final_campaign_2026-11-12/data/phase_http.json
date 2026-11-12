@@ -1,0 +1,266 @@
+{
+ "clients_1_localhost": {
+  "clients": 1,
+  "secs": 30.022003173828125,
+  "paths": {
+   "/merged.bin": {
+    "requests": 120,
+    "req_per_s": 3.9970683936443914,
+    "n200": 46,
+    "n304": 74,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 1.4758110046386719,
+     "p95": 52.02047824859619,
+     "p99": 55.430424213409424,
+     "max": 62.67356872558594
+    },
+    "payload_kb_mean": 141.09726086956522,
+    "wire_mbit_s_total": 1.7295245656780458,
+    "updates_per_s_per_client": 1.5322095508970166,
+    "points_mean": 20000.0,
+    "uncompressed_kb_mean": 220.024
+   }
+  },
+  "fused_rate": null
+ },
+ "clients_2_localhost": {
+  "clients": 2,
+  "secs": 30.029337406158447,
+  "paths": {
+   "/merged.bin": {
+    "requests": 120,
+    "req_per_s": 3.9960921673679777,
+    "n200": 47,
+    "n304": 73,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 1.3293027877807617,
+     "p95": 49.49326515197754,
+     "p99": 51.80535554885864,
+     "max": 51.99146270751953
+    },
+    "payload_kb_mean": 141.10489361702128,
+    "wire_mbit_s_total": 1.7667869018355142,
+    "updates_per_s_per_client": 1.5651360988857914,
+    "points_mean": 20000.0,
+    "uncompressed_kb_mean": 220.024
+   },
+   "/live.bin": {
+    "requests": 250,
+    "req_per_s": 8.325192015349954,
+    "n200": 250,
+    "n304": 0,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 8.803009986877441,
+     "p95": 15.393722057342526,
+     "p99": 18.23997259140014,
+     "max": 27.51755714416504
+    },
+    "payload_kb_mean": 23.96692,
+    "wire_mbit_s_total": 1.5962336881322488,
+    "updates_per_s_per_client": 8.325192015349954,
+    "points_mean": 5000.0,
+    "uncompressed_kb_mean": 55.024
+   }
+  },
+  "fused_rate": null
+ },
+ "clients_4_localhost": {
+  "clients": 4,
+  "secs": 30.05434775352478,
+  "paths": {
+   "/merged.bin": {
+    "requests": 240,
+    "req_per_s": 7.985533473167879,
+    "n200": 94,
+    "n304": 146,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 1.41143798828125,
+     "p95": 48.76158237457275,
+     "p99": 54.81831073760986,
+     "max": 68.08972358703613
+    },
+    "payload_kb_mean": 141.02659574468083,
+    "wire_mbit_s_total": 3.5286741495683334,
+    "updates_per_s_per_client": 1.5638336384953764,
+    "points_mean": 20000.0,
+    "uncompressed_kb_mean": 220.024
+   },
+   "/live.bin": {
+    "requests": 500,
+    "req_per_s": 16.63652806909975,
+    "n200": 500,
+    "n304": 0,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 7.329463958740234,
+     "p95": 14.234173297882077,
+     "p99": 18.221693038940426,
+     "max": 53.10773849487305
+    },
+    "payload_kb_mean": 24.178272,
+    "wire_mbit_s_total": 3.217940006322628,
+    "updates_per_s_per_client": 8.318264034549875,
+    "points_mean": 5000.0,
+    "uncompressed_kb_mean": 55.024
+   }
+  },
+  "fused_rate": null
+ },
+ "clients_8_localhost": {
+  "clients": 8,
+  "secs": 30.057363271713257,
+  "paths": {
+   "/merged.bin": {
+    "requests": 480,
+    "req_per_s": 15.969464642020817,
+    "n200": 176,
+    "n304": 304,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 0.8380413055419922,
+     "p95": 49.284160137176514,
+     "p99": 53.49228858947754,
+     "max": 55.516719818115234
+    },
+    "payload_kb_mean": 140.98272727272726,
+    "wire_mbit_s_total": 6.604161456397948,
+    "updates_per_s_per_client": 1.4638675921852415,
+    "points_mean": 20000.0,
+    "uncompressed_kb_mean": 220.024
+   },
+   "/live.bin": {
+    "requests": 1000,
+    "req_per_s": 33.269718004210034,
+    "n200": 964,
+    "n304": 36,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 2.8330087661743164,
+     "p95": 12.374842166900631,
+     "p99": 18.28815698623657,
+     "max": 27.460098266601562
+    },
+    "payload_kb_mean": 24.226682572614106,
+    "wire_mbit_s_total": 6.215986888504955,
+    "updates_per_s_per_client": 8.018002039014618,
+    "points_mean": 5000.0,
+    "uncompressed_kb_mean": 55.024
+   }
+  },
+  "fused_rate": null
+ },
+ "clients_16_localhost": {
+  "clients": 16,
+  "secs": 30.10146450996399,
+  "paths": {
+   "/merged.bin": {
+    "requests": 951,
+    "req_per_s": 31.59314722661438,
+    "n200": 365,
+    "n304": 586,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 0.8890628814697266,
+     "p95": 47.975897789001465,
+     "p99": 53.487300872802734,
+     "max": 1018.2175636291504
+    },
+    "payload_kb_mean": 141.00884383561643,
+    "wire_mbit_s_total": 13.678597726157363,
+    "updates_per_s_per_client": 1.5157069844524511,
+    "points_mean": 20000.0,
+    "uncompressed_kb_mean": 220.024
+   },
+   "/live.bin": {
+    "requests": 1977,
+    "req_per_s": 65.67786757835607,
+    "n200": 1971,
+    "n304": 6,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 1.251220703125,
+     "p95": 9.699726104736328,
+     "p99": 14.253053665161133,
+     "max": 1022.4268436431885
+    },
+    "payload_kb_mean": 24.23601775748351,
+    "wire_mbit_s_total": 12.695512800498529,
+    "updates_per_s_per_client": 8.184817716043236,
+    "points_mean": 5000.0,
+    "uncompressed_kb_mean": 55.024
+   }
+  },
+  "fused_rate": null
+ },
+ "clients_1_wifi_ip": {
+  "clients": 1,
+  "secs": 30.014585256576538,
+  "paths": {
+   "/merged.bin": {
+    "requests": 120,
+    "req_per_s": 3.998056244129065,
+    "n200": 46,
+    "n304": 74,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 1.1365413665771484,
+     "p95": 48.79995584487915,
+     "p99": 51.2906551361084,
+     "max": 53.74503135681152
+    },
+    "payload_kb_mean": 141.01804347826086,
+    "wire_mbit_s_total": 1.7289807457402495,
+    "updates_per_s_per_client": 1.5325882269161415,
+    "points_mean": 20000.0,
+    "uncompressed_kb_mean": 220.024
+   }
+  }
+ },
+ "clients_4_wifi_ip": {
+  "clients": 4,
+  "secs": 30.048603296279907,
+  "paths": {
+   "/merged.bin": {
+    "requests": 240,
+    "req_per_s": 7.987060085075988,
+    "n200": 90,
+    "n304": 150,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 0.7480382919311523,
+     "p95": 46.42348289489746,
+     "p99": 50.83859443664549,
+     "max": 52.55126953125
+    },
+    "payload_kb_mean": 140.99935555555555,
+    "wire_mbit_s_total": 3.3785109743376447,
+    "updates_per_s_per_client": 1.4975737659517476,
+    "points_mean": 20000.0,
+    "uncompressed_kb_mean": 220.024
+   },
+   "/live.bin": {
+    "requests": 500,
+    "req_per_s": 16.639708510574973,
+    "n200": 484,
+    "n304": 16,
+    "errors": 0,
+    "latency_ms": {
+     "p50": 7.381677627563477,
+     "p95": 13.594555854797353,
+     "p99": 17.78884172439574,
+     "max": 22.309064865112305
+    },
+    "payload_kb_mean": 24.379103305785122,
+    "wire_mbit_s_total": 3.141440121833764,
+    "updates_per_s_per_client": 8.053618919118287,
+    "points_mean": 5000.0,
+    "uncompressed_kb_mean": 55.024
+   }
+  }
+ },
+ "pipeline_rates_under_load_note": "see system_1hz.csv between http markers"
+}

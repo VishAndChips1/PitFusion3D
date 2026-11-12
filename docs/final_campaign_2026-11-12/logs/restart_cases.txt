@@ -1,0 +1,3 @@
+2. systemctl restart               live data after 12s, merged after 12s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 96->82
+3. stop, then start                live data after 14s, merged after 14s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 82->82
+4. restart again (repeat)          live data after 12s, merged after 12s | nodes up 8/8 | rpicam-vid 1 | /dev/shm files 82->82

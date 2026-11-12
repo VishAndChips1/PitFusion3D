@@ -1,0 +1,23 @@
+#!/bin/bash
+# lidar — control the Livox Avia's power mode from the Pi.
+#   lidar status            report the LiDAR's own state (Normal / PowerSaving / Standby)
+#   lidar low               power-saving mode (scanning stops; the sensor stays connected and listening)
+#   lidar standby           standby mode
+#   lidar on                back to Normal mode (the pipeline's driver resumes streaming by itself)
+# Options: --no-restart  leave the pipeline stopped afterwards     --no-stop  don't touch the pipeline (only if it is already stopped)
+# Why the pipeline is stopped: the LiDAR talks to one host at a time, so the ROS driver must release it first.  The stop is graceful.
+CODE=${LIDAR_CODE:-3JEDLAJ001G0651}; HERE=/home/vish/lidar_ctl; LOG=$HERE/lidar.log; UNIT=pitfusion3d.service
+cmd=$1; shift; RESTART=1; STOP=1
+for a in "$@"; do case $a in --no-restart) RESTART=0;; --no-stop) STOP=0;; esac; done
+case $cmd in on) sub=normal;; low) sub=low;; standby) sub=standby;; status) sub=status;; *) echo "usage: lidar <status|low|standby|on> [--no-restart] [--no-stop]"; exit 1;; esac
+say() { echo "[$(date +%T)] $*" | tee -a $LOG; }
+was_active=$(systemctl --user is-active $UNIT)
+if [ $STOP = 1 ] && [ "$was_active" = active ]; then
+  say "stopping the pipeline gracefully so the LiDAR is free"; systemctl --user stop $UNIT
+  for i in $(seq 1 60); do pgrep -f "livox_ros2_avia_node" >/dev/null || break; sleep 1; done
+  pgrep -f "livox_ros2_avia_node" >/dev/null && { say "driver still running after 60 s - aborting"; exit 5; }
+  sleep 2
+fi
+say "lidar_ctl $sub"; raw=$($HERE/lidar_ctl $sub --code $CODE --timeout 60 2>>$LOG); rc=$?; echo "$raw" >> $LOG; out=$(echo "$raw" | grep "^{" | tail -n1); say "result (rc=$rc): $out"; echo "$out"
+if [ $STOP = 1 ] && [ $RESTART = 1 ] && [ "$was_active" = active ]; then say "restarting the pipeline"; systemctl --user start $UNIT; fi
+exit $rc

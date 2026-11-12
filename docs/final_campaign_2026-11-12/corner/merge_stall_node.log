@@ -1,0 +1,5 @@
+[INFO] [1794479179.492833012] [registration_merge_node]: Merging /landfill/fusion/points_rgbt -> /landfill/fusion/points_merged over 0.50s windows with ICP motion compensation
+[INFO] [1794479192.336215867] [registration_merge_node]: Published merged cloud: 23994 pts (60 scans, 1440000 raw pts, 0.00s window) @ 0.00 Hz
+[INFO] [1794479198.265160787] [registration_merge_node]: Published merged cloud: 23994 pts (60 scans, 1440000 raw pts, 0.00s window) @ 0.17 Hz
+[INFO] [1794479204.289217095] [registration_merge_node]: Published merged cloud: 23994 pts (60 scans, 1440000 raw pts, 0.00s window) @ 0.17 Hz
+[INFO] [1794479210.267210557] [registration_merge_node]: Published merged cloud: 23994 pts (60 scans, 1440000 raw pts, 0.00s window) @ 0.17 Hz

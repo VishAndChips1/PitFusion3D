@@ -1,0 +1,44 @@
+{
+ "live_pipeline_60s": {
+  "loopback_MB_per_s": 0.21028866666666665,
+  "loopback_pkts_per_s": 358.05,
+  "udp_in_datagrams": 169357,
+  "udp_rcvbuf_errors": 0,
+  "udp_in_errors": 0,
+  "socket_drop_growth": {}
+ },
+ "shm": "88\n542M\t/dev/shm\n",
+ "no_profile": {
+  "profile": "none",
+  "sent": 250,
+  "received": 204,
+  "delivered_pct": 81.6,
+  "loopback_MB_per_s": 0.29137008000000003,
+  "loopback_pkts_per_s": 499.08,
+  "subscriber_udp_sockets": 6,
+  "subscriber_own_socket_drops": 0,
+  "expected_payload_MB_per_s": 5.76
+ },
+ "current_profile": {
+  "profile": "fastdds_large_buffers.xml",
+  "sent": 250,
+  "received": 240,
+  "delivered_pct": 96.0,
+  "loopback_MB_per_s": 0.33054176,
+  "loopback_pkts_per_s": 569.76,
+  "subscriber_udp_sockets": 7,
+  "subscriber_own_socket_drops": 0,
+  "expected_payload_MB_per_s": 5.76
+ },
+ "shm_only_profile": {
+  "profile": "shm_only.xml",
+  "sent": 250,
+  "received": 240,
+  "delivered_pct": 96.0,
+  "loopback_MB_per_s": 0.29139847999999996,
+  "loopback_pkts_per_s": 499.28,
+  "subscriber_udp_sockets": 6,
+  "subscriber_own_socket_drops": 0,
+  "expected_payload_MB_per_s": 5.76
+ }
+}

@@ -38,7 +38,9 @@ for path in glob.glob('/dev/shm/fastrtps_*') + glob.glob('/dev/shm/sem.fastrtps_
     freed += st.st_blocks * 512
     removed += 1
     if not dry:
-        try: os.unlink(path)
-        except FileNotFoundError: pass
+        try:
+            os.unlink(path)
+        except FileNotFoundError:
+            pass
 print(f"{'would remove' if dry else 'removed'} {removed} stale fastrtps shm files "
       f"({freed/1e6:.0f} MB), kept {kept} in use")

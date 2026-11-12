@@ -1,0 +1,52 @@
+[INFO] [1794479214.187056965] [livox_restamp_node]: Re-stamping livox/lidar -> /landfill/livox/points (min-offset over a 200-sample window)
+[INFO] [1794479214.190865457] [livox_restamp_node]: offset=1793997000.000065s window_jitter=21.62ms (n=50)
+[INFO] [1794479214.194551781] [livox_restamp_node]: offset=1793997000.000008s window_jitter=21.68ms (n=100)
+[INFO] [1794479214.199965282] [livox_restamp_node]: offset=1793997000.000008s window_jitter=21.68ms (n=150)
+[INFO] [1794479214.206514119] [livox_restamp_node]: offset=1793997000.000008s window_jitter=22.96ms (n=200)
+[INFO] [1794479214.211655819] [livox_restamp_node]: offset=1793997000.000008s window_jitter=22.96ms (n=200)
+[INFO] [1794479214.224327577] [livox_restamp_node]: offset=1793997000.000013s window_jitter=24.79ms (n=200)
+[INFO] [1794479214.237657198] [livox_restamp_node]: offset=1793997000.000013s window_jitter=300018.23ms (n=200)
+[INFO] [1794479214.243417205] [livox_restamp_node]: offset=1793997000.000189s window_jitter=300018.06ms (n=200)
+[INFO] [1794479214.248171973] [livox_restamp_node]: offset=1793997000.000224s window_jitter=300018.02ms (n=200)
+[INFO] [1794479214.256175464] [livox_restamp_node]: offset=1793997300.000001s window_jitter=20.42ms (n=200)
+[INFO] [1794479214.260010087] [livox_restamp_node]: offset=1793997300.000012s window_jitter=20.41ms (n=200)
+[INFO] [1794479214.264622630] [livox_restamp_node]: offset=1793997200.000288s window_jitter=100020.13ms (n=200)
+[INFO] [1794479214.270568122] [livox_restamp_node]: offset=1793997200.000090s window_jitter=100020.33ms (n=200)
+[INFO] [1794479214.275280371] [livox_restamp_node]: offset=1793997200.000090s window_jitter=100018.25ms (n=200)
+[INFO] [1794479214.279470555] [livox_restamp_node]: offset=1793997200.000024s window_jitter=28.37ms (n=200)
+[INFO] [1794479214.283053914] [livox_restamp_node]: offset=1793997200.000024s window_jitter=28.37ms (n=200)
+[INFO] [1794479214.286812127] [livox_restamp_node]: offset=1793997200.000024s window_jitter=220.85ms (n=200)
+[INFO] [1794479214.290534285] [livox_restamp_node]: offset=1793997200.000024s window_jitter=229.99ms (n=200)
+[INFO] [1794479214.294234868] [livox_restamp_node]: offset=1793997200.000289s window_jitter=229.72ms (n=200)
+[INFO] [1794479214.297920598] [livox_restamp_node]: offset=1793997200.200038s window_jitter=29.97ms (n=200)
+[INFO] [1794479214.304103928] [livox_restamp_node]: offset=1793997200.200114s window_jitter=29.90ms (n=200)
+[INFO] [1794479214.310050902] [livox_restamp_node]: offset=1793997200.200114s window_jitter=3016.77ms (n=200)
+[INFO] [1794479214.313803875] [livox_restamp_node]: offset=1793997200.200125s window_jitter=3016.76ms (n=200)
+[INFO] [1794479214.317479383] [livox_restamp_node]: offset=1793997200.200221s window_jitter=3022.64ms (n=200)
+[INFO] [1794479214.322683252] [livox_restamp_node]: offset=1793997203.200013s window_jitter=22.85ms (n=200)
+[INFO] [1794479214.327130940] [livox_restamp_node]: offset=1793997203.200002s window_jitter=22.86ms (n=200)
+[WARN] [1794479214.328385666] [livox_restamp_node]: Livox device clock jumped backwards (sensor/driver restart?); resetting offset estimate
+[INFO] [1794479214.334673275] [livox_restamp_node]: offset=1794000330.200008s window_jitter=20.55ms (n=50)
+[INFO] [1794479214.340448450] [livox_restamp_node]: offset=1794000330.200008s window_jitter=21.04ms (n=100)
+[INFO] [1794479214.344263572] [livox_restamp_node]: offset=1794000330.200008s window_jitter=25.48ms (n=150)
+[INFO] [1794479214.364977969] [livox_restamp_node]: Re-stamping livox/lidar -> /landfill/livox/points (min-offset over a 200-sample window)
+[WARN] [1794479214.369155486] [livox_restamp_node]: Host clock stepped by +300.002s relative to the lidar clock (NTP step?); resetting offset estimate
+[WARN] [1794479214.379164846] [livox_restamp_node]: Livox device clock jumped backwards (sensor/driver restart?); resetting offset estimate
+--- OLD (min over 20 s window)
+   steady_err_ms          14.63453715
+   fwd+300s               wrong for 19.9s (first-sample err -300005 ms)
+   back-100s              wrong for 0.0s (first-sample err +0 ms)
+   fwd+0.2s(below thr)    wrong for 19.9s (first-sample err -206 ms)
+   fwd+3s                 wrong for 19.9s (first-sample err -3010 ms)
+   lidar restart          wrong for 0.0s
+   5s stall               wrong for 0.0s, resets=0
+   0.8s latency spike     spike err -800 ms, next sample err -5 ms
+--- NEW (with clock-step reset)
+   steady_err_ms          14.63453715
+   fwd+300s               wrong for 0.0s (first-sample err +0 ms)
+   back-100s              wrong for 0.0s (first-sample err +0 ms)
+   fwd+0.2s(below thr)    wrong for 0.0s (first-sample err +0 ms)
+   fwd+3s                 wrong for 0.0s (first-sample err +0 ms)
+   lidar restart          wrong for 0.0s
+   5s stall               wrong for 0.0s, resets=0
+   0.8s latency spike     spike err +0 ms, next sample err +0 ms

@@ -206,30 +206,43 @@ class RegistrationMergeNode(Node):
         )
 
     def _on_cloud(self, msg):
+        """Accumulate one fused scan; hand the window to the worker when it is complete."""
         stamp_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         self._frame_id = msg.header.frame_id
+        points = self._finite_points(msg)
+        if points is None:
+            return
+        self._reset_window_if_clock_rewound(stamp_sec)
+        if self._window_start is None:
+            self._window_start = stamp_sec
+        self._buffer.append((stamp_sec, points[:, 0:3], points[:, 3:6]))
+        if self._window_is_complete(stamp_sec):
+            self._submit_window()
 
+    @staticmethod
+    def _finite_points(msg):
+        """Return the cloud's (N, 6) array without non-finite points, or None if nothing is left.
+
+        Defence in depth: fusion already drops non-finite points, but one NaN reaching
+        ICP/SVD used to discard the whole 5-scan window.
+        """
         points = cloud_io.read_fields(msg, cloud_io.XYZIRT_FIELDS, dtype=np.float32)
         if points.shape[0] == 0:
-            return
-        # Defence in depth: fusion already drops non-finite points, but one
-        # NaN reaching ICP/SVD used to discard the whole 5-scan window.
+            return None
         finite = np.isfinite(points[:, 0:3]).all(axis=1)
         if not finite.all():
             points = points[finite]
-            if points.shape[0] == 0:
-                return
+        return points if points.shape[0] else None
 
-        # A sim restart rewinds the clock; without this the window never
-        # closes again because stamp_sec stays below the stale start.
-        # 1-second tolerance (matching sensor_fusion_node.py's identical
-        # check), not a hair-trigger on *any* backward movement: on real
-        # hardware with no battery-backed RTC, the clock gets stepped by
-        # NTP as it settles after every boot -- small backward jitter
-        # from that is normal and was previously enough to reset this
-        # window every few seconds, discarding whatever scans had
-        # already accumulated and tanking the merged cloud's refresh
-        # rate for the first several minutes after every power-on.
+    def _reset_window_if_clock_rewound(self, stamp_sec):
+        """Start a fresh window if stamps jumped backwards by more than 1 s.
+
+        A sim restart rewinds the clock; without this the window never closes again because
+        stamp_sec stays below the stale start. The 1 s tolerance (matching sensor_fusion_node.py)
+        is deliberate: this Pi has no battery-backed RTC, so NTP steps the clock after every
+        boot, and small backward jitter used to reset the window every few seconds, tanking the
+        merged cloud's refresh rate for the first minutes after power-on.
+        """
         if self._window_start is not None and stamp_sec < self._window_start - 1.0:
             self.get_logger().warn(
                 'Timestamps jumped backwards (%.3f < %.3f); resetting merge window'
@@ -238,47 +251,41 @@ class RegistrationMergeNode(Node):
             self._buffer = []
             self._window_start = None
 
-        if self._window_start is None:
-            self._window_start = stamp_sec
+    def _window_is_complete(self, stamp_sec):
+        """A window closes when its scans span window_duration, or at the safety scan cap."""
+        return (stamp_sec - self._window_start >= self._window_duration
+                or len(self._buffer) >= self._max_window_scans)
 
-        self._buffer.append((stamp_sec, points[:, 0:3], points[:, 3:6]))
+    def _submit_window(self):
+        """Hand the closed window to the worker thread, replacing a stale waiting one.
 
-        if (stamp_sec - self._window_start >= self._window_duration
-                or len(self._buffer) >= self._max_window_scans):
-            # Defensive: ICP/SVD/voxel-downsampling is real numerical code
-            # with edge cases (e.g. a degenerate all-coincident-points
-            # window, or a NaN/Inf point slipping through from upstream --
-            # see sensor_fusion_node.py's NaN filtering, added for exactly
-            # this reason). Before this fix, any such exception here would
-            # propagate uncaught out of this subscription callback and
-            # kill the entire node process -- matching the project's
-            # established pattern elsewhere (camera node capture retries)
-            # of treating a single bad frame as recoverable, not fatal.
-            # systemd's Restart=on-failure is still there as a backstop,
-            # but that's a much slower, more disruptive recovery than
-            # just skipping one window and continuing.
-            window, self._buffer = self._buffer, []
-            self._window_start = None
-            item = (time.monotonic(), window)
-            try:
-                self._work_q.put_nowait(item)
-            except queue.Full:
-                # Worker is busy AND a window is already waiting: that
-                # waiting one is now stale. Replace it with this fresher
-                # one (real-time: never build a backlog of old data).
-                try:
-                    self._work_q.get_nowait()
-                except queue.Empty:
-                    pass
-                self._dropped_windows += 1
-                if self._dropped_windows % 10 == 1:
-                    self.get_logger().warn(
-                        f'Merge worker behind -- replaced a stale window with the newest '
-                        f'({self._dropped_windows} dropped so far)')
-                try:
-                    self._work_q.put_nowait(item)
-                except queue.Full:
-                    pass
+        Registration is real numerical code with edge cases (degenerate or NaN input); it runs
+        in the worker inside a try/except so one bad window never kills the node (systemd's
+        restart is only a much slower backstop).
+        """
+        window, self._buffer = self._buffer, []
+        self._window_start = None
+        item = (time.monotonic(), window)
+        try:
+            self._work_q.put_nowait(item)
+            return
+        except queue.Full:
+            pass
+        # Worker busy AND a window already waiting: the waiting one is now stale. Replace it
+        # with this fresher one (real-time: never build a backlog of old data).
+        try:
+            self._work_q.get_nowait()
+        except queue.Empty:
+            pass
+        self._dropped_windows += 1
+        if self._dropped_windows % 10 == 1:
+            self.get_logger().warn(
+                f'Merge worker behind -- replaced a stale window with the newest '
+                f'({self._dropped_windows} dropped so far)')
+        try:
+            self._work_q.put_nowait(item)
+        except queue.Full:
+            pass
 
     def _worker_loop(self):
         while rclpy.ok():

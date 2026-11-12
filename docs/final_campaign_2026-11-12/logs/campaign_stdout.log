@@ -1,0 +1,51 @@
+[16:40:46] campaign start; phases=['meta', 'inventory', 'code', 'idle_os', 'startup', 'idle_pipeline', 'sensor', 'latency', 'threads', 'transport', 'accuracy', 'http', 'net', 'sweep', 'stress', 'soak', 'corner', 'recovery', 'restart_timing', 'final']; power sampler running
+[16:40:46] === PHASE meta begin
+[16:41:00] === PHASE meta end
+[16:41:00] === PHASE inventory begin
+[16:42:14] === PHASE inventory end
+[16:42:14] === PHASE code begin
+[16:42:15] === PHASE code end
+[16:42:15] === PHASE idle_os begin
+[16:45:24] === PHASE idle_os end
+[16:45:24] === PHASE startup begin
+[16:47:14] === PHASE startup end
+[16:47:14] === PHASE idle_pipeline begin
+[16:53:50] === PHASE idle_pipeline end
+[16:53:50] === PHASE sensor begin
+[16:54:59] sensor lidar: ['scans', 'rate_hz', 'points_per_scan', 'valid_points_per_scan']
+[16:55:46] sensor rgb: ['frames', 'rate_hz', 'resolution', 'encoding']
+[16:56:10] sensor thermal: ['frames', 'rate_hz', 'note']
+[16:57:14] sensor fused: ['fused_clouds', 'fused_rate_hz', 'lidar_in_rate_hz', 'rgb_rate_hz']
+[16:58:15] sensor merged: ['merged_clouds', 'merged_rate_hz', 'points_per_merged_cloud', 'bytes_per_merged_cloud']
+[16:58:22] === PHASE sensor end
+[16:58:22] === PHASE latency begin
+[17:01:37] === PHASE latency end
+[17:01:37] === PHASE threads begin
+[17:03:38] === PHASE threads end
+[17:03:38] === PHASE transport begin
+[17:06:20] === PHASE transport end
+[17:06:20] === PHASE accuracy begin
+[17:06:28] === PHASE accuracy end
+[17:06:28] === PHASE http begin
+[17:10:36] === PHASE http end
+[17:10:36] === PHASE net begin
+[17:12:39] === PHASE net end
+[17:12:39] === PHASE sweep begin
+[17:29:34] === PHASE sweep end
+[17:29:34] === PHASE stress begin
+done
+done
+done
+done
+done
+[17:42:08] === PHASE stress end
+[17:42:08] === PHASE soak begin
+[18:14:12] === PHASE soak end
+[18:14:12] === PHASE corner begin
+[18:16:08] corner t_merge done
+[18:18:43] corner t_fusion done
+[18:19:32] corner t_streamer done
+[18:19:35] corner t_restamp done
+[18:20:12] corner t_merge_stall done
+[18:20:12] === PHASE corner end
+[18:20:12] === PHASE recovery begin

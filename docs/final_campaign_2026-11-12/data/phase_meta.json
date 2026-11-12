@@ -1,0 +1,12 @@
+{
+ "start": "2026-11-12 16:40:46",
+ "start_epoch": 1794462046.72461,
+ "git": "e3e9850 Pipeline audit 2026-11-12: fix forward clock-step stall, merge buffer cap, clean thermal shutdown; add tests and results\n1a81180 Add pipeline audit (threading, layout, micro-benchmarks, open items)\nee8aa27 Add point-cap sweep results (merged 20k-105k, live 5k-25k) with power/current safety data\n",
+ "uptime": "2026-11-12 16:08:42",
+ "camera": {
+  "thermal_hz": 0.0,
+  "usb_present": true
+ },
+ "caps": "Integer value is: 20000\nInteger value is: 5000\n",
+ "power_source": "00001388"
+}

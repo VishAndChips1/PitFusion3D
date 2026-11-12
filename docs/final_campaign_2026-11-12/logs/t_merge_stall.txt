@@ -1,0 +1,1 @@
+[PASS] STALLED STAMPS: 250 scans with a frozen timestamp -> 4 merged outputs, rss 162->244 MB, alive=True
