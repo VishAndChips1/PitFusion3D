@@ -9,7 +9,7 @@ Follow-up to the 2026-11-12 campaign (`../final_campaign_20261112/FULL_RESULTS_R
 | Pi powered up | Service runs **before** the pipeline: Standby -> **Normal** in 0.9 s (whole step 4.8 s), then the pipeline connects | `boot_state_seen` / `boot_wake_to_normal` entries |
 | Pi loses power suddenly | **Cannot be handled in software.** Data stops after 3.2 s; the LiDAR re-broadcasts every 1 s (238 packets seen) and stays in Normal mode | `data/lidar_sudden_loss.json` (8672 data packets, last at 3.206 s) |
 
-Installed: `/etc/systemd/system/lidar-power.service` (enabled), hook `~/lidar_ctl/lidar_power_hook.sh`, copies in the repo `tools/lidar_ctl/`. Ordering: `Before=user@1000.service` (starts before the pipeline, stops after it) and `After=NetworkManager.service` (stops before the network goes down). The start/stop actions were tested through systemd; the final real power-off/boot cycle is recorded in section 10.
+Installed: `/etc/systemd/system/lidar-power.service` (enabled), hook `~/lidar_ctl/lidar_power_hook.sh`, copies in the repo `tools/lidar_ctl/`. Ordering: `Before=user@1000.service` (starts before the pipeline, stops after it) and `After=NetworkManager.service` (stops before the network goes down). The start/stop actions were tested through systemd. A full real power-off/boot cycle has NOT yet been run (it ends the working session); to verify, power off or reboot the Pi, then check `~/lidar_ctl/power_events.log` for `shutdown_sleep` (Normal -> Standby) and, after boot, `boot_state_seen` (Standby) followed by `boot_wake_to_normal` (Standby -> Normal).
 **For sudden power loss** the only fix is hardware: power the LiDAR through a switch (relay or MOSFET) driven from the Pi's 5 V rail, so it turns off when the Pi's supply disappears. Figure D01.
 
 ## 2. Thermal camera
@@ -55,4 +55,4 @@ Data flowing 25 s after power-on; the desktop takes 63 s and is not waited for. 
 
 ## 10. Scorecard (D10) and open items
 Green: real-time performance, power, robustness, boot, registration accuracy. Amber: LiDAR power management (sudden loss needs hardware), colour/thermal alignment (needs a target), SD recording. Red: thermal camera stuck state, WiFi in the rig room.
-Open: real shutdown/boot cycle of `lidar-power.service` (see end of this file once run), calibration target, camera power switch, LiDAR power switch, ambient temperature logging.
+Open: real shutdown/boot cycle of `lidar-power.service`, calibration target, camera power switch, LiDAR power switch, ambient temperature logging.
