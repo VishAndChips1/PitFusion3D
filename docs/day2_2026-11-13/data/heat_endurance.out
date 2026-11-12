@@ -1,0 +1,5 @@
+[09:24:12] phase -> stress
+SAFETY at 1489s: est 1.63 A, ext5v 4.849 V, temp 84.2 C
+done
+[09:46:04] phase -> cooldown
+done SAFETY at 1489s: est 1.63 A, ext5v 4.849 V, temp 84.2 C

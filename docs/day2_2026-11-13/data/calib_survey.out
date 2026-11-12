@@ -1,0 +1,5 @@
+collected 278 lidar scans and 5 rgb frames
+frame 1 best yaw 2.50 pitch 1.00 score 0.171
+frame 2 best yaw 2.50 pitch 1.00 score 0.178
+frame 3 best yaw 3.00 pitch 1.00 score 0.189
+best offset: yaw 2.66 deg, pitch 0.92 deg (score 0.176 vs -0.007 at zero)

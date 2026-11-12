@@ -1,0 +1,20 @@
+[Unit]
+Description=Livox LiDAR: wake to Normal at boot (before the pipeline), Standby at shutdown (after the pipeline)
+Documentation=file:///home/vish/lidar_ctl/README.md
+After=network.target NetworkManager.service
+Wants=NetworkManager.service
+# start BEFORE the user manager (so the pipeline's driver finds the LiDAR awake); because stop order is the reverse of start order
+# this unit therefore stops AFTER the pipeline has been stopped and the LiDAR released, and BEFORE the network goes down
+Before=user@1000.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=vish
+ExecStart=/home/vish/lidar_ctl/lidar_power_hook.sh start
+ExecStop=/home/vish/lidar_ctl/lidar_power_hook.sh stop
+TimeoutStartSec=75
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

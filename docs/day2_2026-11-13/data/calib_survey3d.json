@@ -1,0 +1,134 @@
+{
+ "per_frame": [
+  {
+   "stamp": 1794520881.86043,
+   "best_yaw": -1.0,
+   "best_pitch": 2.0,
+   "best_scale": 0.96,
+   "score_best": -0.017872569703511303,
+   "score_base": -0.024117613317895872
+  },
+  {
+   "stamp": 1794520887.8686016,
+   "best_yaw": -1.0,
+   "best_pitch": 1.5,
+   "best_scale": 0.96,
+   "score_best": -0.019204975581648045,
+   "score_base": -0.058903060248398614
+  },
+  {
+   "stamp": 1794520893.9561975,
+   "best_yaw": -1.0,
+   "best_pitch": 2.0,
+   "best_scale": 0.96,
+   "score_best": -0.019950993564900633,
+   "score_base": -0.05608681533283366
+  },
+  {
+   "stamp": 1794520899.956793,
+   "best_yaw": 0.0,
+   "best_pitch": -0.5,
+   "best_scale": 0.94,
+   "score_best": -0.018220133510555268,
+   "score_base": -0.05913162711340032
+  },
+  {
+   "stamp": 1794520905.9716256,
+   "best_yaw": 0.0,
+   "best_pitch": -0.5,
+   "best_scale": 0.94,
+   "score_best": -0.01903813114291948,
+   "score_base": -0.05820603684744734
+  },
+  {
+   "stamp": 1794520912.0559397,
+   "best_yaw": -0.5,
+   "best_pitch": 0.5,
+   "best_scale": 0.96,
+   "score_best": -0.01815801760309648,
+   "score_base": -0.0556278440401629
+  },
+  {
+   "stamp": 1794520918.0726004,
+   "best_yaw": -1.0,
+   "best_pitch": 0.0,
+   "best_scale": 0.96,
+   "score_best": -0.020112166159516554,
+   "score_base": -0.06064331603944
+  },
+  {
+   "stamp": 1794520924.155229,
+   "best_yaw": -1.0,
+   "best_pitch": 0.5,
+   "best_scale": 0.96,
+   "score_best": -0.018640434039741572,
+   "score_base": -0.0577683870016265
+  },
+  {
+   "stamp": 1794520930.1582463,
+   "best_yaw": -1.0,
+   "best_pitch": 0.0,
+   "best_scale": 0.96,
+   "score_best": -0.01440885205245115,
+   "score_base": -0.05330008830270695
+  },
+  {
+   "stamp": 1794520936.1582494,
+   "best_yaw": -1.0,
+   "best_pitch": -1.0,
+   "best_scale": 0.96,
+   "score_best": -0.021458858087157962,
+   "score_base": -0.05907724157324461
+  },
+  {
+   "stamp": 1794520942.1688983,
+   "best_yaw": -1.0,
+   "best_pitch": -1.0,
+   "best_scale": 0.96,
+   "score_best": -0.01859666961122848,
+   "score_base": -0.05597281133509198
+  },
+  {
+   "stamp": 1794520948.172296,
+   "best_yaw": -1.0,
+   "best_pitch": -0.5,
+   "best_scale": 0.96,
+   "score_best": -0.01803041558021645,
+   "score_base": -0.059585567818041425
+  },
+  {
+   "stamp": 1794520954.2652469,
+   "best_yaw": -0.5,
+   "best_pitch": -0.5,
+   "best_scale": 0.96,
+   "score_best": -0.01834102900453385,
+   "score_base": -0.05371068713923585
+  },
+  {
+   "stamp": 1794520960.3532836,
+   "best_yaw": 0.0,
+   "best_pitch": -0.5,
+   "best_scale": 0.94,
+   "score_best": -0.02001960619765264,
+   "score_base": -0.05352675899436561
+  },
+  {
+   "stamp": 1794520966.360186,
+   "best_yaw": -1.0,
+   "best_pitch": -1.0,
+   "best_scale": 0.96,
+   "score_best": -0.016565304342733084,
+   "score_base": -0.05165869751189574
+  }
+ ],
+ "mean_best_yaw": -1.0,
+ "mean_best_pitch": -0.5,
+ "mean_best_scale": 0.96,
+ "mean_score_best": -0.02104442836069732,
+ "mean_score_base": -0.054487770174385844,
+ "std_yaw": 0.40276819911981904,
+ "std_pitch": 0.9977753031397177,
+ "std_scale": 0.008000000000000009,
+ "n_frames": 15,
+ "intrinsics_fx": 1065.0
+}

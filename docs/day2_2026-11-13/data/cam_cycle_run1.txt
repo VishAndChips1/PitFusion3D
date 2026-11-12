@@ -1,0 +1,10 @@
+[08:14:36] off=10s idle=60s | camera present before: yes
+[08:14:36] writable disable knob: yes
+[08:14:36] stream attempt BEFORE power-cycle: frames=0 rc=0
+[08:14:44] port power OFF
+[08:14:47] camera present while port off: no
+[08:14:54] port power ON
+[08:14:55] camera re-enumerated after 2s: yes
+[08:14:55] leaving the camera completely alone for 60s
+[08:15:55] FIRST stream attempt after idle: frames=0 rc=0
+[08:16:02] second attempt right after: frames=0 rc=255

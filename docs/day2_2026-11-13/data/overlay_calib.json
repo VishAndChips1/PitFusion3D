@@ -1,0 +1,66 @@
+{
+ "per_frame": [
+  {
+   "stamp": 1794519317.6891515,
+   "scans": 5,
+   "points": 104021,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.011851565269330115,
+   "score_best": 0.13589601488109918
+  },
+  {
+   "stamp": 1794519318.3798337,
+   "scans": 10,
+   "points": 209518,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.012225282464086443,
+   "score_best": 0.14288708293336258
+  },
+  {
+   "stamp": 1794519318.9766703,
+   "scans": 10,
+   "points": 209213,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.0097426368657184,
+   "score_best": 0.14155806118751083
+  },
+  {
+   "stamp": 1794519319.668096,
+   "scans": 10,
+   "points": 209701,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.008573217512776014,
+   "score_best": 0.13798486621986122
+  },
+  {
+   "stamp": 1794519320.368167,
+   "scans": 10,
+   "points": 209227,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.014374664995843004,
+   "score_best": 0.14206815103961032
+  }
+ ],
+ "grid_deg": [
+  -4.0,
+  4.0,
+  0.5
+ ],
+ "mean_best_yaw_deg": 3.506094980316564,
+ "mean_best_pitch_deg": -1.0152861279586234,
+ "mean_score_at_zero": 0.011353473421550794,
+ "mean_score_best": 0.14007883525228884,
+ "spread_yaw_deg": 0.0,
+ "spread_pitch_deg": 0.0,
+ "intrinsics": {
+  "fx": 1065.0,
+  "fy": 1065.0,
+  "cx": 640.0,
+  "cy": 360.0
+ }
+}

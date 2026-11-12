@@ -56,6 +56,32 @@ def _load_extrinsics(path):
     return reference_frame, frames
 
 
+def _load_boresight_corrections(path):
+    """Optional measured rotation corrections, {camera frame: (yaw_deg, pitch_deg)}.
+
+    Read from the top-level `boresight_correction_deg` key of the extrinsics file. The rotation is
+    applied in the camera frame after the extrinsic chain, i.e. as a small residual alignment
+    between the LiDAR and that camera. Absent key = no correction (previous behaviour).
+    """
+    with open(path, 'r', encoding='utf-8') as yaml_file:
+        data = yaml.safe_load(yaml_file) or {}
+    corrections = {}
+    for frame, c in (data.get('boresight_correction_deg') or {}).items():
+        corrections[str(frame)] = (float(c.get('yaw', 0.0)), float(c.get('pitch', 0.0)))
+    return corrections
+
+
+def apply_boresight_correction(transform, yaw_deg, pitch_deg):
+    """Fold a camera-frame yaw/pitch rotation into a (M, b) lidar->camera transform (row-vector convention)."""
+    cy, sy = np.cos(np.radians(yaw_deg)), np.sin(np.radians(yaw_deg))
+    cp, sp = np.cos(np.radians(pitch_deg)), np.sin(np.radians(pitch_deg))
+    rz = np.array([[cy, -sy, 0.0], [sy, cy, 0.0], [0.0, 0.0, 1.0]])
+    ry = np.array([[cp, 0.0, sp], [0.0, 1.0, 0.0], [-sp, 0.0, cp]])
+    rc = rz @ ry
+    m, b = transform
+    return m @ rc.T, b @ rc.T
+
+
 def _load_camera_intrinsics(path, camera_key):
     with open(path, 'r', encoding='utf-8') as yaml_file:
         data = yaml.safe_load(yaml_file) or {}
@@ -164,6 +190,10 @@ class SensorFusionNode(Node):
         self._thermal_intrinsics = _load_camera_intrinsics(intrinsics_path, 'thermal_camera')
 
         self._rgb_transform = lidar_to_camera_transform(extrinsics, lidar_frame, rgb_frame)
+        yaw_pitch = _load_boresight_corrections(extrinsics_path).get(rgb_frame)
+        if yaw_pitch:
+            self._rgb_transform = apply_boresight_correction(self._rgb_transform, *yaw_pitch)
+            self.get_logger().info('RGB boresight correction applied: yaw %+.2f deg, pitch %+.2f deg' % yaw_pitch)
         self._thermal_transform = lidar_to_camera_transform(extrinsics, lidar_frame, thermal_frame)
         # Co-located rigs share one transform; skip the second projection.
         self._shared_transform = (

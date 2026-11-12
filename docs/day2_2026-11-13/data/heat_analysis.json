@@ -1,0 +1,103 @@
+{
+ "episodes": [
+  {
+   "start": "11 Nov 08:08",
+   "minutes": 1.2,
+   "n": 7,
+   "soc_before_C": 52.7,
+   "soc_during_mean_C": 40.7,
+   "soc_during_max_C": 44.4
+  },
+  {
+   "start": "11 Nov 08:24",
+   "minutes": 11.6,
+   "n": 59,
+   "soc_before_C": 58.0,
+   "soc_during_mean_C": 53.9,
+   "soc_during_max_C": 60.9
+  },
+  {
+   "start": "11 Nov 12:49",
+   "minutes": 132.6,
+   "n": 271,
+   "soc_before_C": 56.9,
+   "soc_during_mean_C": 64.6,
+   "soc_during_max_C": 72.5
+  },
+  {
+   "start": "11 Nov 16:52",
+   "minutes": 1.1,
+   "n": 4,
+   "soc_before_C": 59.5,
+   "soc_during_mean_C": 47.9,
+   "soc_during_max_C": 64.2
+  },
+  {
+   "start": "11 Nov 17:48",
+   "minutes": 117.3,
+   "n": 208,
+   "soc_before_C": 48.4,
+   "soc_during_mean_C": 67.0,
+   "soc_during_max_C": 75.2
+  },
+  {
+   "start": "11 Nov 19:49",
+   "minutes": 2.2,
+   "n": 6,
+   "soc_before_C": 69.0,
+   "soc_during_mean_C": 70.9,
+   "soc_during_max_C": 73.0
+  },
+  {
+   "start": "11 Nov 19:54",
+   "minutes": 1.1,
+   "n": 6,
+   "soc_before_C": 71.2,
+   "soc_during_mean_C": 70.9,
+   "soc_during_max_C": 73.0
+  },
+  {
+   "start": "11 Nov 20:06",
+   "minutes": 13.4,
+   "n": 26,
+   "soc_before_C": 66.7,
+   "soc_during_mean_C": 61.3,
+   "soc_during_max_C": 70.3
+  },
+  {
+   "start": "11 Nov 20:43",
+   "minutes": 26.0,
+   "n": 43,
+   "soc_before_C": 61.8,
+   "soc_during_mean_C": 61.1,
+   "soc_during_max_C": 69.7
+  },
+  {
+   "start": "12 Nov 16:09",
+   "minutes": 32.7,
+   "n": 59,
+   "soc_before_C": 60.6,
+   "soc_during_mean_C": 64.9,
+   "soc_during_max_C": 71.4
+  },
+  {
+   "start": "12 Nov 16:45",
+   "minutes": 95.7,
+   "n": 170,
+   "soc_before_C": 66.0,
+   "soc_during_mean_C": 64.8,
+   "soc_during_max_C": 75.7
+  },
+  {
+   "start": "13 Nov 08:00",
+   "minutes": 7.8,
+   "n": 15,
+   "soc_before_C": 37.6,
+   "soc_during_mean_C": 50.9,
+   "soc_during_max_C": 58.7
+  }
+ ],
+ "good_mean": 61.47896266829866,
+ "stuck_mean": 64.38452723146747,
+ "n_events": 887
+}

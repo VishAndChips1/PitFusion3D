@@ -1,0 +1,8 @@
+[08:16:34] 1. wake to Normal
+{"ok":true,"command":"normal","initial_state":"Normal","final_state":"Normal","switch_seconds":0.0,"broadcast_code":"3JEDLAJ001G0651"}
+[08:16:35] 2. start streaming and keep a live host connection for 20 s
+[08:16:55] 3. SIGKILL the host (no disconnect, no more heartbeats)
+./lidar_sudden_loss.sh: line 8: 24057 Killed                  $C/lidar_ctl sampling-on --code $CODE --timeout 40 --watch 60 > /dev/null 2>&1
+[08:20:55] 4. sniffer result: {"seconds": 240.0, "data_packets_total": 8672, "data_packets_per_5s": {"0": 8672}, "last_data_packet_at_s": 3.2063236236572266, "first_rebroadcast_at_s": 3.2090864181518555, "broadcast_packets": 238}
+[08:20:55] 5. reconnect and read the state
+{"ok":true,"command":"status","initial_state":"Normal","final_state":"Normal","switch_seconds":0.0,"broadcast_code":"3JEDLAJ001G0651"}

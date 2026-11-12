@@ -38,6 +38,27 @@ The state is reported in the 1 Hz heartbeat (general command 0x03, `work_state` 
 | Repeat Power-Saving → Normal | 9.7 s again (repeatable) |
 | Final state left for the night | **Power-Saving** |
 
+## Automatic Standby at shutdown and wake at boot (installed 2026-11-13)
+**What you asked for:** when the Pi is powered down the LiDAR goes into Standby; when the Pi gets power again the LiDAR comes out of Standby into normal operation.
+
+| Situation | What happens | Status |
+|---|---|---|
+| Pi shut down or rebooted from the OS (`poweroff`, `reboot`, desktop menu, `shutdown`) | `lidar-power.service` stops **after** the ROS pipeline has released the sensor and **before** the network goes down, and puts the LiDAR into **Standby** | installed, tested through systemd; **real power-down ordering verified at the reboot test (see `power_events.log`)** |
+| Pi powered up | the same service starts **before** the pipeline's user session, reads the LiDAR's state (logging whether the previous shutdown left it in Standby) and wakes it to **Normal**; the ROS driver then connects to an already-awake sensor and streams | installed, tested through systemd |
+| **Pi loses power suddenly** (battery flat, cable pulled) | **cannot be handled by software**: nothing is left running to send the command. Measured on the real unit: after the host disappears the LiDAR **stops sending point data within 3.2 s**, starts re-broadcasting once a second to find a new host, and **stays in Normal mode** (it does *not* enter Standby by itself). It is awake and idle, not scanning | measured 2026-11-13 |
+
+**For sudden power loss the only reliable fix is hardware:** switch the LiDAR's own supply from the Pi's 5 V, for example a small relay/MOSFET module whose coil is driven from a Pi 5 V pin or USB port, so the LiDAR is unpowered whenever the Pi is. (Or accept the idle state: with no host the sensor is not scanning.)
+
+**Files and controls**
+* `lidar_power_hook.sh start|stop` — the action run by the service; every action is appended as one JSON line to `~/lidar_ctl/power_events.log` (state seen, state after, seconds taken).
+* `/etc/systemd/system/lidar-power.service` — `Type=oneshot`, `RemainAfterExit=yes`, `User=vish`, `After=NetworkManager.service`, `Before=user@1000.service`, `TimeoutStartSec=75`, `TimeoutStopSec=60`; enabled for multi-user.target.
+* Choose the sleep mode: `LIDAR_SLEEP_MODE=standby` (default, 0.9 s wake) or `low` (Power-Saving, 9.7 s wake) — set it with `sudo systemctl edit lidar-power.service` (`[Service] Environment=LIDAR_SLEEP_MODE=low`).
+* Disable it: `sudo systemctl disable --now lidar-power.service`.
+* Boot cost: the wake step runs before the pipeline starts, so first data appears about 5 s later (Standby) or about 15 s later (Power-Saving) than the 25 s measured without it.
+* The manual `~/lidar` commands still work; they stop the pipeline, change the mode and restart it.
+
+**Honest limits.** (1) Standby vs Power-Saving power draw was not measured (the sensor's supply is not visible to the Pi); Power-Saving is nominally the deeper state, Standby the faster to wake. (2) If the LiDAR itself lost power overnight it restarts in Normal; the boot log line `boot_state_seen` shows which case occurred.
+
 ## Behaviour to know about
 * After a Pi reboot the pipeline auto-starts, its driver connects to the sleeping LiDAR and simply publishes nothing; run `~/lidar on` to start scanning again. The fused/merged outputs stay silent until then (the viewer shows its last cloud / empty).
 * If the sensor loses power entirely it starts in Normal mode again (power-up default).

@@ -1,0 +1,5 @@
+[08:57:54] attempt 1 (expected to fail and trigger the self-reset): frames=0
+[08:58:01] waiting for the camera's self-reset (USB disconnect)...
+[08:58:04] self-reset seen after ~4s (disconnect events: 1); waiting for it to re-enumerate
+[08:58:05] re-enumerated; hands-off for 120s
+[09:00:05] attempt 2 after 120s of quiet: frames=0

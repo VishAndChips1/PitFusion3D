@@ -1,0 +1,1 @@
+{"label": "A: voxel 0.2 (current)", "cpu": {"driver": 14.7, "restamp": 6.3, "rgb": 15.7, "fusion": 22.5, "merge": 38.1, "streamer": 5.5}, "fused": {"hz": 10.01, "interval_p95_ms": 124, "age_p50_ms": 31, "age_p95_ms": 62, "pts": 24000}, "merged": {"hz": 1.55, "interval_p95_ms": 765, "age_p50_ms": 271, "age_p95_ms": 312, "pts": 120994}}

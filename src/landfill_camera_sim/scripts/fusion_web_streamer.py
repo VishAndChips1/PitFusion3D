@@ -34,6 +34,7 @@ import socketserver
 import struct
 import sys
 import threading
+import time
 
 import numpy as np
 
@@ -41,6 +42,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from rclpy.qos import qos_profile_sensor_data
+from rcl_interfaces.msg import SetParametersResult
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 
@@ -402,6 +404,7 @@ class _StreamState:
         self.latest_id = 0
         self.encoded_id = 0
         self.encoder = None
+        self.stamp = 0.0    # header stamp (s) of the cloud currently served
 
     def offer(self, msg):
         self.latest_msg = msg
@@ -415,10 +418,10 @@ class _StreamState:
             if msg is None or lid == self.encoded_id:
                 return
             n, payload = self.encoder(msg)
-            self.set_payload(n, payload)
+            self.set_payload(n, payload, msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9)
             self.encoded_id = lid
 
-    def set_payload(self, n_points, payload_bytes):
+    def set_payload(self, n_points, payload_bytes, stamp=0.0):
         # Compressed once here, per actual data update (~1-10Hz), not
         # per poll (browsers poll faster than that to catch an update
         # promptly -- compressing per-poll would redo this work for
@@ -430,10 +433,15 @@ class _StreamState:
             )
             self.seq = next_seq
             self.buffer = body
+            self.stamp = stamp
 
     def get_buffer_and_seq(self):
         with self.lock:
             return self.buffer, self.seq
+
+    def get_buffer_seq_stamp(self):
+        with self.lock:
+            return self.buffer, self.seq, self.stamp
 
 
 class _SharedState:
@@ -526,7 +534,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             stream_state.refresh()
         except Exception:
             pass  # serve the previous payload rather than fail the request
-        body, seq = stream_state.get_buffer_and_seq()
+        body, seq, stamp = stream_state.get_buffer_seq_stamp()
         etag = f'"{seq}"'
         if self.headers.get('If-None-Match') == etag:
             self.send_response(304)
@@ -541,6 +549,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Cache-Control', 'no-cache')
         self.send_header('ETag', etag)
+        # Data age = X-Server-Time - X-Cloud-Stamp (both on the Pi's clock, so independent of the client's clock).
+        self.send_header('X-Cloud-Stamp', f'{stamp:.3f}')
+        self.send_header('X-Server-Time', f'{time.time():.3f}')
+        self.send_header('Access-Control-Expose-Headers', 'X-Cloud-Stamp, X-Server-Time')
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -713,6 +725,10 @@ class FusionWebStreamer(Node):
         self._http_port = int(self.get_parameter('http_port').value)
         self._max_points_merged = int(self.get_parameter('max_points_merged').value)
         self._max_points_live = int(self.get_parameter('max_points_live').value)
+        # The caps can be changed at runtime (`ros2 param set /fusion_web_streamer
+        # max_points_merged N`) so they can be tuned/swept without a restart; the
+        # change applies from the next encoded cloud.
+        self.add_on_set_parameters_callback(self._on_param_change)
 
         http_keepalive = bool(self.get_parameter('http_keepalive').value)
 
@@ -749,6 +765,18 @@ class FusionWebStreamer(Node):
             % (merged_topic, self._max_points_merged, live_topic, self._max_points_live,
                self._http_port, http_keepalive)
         )
+
+    def _on_param_change(self, params):
+        for p in params:
+            if p.name in ('max_points_merged', 'max_points_live'):
+                if not isinstance(p.value, int) or not (100 <= p.value <= 1_000_000):
+                    return SetParametersResult(successful=False, reason='must be an int in [100, 1000000]')
+        for p in params:
+            if p.name == 'max_points_merged':
+                self._max_points_merged = int(p.value)
+            elif p.name == 'max_points_live':
+                self._max_points_live = int(p.value)
+        return SetParametersResult(successful=True)
 
     def _on_merged(self, msg):
         # Defensive, same gap/fix as sensor_fusion_node.py and

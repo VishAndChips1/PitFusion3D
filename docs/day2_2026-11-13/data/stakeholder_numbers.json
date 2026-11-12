@@ -1,0 +1,107 @@
+{
+ "data_volume": {
+  "LiDAR scans (raw)": {
+   "mb_per_s": 4.32,
+   "gb_per_hour": 15.552
+  },
+  "RGB frames (raw rgb8)": {
+   "mb_per_s": 27.648,
+   "gb_per_hour": 99.5328
+  },
+  "thermal frames (raw mono16)": {
+   "mb_per_s": 19.6608,
+   "gb_per_hour": 70.77888
+  },
+  "fused cloud (XYZ+I+RGB+T)": {
+   "mb_per_s": 5.76,
+   "gb_per_hour": 20.736
+  },
+  "merged cloud (full resolution)": {
+   "mb_per_s": 4.44312,
+   "gb_per_hour": 15.995232
+  },
+  "all three raw sensors": {
+   "mb_per_s": 51.6288,
+   "gb_per_hour": 185.86368
+  },
+  "merged cloud, quantised 11 B/pt + gzip (viewer format, full res)": {
+   "mb_per_s": 1.35762,
+   "gb_per_hour": 4.887432
+  }
+ },
+ "sd": {
+  "free_gb": 70,
+  "write_mb_s": 53.0,
+  "read_mb_s": 79.6,
+  "hours_by_stream": {
+   "LiDAR scans (raw)": 4.501028806584363,
+   "RGB frames (raw rgb8)": 0.7032857510288066,
+   "thermal frames (raw mono16)": 0.9889955873842593,
+   "fused cloud (XYZ+I+RGB+T)": 3.3757716049382713,
+   "merged cloud (full resolution)": 4.376304138633313,
+   "all three raw sensors": 0.37662011211657925,
+   "merged cloud, quantised 11 B/pt + gzip (viewer format, full res)": 14.322449908254477
+  },
+  "can_sustain": {
+   "LiDAR scans (raw)": true,
+   "RGB frames (raw rgb8)": true,
+   "thermal frames (raw mono16)": true,
+   "fused cloud (XYZ+I+RGB+T)": true,
+   "merged cloud (full resolution)": true,
+   "all three raw sensors": false,
+   "merged cloud, quantised 11 B/pt + gzip (viewer format, full res)": true
+  }
+ },
+ "power_w": {
+  "Pi + sensors, LiDAR asleep": {
+   "typical": 4.1,
+   "conservative": 7.323529411764706
+  },
+  "Pi + sensors + LiDAR scanning": {
+   "typical": 13.1,
+   "conservative": 16.323529411764707
+  }
+ },
+ "runtime_h": {
+  "50 Wh": {
+   "Pi + sensors, LiDAR asleep": {
+    "typical": 12.195121951219512,
+    "conservative": 6.827309236947792
+   },
+   "Pi + sensors + LiDAR scanning": {
+    "typical": 3.816793893129771,
+    "conservative": 3.063063063063063
+   }
+  },
+  "100 Wh": {
+   "Pi + sensors, LiDAR asleep": {
+    "typical": 24.390243902439025,
+    "conservative": 13.654618473895583
+   },
+   "Pi + sensors + LiDAR scanning": {
+    "typical": 7.633587786259542,
+    "conservative": 6.126126126126126
+   }
+  },
+  "150 Wh": {
+   "Pi + sensors, LiDAR asleep": {
+    "typical": 36.58536585365854,
+    "conservative": 20.481927710843376
+   },
+   "Pi + sensors + LiDAR scanning": {
+    "typical": 11.450381679389313,
+    "conservative": 9.18918918918919
+   }
+  },
+  "300 Wh": {
+   "Pi + sensors, LiDAR asleep": {
+    "typical": 73.17073170731707,
+    "conservative": 40.96385542168675
+   },
+   "Pi + sensors + LiDAR scanning": {
+    "typical": 22.900763358778626,
+    "conservative": 18.37837837837838
+   }
+  }
+ }
+}

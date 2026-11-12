@@ -1,0 +1,121 @@
+{
+ "rates": [
+  {
+   "t_s": 0,
+   "phase": "baseline",
+   "points_rgbt": 10.0,
+   "points_merged": 1.47
+  },
+  {
+   "t_s": 113,
+   "phase": "baseline",
+   "points_rgbt": 9.93,
+   "points_merged": 1.53
+  },
+  {
+   "t_s": 224,
+   "phase": "stress",
+   "points_rgbt": 10.07,
+   "points_merged": 0.67
+  },
+  {
+   "t_s": 351,
+   "phase": "stress",
+   "points_rgbt": 9.67,
+   "points_merged": 0.6
+  },
+  {
+   "t_s": 479,
+   "phase": "stress",
+   "points_rgbt": 9.0,
+   "points_merged": 0.73
+  },
+  {
+   "t_s": 601,
+   "phase": "stress",
+   "points_rgbt": 8.8,
+   "points_merged": 0.93
+  },
+  {
+   "t_s": 732,
+   "phase": "stress",
+   "points_rgbt": 9.13,
+   "points_merged": 1.2
+  },
+  {
+   "t_s": 852,
+   "phase": "stress",
+   "points_rgbt": 10.0,
+   "points_merged": 1.27
+  },
+  {
+   "t_s": 973,
+   "phase": "stress",
+   "points_rgbt": 10.0,
+   "points_merged": 1.2
+  },
+  {
+   "t_s": 1092,
+   "phase": "stress",
+   "points_rgbt": 10.0,
+   "points_merged": 1.33
+  },
+  {
+   "t_s": 1211,
+   "phase": "stress",
+   "points_rgbt": 10.07,
+   "points_merged": 1.27
+  },
+  {
+   "t_s": 1329,
+   "phase": "stress",
+   "points_rgbt": 10.07,
+   "points_merged": 1.2
+  },
+  {
+   "t_s": 1449,
+   "phase": "stress",
+   "points_rgbt": 10.0,
+   "points_merged": 1.33
+  },
+  {
+   "t_s": 1569,
+   "phase": "cooldown",
+   "points_rgbt": 9.87,
+   "points_merged": 1.33
+  },
+  {
+   "t_s": 1679,
+   "phase": "cooldown",
+   "points_rgbt": 9.87,
+   "points_merged": 1.6
+  },
+  {
+   "t_s": 1789,
+   "phase": "cooldown",
+   "points_rgbt": 10.0,
+   "points_merged": 1.53
+  },
+  {
+   "t_s": 1899,
+   "phase": "cooldown",
+   "points_rgbt": 10.0,
+   "points_merged": 1.53
+  },
+  {
+   "t_s": 2010,
+   "phase": "cooldown",
+   "points_rgbt": 9.87,
+   "points_merged": 1.27
+  },
+  {
+   "t_s": 2120,
+   "phase": "cooldown",
+   "points_rgbt": 9.53,
+   "points_merged": 1.47
+  }
+ ],
+ "abort": "SAFETY at 1489s: est 1.63 A, ext5v 4.849 V, temp 84.2 C",
+ "workers": 4,
+ "stress_min": 25.0
+}

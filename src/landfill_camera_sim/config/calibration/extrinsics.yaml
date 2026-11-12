@@ -45,3 +45,10 @@ transforms:
   camera_platform/lidar_frame:
     translation: {x: 0.0, y: 0.0, z: 0.0}
     rotation_rpy: {roll: 0.0, pitch: 0.0, yaw: 0.0}
+
+# Optional boresight correction (supported by sensor_fusion_node, currently DISABLED): a rotation in the camera frame applied after the
+# transforms above. An edge-alignment survey on 2026-11-13 suggested the RGB camera and LiDAR may differ by roughly 1.5-3.5 deg in yaw, but the
+# estimate was not stable across scenes (paired test: a half-size correction scored best), so it was NOT applied. A checkerboard / target-based
+# calibration is the reliable way to measure it. To enable a measured value:
+# boresight_correction_deg:
+#   camera_platform/rgb_optical_frame: {yaw: 0.0, pitch: 0.0}

@@ -1,0 +1,14 @@
+[    0.000000] vish-desktop kernel: Linux version 6.8.0-1065-raspi (buildd@bos03-arm64-035) (aarch64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binu
+[   12.358525] vish-desktop systemd[1]: Starting NetworkManager-wait-online.service - Network Manager Wait Online...
+[   13.842983] vish-desktop systemd[1409]: Starting pitfusion3d.service - PitFusion3D sensor pipeline (Livox + RGB + thermal -> fused point cloud web viewer)...
+[   13.843344] vish-desktop systemd[1409]: Started pitfusion3d.service - PitFusion3D sensor pipeline (Livox + RGB + thermal -> fused point cloud web viewer).
+[   14.369610] vish-desktop kernel: macb 1f00100000.ethernet eth0: Link is Up - 100Mbps/Full - flow control off
+[   18.954694] vish-desktop run_pipeline.sh[1461]: [livox_restamp_node-2] [INFO] [1794481624.469204196] [livox_restamp_node]: Re-stamping livox/lidar -> /landfill/livox/points
+[   21.796602] vish-desktop run_pipeline.sh[1461]: [sensor_fusion_node.py-6] [INFO] [1794481627.309705916] [sensor_fusion_node]: Fusing /landfill/livox/points + /landfill/rgb/
+[   25.329861] vish-desktop run_pipeline.sh[1461]: [registration_merge_node.py-7] [INFO] [1794481630.844323118] [registration_merge_node]: Published merged cloud: 76052 pts (4
+[   25.750935] vish-desktop run_pipeline.sh[1461]: [thermal_camera_node-5] [INFO] [1794481631.264293840] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_2
+[   26.066237] vish-desktop run_pipeline.sh[1461]: [registration_merge_node.py-7] [INFO] [1794481631.577186599] [registration_merge_node]: Published merged cloud: 127582 pts (
+[   26.749796] vish-desktop run_pipeline.sh[1461]: [registration_merge_node.py-7] [INFO] [1794481632.263954172] [registration_merge_node]: Published merged cloud: 126325 pts (
+[   27.303586] vish-desktop run_pipeline.sh[1461]: [registration_merge_node.py-7] [INFO] [1794481632.817565839] [registration_merge_node]: Published merged cloud: 101547 pts (
+[   28.036992] vish-desktop run_pipeline.sh[1461]: [registration_merge_node.py-7] [INFO] [1794481633.550550005] [registration_merge_node]: Published merged cloud: 96748 pts (7
+[   28.609984] vish-desktop run_pipeline.sh[1461]: [registration_merge_node.py-7] [INFO] [1794481634.124416060] [registration_merge_node]: Published merged cloud: 96222 pts (6

@@ -1,0 +1,48 @@
+{
+ "per_frame": [
+  {
+   "stamp": 1794520645.0793216,
+   "scans": 10,
+   "points": 105699,
+   "best_yaw_deg": 2.5,
+   "best_pitch_deg": 1.0,
+   "score_at_zero": -0.008459856559807726,
+   "score_best": 0.17090462392941386
+  },
+  {
+   "stamp": 1794520651.079657,
+   "scans": 10,
+   "points": 105506,
+   "best_yaw_deg": 2.5,
+   "best_pitch_deg": 1.0,
+   "score_at_zero": -0.011297853565168435,
+   "score_best": 0.17842816011275048
+  },
+  {
+   "stamp": 1794520657.1856554,
+   "scans": 10,
+   "points": 105656,
+   "best_yaw_deg": 3.0,
+   "best_pitch_deg": 1.0,
+   "score_at_zero": 0.0001462849331440104,
+   "score_best": 0.18901609811304942
+  }
+ ],
+ "grid_deg": [
+  -6.0,
+  6.0,
+  0.5
+ ],
+ "mean_best_yaw_deg": 2.6637003684776057,
+ "mean_best_pitch_deg": 0.9168462708262309,
+ "mean_score_at_zero": -0.006537141730610717,
+ "mean_score_best": 0.17636941599680192,
+ "spread_yaw_deg": 0.23570226039551584,
+ "spread_pitch_deg": 0.0,
+ "intrinsics": {
+  "fx": 1065.0,
+  "fy": 1065.0,
+  "cx": 640.0,
+  "cy": 360.0
+ }
+}

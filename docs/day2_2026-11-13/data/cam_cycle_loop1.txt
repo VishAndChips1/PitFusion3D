@@ -1,0 +1,10 @@
+08:17:09 cycle 1/10 off=8s idle=30s -> frames=0 stuck
+08:17:56 cycle 2/10 off=8s idle=30s -> frames=0 stuck
+08:18:42 cycle 3/10 off=8s idle=30s -> frames=0 stuck
+08:19:29 cycle 4/10 off=8s idle=30s -> frames=0 stuck
+08:20:15 cycle 5/10 off=8s idle=30s -> frames=0 stuck
+08:21:02 cycle 6/10 off=8s idle=30s -> frames=0 stuck
+08:21:49 cycle 7/10 off=8s idle=30s -> frames=0 stuck
+08:22:35 cycle 8/10 off=8s idle=30s -> frames=0 stuck
+08:23:22 cycle 9/10 off=8s idle=30s -> frames=0 stuck
+08:24:08 cycle 10/10 off=8s idle=30s -> frames=0 stuck

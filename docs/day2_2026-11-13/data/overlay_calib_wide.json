@@ -1,0 +1,57 @@
+{
+ "per_frame": [
+  {
+   "stamp": 1794519511.8534195,
+   "scans": 9,
+   "points": 187979,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.014925878763299993,
+   "score_best": 0.15597373203111764
+  },
+  {
+   "stamp": 1794519512.9524345,
+   "scans": 10,
+   "points": 208643,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.003768155005311178,
+   "score_best": 0.14043479820705662
+  },
+  {
+   "stamp": 1794519514.0686028,
+   "scans": 10,
+   "points": 208852,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.01336398017500242,
+   "score_best": 0.16114475114310475
+  },
+  {
+   "stamp": 1794519515.153225,
+   "scans": 10,
+   "points": 208752,
+   "best_yaw_deg": 3.5,
+   "best_pitch_deg": -1.0,
+   "score_at_zero": 0.00940906596657651,
+   "score_best": 0.15345858573882185
+  }
+ ],
+ "grid_deg": [
+  -9.0,
+  9.0,
+  0.5
+ ],
+ "mean_best_yaw_deg": 3.511288005201544,
+ "mean_best_pitch_deg": -1.0776955968475899,
+ "mean_score_at_zero": 0.010366769977547523,
+ "mean_score_best": 0.15275296678002523,
+ "spread_yaw_deg": 0.0,
+ "spread_pitch_deg": 0.0,
+ "intrinsics": {
+  "fx": 1065.0,
+  "fy": 1065.0,
+  "cx": 640.0,
+  "cy": 360.0
+ }
+}
