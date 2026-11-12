@@ -266,9 +266,16 @@ class ThermalCameraNode(Node):
                 self.get_logger().error(f'Failed to process/publish frame, skipping: {exc!r}')
 
     def destroy_node(self):
+        # Stop the capture thread and WAIT for it before closing the device. Releasing the
+        # capture from this thread while the other is inside cap.read() is a race, and an
+        # unclean close of a streaming session has been observed to leave this camera
+        # unable to stream again until it is power-cycled (2026-11-12).
         self._running = False
+        if self._thread.is_alive() and self._thread is not threading.current_thread():
+            self._thread.join(timeout=3.0)
         if self._cap is not None:
             self._cap.release()
+            self._cap = None
         super().destroy_node()
 
 

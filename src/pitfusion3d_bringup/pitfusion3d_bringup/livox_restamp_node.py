@@ -28,6 +28,15 @@ startup sample) so it can track slow crystal drift between the lidar's
 free-running oscillator and the host clock over a long-running session.
 A large drop in device_ns (driver/sensor restart) resets the window
 immediately rather than slowly re-converging.
+
+Host clock steps (this Pi has no RTC, so NTP steps its clock by minutes to
+days shortly after boot): the lidar counter and the host clock normally
+advance by the same amount between two scans. If they disagree by more than
+`clock_step_threshold_s`, the host clock was stepped. A *forward* step would
+otherwise be invisible to the min-filter for a whole window (~20s) -- every
+new sample is larger, so the old minimum keeps winning and the lidar stamps
+stay behind the camera stamps, so nothing fuses. The window is reset
+immediately instead, in either direction.
 """
 from collections import deque
 
@@ -45,13 +54,17 @@ class LivoxRestampNode(Node):
         self.declare_parameter('output_topic', '/landfill/livox/points')
         self.declare_parameter('offset_window', 200)  # ~20s at 10Hz
         self.declare_parameter('log_period', 50)  # messages between diagnostic logs
+        self.declare_parameter('clock_step_threshold_s', 0.1)  # must stay below sensor_fusion_node's sync_slop (0.15s)
 
         self._window_size = int(self.get_parameter('offset_window').value)
         self._log_period = int(self.get_parameter('log_period').value)
         self._offsets = deque(maxlen=self._window_size)
         self._offset_ns = None
         self._last_device_ns = None
+        self._last_arrival_ns = None
+        self._step_threshold_ns = int(float(self.get_parameter('clock_step_threshold_s').value) * 1e9)
         self._msg_count = 0
+        self.clock_resets = 0
 
         # BEST_EFFORT: a lidar scan arriving at 10Hz makes retransmitting a
         # dropped one pointless, and it removes DDS's ACK/retransmit
@@ -74,24 +87,38 @@ class LivoxRestampNode(Node):
             f"(min-offset over a {self._window_size}-sample window)"
         )
 
+    def _estimate(self, arrival_ns, device_ns):
+        """Update the offset estimate for one scan; returns the corrected stamp (ns).
+        Pure function of its inputs plus the filter state, so it can be unit-tested
+        without a running clock."""
+        if self._last_device_ns is not None:
+            if device_ns < self._last_device_ns - 1_000_000_000:
+                self.get_logger().warn(
+                    'Livox device clock jumped backwards (sensor/driver restart?); '
+                    'resetting offset estimate', throttle_duration_sec=5.0
+                )
+                self._offsets.clear()
+                self.clock_resets += 1
+            else:
+                skew = (arrival_ns - self._last_arrival_ns) - (device_ns - self._last_device_ns)
+                if abs(skew) > self._step_threshold_ns:
+                    self.get_logger().warn(
+                        f'Host clock stepped by {skew / 1e9:+.3f}s relative to the lidar clock '
+                        '(NTP step?); resetting offset estimate', throttle_duration_sec=5.0
+                    )
+                    self._offsets.clear()
+                    self.clock_resets += 1
+        self._last_device_ns = device_ns
+        self._last_arrival_ns = arrival_ns
+
+        self._offsets.append(arrival_ns - device_ns)
+        self._offset_ns = min(self._offsets)
+        return device_ns + self._offset_ns
+
     def _on_cloud(self, msg):
         arrival_ns = self.get_clock().now().nanoseconds
         device_ns = msg.header.stamp.sec * 1_000_000_000 + msg.header.stamp.nanosec
-
-        if self._last_device_ns is not None and device_ns < self._last_device_ns - 1_000_000_000:
-            self.get_logger().warn(
-                'Livox device clock jumped backwards (sensor/driver restart?); '
-                'resetting offset estimate'
-            )
-            self._offsets.clear()
-            self._offset_ns = None
-        self._last_device_ns = device_ns
-
-        sample_offset = arrival_ns - device_ns
-        self._offsets.append(sample_offset)
-        self._offset_ns = min(self._offsets)
-
-        corrected_ns = device_ns + self._offset_ns
+        corrected_ns = self._estimate(arrival_ns, device_ns)
         msg.header.stamp.sec = corrected_ns // 1_000_000_000
         msg.header.stamp.nanosec = corrected_ns % 1_000_000_000
         self._publisher.publish(msg)

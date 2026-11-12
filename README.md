@@ -41,6 +41,9 @@ Before/after measurements on the real Raspberry Pi 5 rig, the configuration sele
 [RESULTS](docs/performance_2026-11-11/RESULTS.md) ·
 [best configuration](docs/performance_2026-11-11/BEST_CONFIGURATION.md) ·
 [corner-case report](docs/performance_2026-11-11/07_corner_case_report.md).
+
+**[docs/pipeline_audit_2026-11-12/](docs/pipeline_audit_2026-11-12/README.md)** - full pipeline audit, corner-case results, fixes (clock-step, merge buffer, thermal shutdown) and thermal-camera findings.
+
 Headline: RGB reaching fusion 3.6 -> 10 Hz, fused cloud 2.4 -> 10 Hz, merged cloud 0.66 -> 1.5 Hz, nodes respawn after a crash, and the viewer keeps working with the thermal camera down.
 
 ## Real hardware deployment

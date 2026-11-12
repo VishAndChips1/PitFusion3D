@@ -156,6 +156,10 @@ class RegistrationMergeNode(Node):
         input_topic = str(self.get_parameter('input_topic').value)
         output_topic = str(self.get_parameter('output_topic').value)
         self._window_duration = float(self.get_parameter('window_duration').value)
+        # Safety valve: normally a window closes when scan stamps span window_duration
+        # (~10-15 scans). If stamps ever stall (frozen/odd clock) the buffer would grow
+        # without bound, so also close it after this many scans.
+        self._max_window_scans = 60
         self._icp_voxel_size = float(self.get_parameter('icp_voxel_size').value)
         self._max_icp_iterations = int(self.get_parameter('max_icp_iterations').value)
         self._max_correspondence_distance = float(self.get_parameter('max_correspondence_distance').value)
@@ -239,7 +243,8 @@ class RegistrationMergeNode(Node):
 
         self._buffer.append((stamp_sec, points[:, 0:3], points[:, 3:6]))
 
-        if stamp_sec - self._window_start >= self._window_duration:
+        if (stamp_sec - self._window_start >= self._window_duration
+                or len(self._buffer) >= self._max_window_scans):
             # Defensive: ICP/SVD/voxel-downsampling is real numerical code
             # with edge cases (e.g. a degenerate all-coincident-points
             # window, or a NaN/Inf point slipping through from upstream --
