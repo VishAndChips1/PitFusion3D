@@ -3,11 +3,13 @@
 #   lidar status            report the LiDAR's own state (Normal / PowerSaving / Standby)
 #   lidar low               power-saving mode (scanning stops; the sensor stays connected and listening)
 #   lidar standby           standby mode
-#   lidar on                back to Normal mode (the pipeline's driver resumes streaming by itself)
+#   lidar on                back to Normal mode, then the pipeline is started again
 # Options: --no-restart  leave the pipeline stopped afterwards     --no-stop  don't touch the pipeline (only if it is already stopped)
 # Why the pipeline is stopped: the LiDAR talks to one host at a time, so the ROS driver must release it first.  The stop is graceful.
 CODE=${LIDAR_CODE:-3JEDLAJ001G0651}; HERE=/home/vish/lidar_ctl; LOG=$HERE/lidar.log; UNIT=pitfusion3d.service
 cmd=$1; shift; RESTART=1; STOP=1
+# low/standby leave the pipeline stopped: starting it would wake the LiDAR again (the service wakes it before the driver starts)
+case $cmd in low|standby) RESTART=0;; esac
 for a in "$@"; do case $a in --no-restart) RESTART=0;; --no-stop) STOP=0;; esac; done
 case $cmd in on) sub=normal;; low) sub=low;; standby) sub=standby;; status) sub=status;; *) echo "usage: lidar <status|low|standby|on> [--no-restart] [--no-stop]"; exit 1;; esac
 say() { echo "[$(date +%T)] $*" | tee -a $LOG; }
@@ -19,5 +21,6 @@ if [ $STOP = 1 ] && [ "$was_active" = active ]; then
   sleep 2
 fi
 say "lidar_ctl $sub"; raw=$($HERE/lidar_ctl $sub --code $CODE --timeout 60 2>>$LOG); rc=$?; echo "$raw" >> $LOG; out=$(echo "$raw" | grep "^{" | tail -n1); say "result (rc=$rc): $out"; echo "$out"
-if [ $STOP = 1 ] && [ $RESTART = 1 ] && [ "$was_active" = active ]; then say "restarting the pipeline"; systemctl --user start $UNIT; fi
+if [ $STOP = 1 ] && [ $RESTART = 1 ] && { [ "$was_active" = active ] || [ "$cmd" = on ]; }; then say "starting the pipeline"; systemctl --user start $UNIT; fi
+if [ $STOP = 1 ] && [ $RESTART = 0 ] && [ "$was_active" = active ]; then say "pipeline left stopped; run 'lidar on' to wake the LiDAR and resume"; fi
 exit $rc

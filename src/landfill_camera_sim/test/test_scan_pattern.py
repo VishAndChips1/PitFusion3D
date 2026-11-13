@@ -42,7 +42,7 @@ def load_pattern(max_rows=50000):
 
 
 def package_directions(azimuth, zenith):
-    """The closed form used by livox_pattern_filter.py."""
+    """Return the closed-form directions used by livox_pattern_filter.py."""
     cos_zenith = np.cos(zenith)
     dirs = np.empty((azimuth.shape[0], 3))
     dirs[:, 0] = cos_zenith * np.cos(azimuth)
@@ -52,7 +52,7 @@ def package_directions(azimuth, zenith):
 
 
 def upstream_directions(azimuth, zenith):
-    """Reference: the quaternion the Gazebo Classic plugin builds."""
+    """Return the reference directions, built from the quaternion the Gazebo Classic plugin uses."""
     rotation = Rotation.from_euler(
         'xyz', np.stack([np.zeros_like(azimuth), zenith, azimuth], axis=1))
     return rotation.apply(np.array([1.0, 0.0, 0.0]))

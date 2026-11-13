@@ -56,7 +56,7 @@ class LatestFrame:
         self._last_request = time.monotonic()
 
     def wanted(self):
-        """True while a client has asked for a picture recently."""
+        """Return True while a client has asked for a picture recently."""
         return time.monotonic() - self._last_request < IDLE_UNSUBSCRIBE_S
 
     def get(self):
@@ -71,7 +71,7 @@ FRAME = LatestFrame()
 
 
 def no_signal_picture():
-    """A 640x512 black picture explaining that the camera is not delivering frames."""
+    """Return a black 640x512 picture saying the camera is not delivering frames."""
     picture = np.zeros((512, 640, 3), np.uint8)
     cv2.putText(picture, 'NO SIGNAL', (200, 250), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (255, 255, 255), 3)
     cv2.putText(picture, 'thermal camera is not delivering frames', (95, 300),
