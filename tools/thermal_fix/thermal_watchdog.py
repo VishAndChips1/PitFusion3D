@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Thermal camera watchdog.  Detects the 'stuck camera' state (camera re-enumerates over and over, ~every 34 s, never streams) from the
-USB event log and, if it persists, tries to recover it with an escalating ladder: (1) port power-cycle, (2) deauthorise/reauthorise,
+USB event log and, if it persists, tries to recover it with an escalating ladder: (0) ganged VBUS power cut of the whole onboard USB group (the only real power loss), (1) port power-cycle, (2) deauthorise/reauthorise,
 (3) USB reset.  Each step needs write permission (see install_once.sh); without it the watchdog only logs.  Never touches ROS or the node.
 Status: ~/thermal_fix/status.json   Log: ~/thermal_fix/watchdog.log"""
 import os, re, sys, time, json, glob, subprocess
@@ -33,6 +33,20 @@ def port_dir(dev):
 def writable(p): return os.path.exists(p) and os.access(p, os.W_OK)
 def w(p, v):
     with open(p, 'w') as f: f.write(str(v))
+VBUS_HOLD_S = 30     # how long the whole onboard USB group stays unpowered (lets the camera fully discharge / cool)
+def onboard_ports():
+    """The disable knobs of every port on the Pi 5's four onboard hubs (RP1 xHCI controllers). VBUS only drops when ALL of them are off."""
+    out = []
+    for p in glob.glob('/sys/bus/usb/devices/usb[0-9]*/[0-9]*-0:1.0/usb*-port*/disable'):
+        if '1000120000.pcie' in os.path.realpath(p): out.append(p)      # RP1 xHCI hubs; excludes the dwc2 OTG hub
+    return sorted(out)
+def vbus_cycle(hold=VBUS_HOLD_S):
+    """Real power cut to everything on the Pi 5's USB ports (ganged VBUS): disable all ports, wait, enable all.  Briefly drops keyboard/mouse too."""
+    ports = onboard_ports()
+    if not ports or not all(writable(p) for p in ports): raise PermissionError('onboard USB port knobs not writable (run: sudo bash ~/thermal_fix/install_ganged_power.sh)')
+    for p in ports: w(p, 1)
+    time.sleep(hold)
+    for p in ports: w(p, 0)
 def settle_check(wait=90):
     """After an action: success if the camera is present and does NOT disconnect again for `wait` seconds."""
     t0 = time.time(); time.sleep(5)
@@ -41,9 +55,21 @@ def settle_check(wait=90):
         if any(t > t0 + 3 for t in recent_disconnects(wait + 10)): return False
     return camera_sysdir() is not None
 def ladder(status):
+    dev = camera_sysdir(); tried = []
+    ports = onboard_ports()
+    if ports and all(writable(p) for p in ports):          # step 0: the only method that really removes power from the camera
+        log(f'ACTION vbus_cycle (all {len(ports)} onboard USB ports off for {VBUS_HOLD_S}s)' + (' [dry run]' if DRY else ''))
+        if not DRY:
+            try: vbus_cycle()
+            except OSError as e: log(f'vbus_cycle failed: {e}'); tried.append(('vbus_cycle', repr(e)))
+            else:
+                time.sleep(8); ok = settle_check(); tried.append(('vbus_cycle', 'recovered' if ok else 'still unstable'))
+                status['attempts']['vbus_cycle'] = status['attempts'].get('vbus_cycle', 0) + 1
+                if ok: status['recoveries']['vbus_cycle'] = status['recoveries'].get('vbus_cycle', 0) + 1; log('RECOVERED by vbus_cycle'); return 'vbus_cycle'
+    else: tried.append(('vbus_cycle', 'no permission (sudo bash ~/thermal_fix/install_ganged_power.sh)'))
     dev = camera_sysdir()
-    if not dev: log('camera not on USB at all (cable/port/power) - nothing software can do'); return 'absent'
-    port = port_dir(dev); tried = []
+    if not dev: log(f'camera not on USB at all (cable/port/power) - nothing more software can do: {tried}'); return 'absent'
+    port = port_dir(dev)
     steps = [('port_power_cycle', f'{port}/disable', lambda: (w(f'{port}/disable', 1), time.sleep(8), w(f'{port}/disable', 0))),
              ('deauthorize_reauthorize', f'{dev}/authorized', lambda: (w(f'{dev}/authorized', 0), time.sleep(4), w(f'{dev}/authorized', 1)))]
     for name, path, fn in steps:
@@ -67,12 +93,16 @@ def ladder(status):
     else: tried.append(('usb_reset', 'no permission' if not DRY else 'dry run'))
     log(f'no method recovered the camera: {tried}'); return tried
 def main():
+    if '--vbus-test' in sys.argv:
+        log('manual vbus_cycle test'); vbus_cycle(); log('vbus_cycle done'); return
     status = dict(state='starting', stuck_since=None, attempts={}, recoveries={}, last_action=0, actions_this_hour=[], permission=False); last_perm_note = 0
     log('watchdog started' + (' (dry run)' if DRY else ''))
     while True:
         n = len(recent_disconnects(WINDOW_S)); now = time.time(); dev = camera_sysdir()
         stuck = n >= STUCK_N; status['recent_disconnects_5min'] = n; status['camera_present'] = dev is not None
-        if dev: status['permission'] = writable(f'{port_dir(dev)}/disable') or writable(f'{dev}/authorized')
+        _op = onboard_ports(); status['vbus_permission'] = bool(_op) and all(writable(p) for p in _op)
+        if dev: status['permission'] = status['vbus_permission'] or writable(f'{port_dir(dev)}/disable') or writable(f'{dev}/authorized')
+        elif status['vbus_permission']: status['permission'] = True
         if stuck and status['stuck_since'] is None: status['stuck_since'] = now; status['state'] = 'stuck'; log(f'camera STUCK: {n} disconnects in {WINDOW_S}s')
         if not stuck and status['stuck_since'] is not None and n == 0:
             log(f'camera recovered by itself/after action after {(now - status["stuck_since"]) / 60:.1f} min'); status['stuck_since'] = None; status['state'] = 'ok'
@@ -81,7 +111,7 @@ def main():
             status['actions_this_hour'] = [t for t in status['actions_this_hour'] if now - t < 3600]
             if len(status['actions_this_hour']) < MAX_PER_H:
                 if not status['permission'] and not DRY:
-                    if now - last_perm_note > 3600: log('NO PERMISSION to reset the camera. One-time fix:  sudo bash ~/thermal_fix/install_once.sh'); last_perm_note = now
+                    if now - last_perm_note > 3600: log('NO PERMISSION to reset the camera. One-time fix:  sudo bash ~/thermal_fix/install_ganged_power.sh'); last_perm_note = now
                 else: status['actions_this_hour'].append(now); status['last_action'] = now; ladder(status)
         status['updated'] = time.strftime('%Y-%m-%d %H:%M:%S'); json.dump(status, open(f'{HERE}/status.json', 'w'), indent=1)
         if '--once' in sys.argv: print(json.dumps(status)); return

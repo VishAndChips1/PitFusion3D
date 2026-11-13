@@ -56,3 +56,12 @@ Data flowing 25 s after power-on; the desktop takes 63 s and is not waited for. 
 ## 10. Scorecard (D10) and open items
 Green: real-time performance, power, robustness, boot, registration accuracy. Amber: LiDAR power management (sudden loss needs hardware), colour/thermal alignment (needs a target), SD recording. Red: thermal camera stuck state, WiFi in the rig room.
 Open: real shutdown/boot cycle of `lidar-power.service`, calibration target, camera power switch, LiDAR power switch, ambient temperature logging.
+
+## 11. Thermal camera follow-up (2026-11-13, midday)
+Evidence (`data/cam_rest_test.txt`, kernel journal):
+- The camera enumerates normally and stays connected indefinitely (100 s and 20 min tested) while nothing opens it.
+- Any stream request, even plain `v4l2-ctl` with no ROS, yields **0 frames** and the camera resets itself **about 10 s later** (the UVC endpoint is bulk; the kernel logs -71 errors). With the pipeline running, its reopen loop makes this repeat every ~34 s (227 disconnects between 09:30 and 11:45).
+- Resting the camera untouched for 20 minutes did not clear it. A restart of the host-side stack or USB port/authorisation/usbreset does not either.
+- Pi 5 USB power is ganged: VBUS drops only if all onboard hubs' ports are off together (uhubctl README, Raspberry Pi 5 section); my earlier cycles disabled one port, so they never cut power to the camera. This explains why only real power loss ever helped.
+Implemented: the watchdog (`~/thermal_fix/thermal_watchdog.py`) has a new first step, `vbus_cycle`: disable all onboard USB ports for 30 s, re-enable, then check the camera stays up for 90 s. It needs a one-time permission step: `sudo bash ~/thermal_fix/install_ganged_power.sh` (not yet run). Manual test afterwards: `python3 ~/thermal_fix/thermal_watchdog.py --vbus-test` (briefly drops USB keyboard/mouse).
+If vbus_cycle does not restore streaming, the camera itself (or its cable) is faulty and should be replaced.
