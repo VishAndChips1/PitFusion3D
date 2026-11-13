@@ -1,30 +1,12 @@
 #!/usr/bin/env python3
-"""Serve the fused RGB+thermal point cloud to any browser on the network.
+"""Serve the fused point clouds to any browser on the network.
 
-Subscribes to both the per-scan fused cloud (x,y,z,rgb,thermal, ~10Hz,
-sparser -- sensor_fusion_node.py's direct output) and the windowed ICP
-merge (~1Hz, denser -- registration_merge_node.py's output), keeps each
-as a compact binary buffer, and serves them plus a self-contained
-three.js viewer page over plain HTTP -- no ROS install needed on the
-viewing device, just a browser pointed at http://<this-machine>:<port>/.
-The page defaults to the denser merged view and lets you switch to the
-faster live one with one click.
-
-This node only binds a local port; reaching it from another device on
-the same WiFi network still depends on the network path from that
-device to this machine (see the package README for the WSL2 note).
-
-Three.js and OrbitControls are served from web_assets/ alongside this
-script, not loaded from a CDN. When the viewer is a device connected to
-the Pi's own standalone hotspot (PitFusion3D-AP, no uplink -- see
-pitfusion3d_bringup's start_hotspot_viewing.sh), that device has no
-route to any CDN at all: the page's <script src="https://.../three.min.js">
-tag would just fail to load, THREE stays undefined, and the entire page
-script throws on its very first line (`new THREE.Scene()`) -- before
-the fetch/poll loop that fills the view ever runs. That's a silent,
-totally blank failure with nothing in the served HTML to suggest why.
-Serving both files locally means the page has zero internet dependency,
-which is the actual requirement for a standalone field deployment.
+Subscribes to the per-scan fused cloud (live, ~10 Hz) and the ICP-merged cloud
+(denser, ~1.5 Hz), keeps each as a compact quantised binary buffer and serves
+them, plus a three.js viewer page (web_assets/viewer.html), over plain HTTP.
+No ROS is needed on the viewing device: open http://<this-machine>:<port>/.
+All scripts are served locally, so the page also works on the Pi's own offline
+hotspot where no CDN is reachable.
 """
 
 import gzip
@@ -39,343 +21,21 @@ import time
 import numpy as np
 
 import rclpy
-from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException
-from rclpy.qos import qos_profile_sensor_data
 from rcl_interfaces.msg import SetParametersResult
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 
 
-PAGE_HTML = """<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>PitFusion3D live view</title>
-<style>
-  html, body { margin:0; height:100%; background:#0b0f14; color:#e6edf3;
-    font-family: -apple-system, Segoe UI, Roboto, sans-serif; overflow:hidden; }
-  #hud { position:absolute; top:12px; left:12px; z-index:2; background:rgba(15,20,27,0.75);
-    border:1px solid #26313f; border-radius:10px; padding:10px 14px; backdrop-filter: blur(6px);
-    min-width:190px; }
-  #hud h1 { font-size:14px; margin:0 0 6px; font-weight:600; letter-spacing:.02em; color:#9fd3ff; }
-  #hud div.row { font-size:12px; color:#9aa7b4; margin-top:2px; }
-  #hud .group { margin-top:8px; display:flex; gap:6px; }
-  #hud button { background:#1b2734; color:#e6edf3; border:1px solid #33445a;
-    border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; flex:1; }
-  #hud button:hover { background:#243447; }
-  #hud button.active { background:#2563eb; border-color:#2563eb; }
-  #hud button.fit { margin-top:8px; width:100%; }
-  #stat-hz { color:#7ee787; font-weight:600; }
-  #stat-hz.stale { color:#f0883e; }
-  canvas { display:block; }
-</style>
-</head>
-<body>
-<div id="hud">
-  <h1>PitFusion3D &middot; live fused cloud</h1>
-  <div class="row">points: <span id="stat-points">--</span></div>
-  <div class="row">refresh: <span id="stat-hz">--</span></div>
-  <div class="row">last update: <span id="stat-age">--</span></div>
-  <div class="group">
-    <button id="mode-rgb" class="active">RGB</button>
-    <button id="mode-thermal">Thermal</button>
-  </div>
-  <div class="group">
-    <button id="src-merged" class="active">Merged (dense)</button>
-    <button id="src-live">Live (fast)</button>
-  </div>
-  <button id="fit-view" class="fit">Fit view</button>
-</div>
-<script src="/three.min.js"></script>
-<script src="/OrbitControls.js"></script>
-<script>
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b0f14);
-// Depth cueing: without this, distant and near points are equally sharp
-// and equally bright, which reads as a flat, hard-to-parse smear rather
-// than a 3D scene. Fog fading toward the background color gives the eye
-// a real depth cue for free.
-scene.fog = new THREE.Fog(0x0b0f14, 3, 30);
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.05, 500);
-camera.position.set(6, -10, 6);
-camera.up.set(0, 0, 1);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
-// This was the main cause of the view looking "pixely": with no pixel
-// ratio set, three.js renders at 1 canvas pixel per CSS pixel regardless
-// of the display's actual density, so every point (and the whole scene)
-// comes out visibly blocky on any modern high-DPI laptop screen. Capped
-// at 2 rather than the raw devicePixelRatio (which can be 3+ on some
-// 4K/Retina-class panels) to avoid needlessly quadrupling the Pi's own
-// render workload for a difference the eye won't notice past 2x.
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-document.body.appendChild(renderer.domElement);
-
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.target.set(0,0,0);
-
-const grid = new THREE.GridHelper(40, 40, 0x2a3a4d, 0x1a2531);
-grid.rotation.x = Math.PI/2;
-scene.add(grid);
-scene.add(new THREE.AxesHelper(1.5));
-
-// A soft circular sprite instead of THREE's default hard-edged square
-// point: square points packed at any real density look like a blocky
-// mosaic (part of the "pixely" complaint) -- round, soft-edged ones read
-// as a smooth, photographic point cloud at the same density.
-function makeDiscTexture() {
-  const size = 64;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-  gradient.addColorStop(0.0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.7, 'rgba(255,255,255,1)');
-  gradient.addColorStop(1.0, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
-}
-const discTexture = makeDiscTexture();
-
-let geometry = new THREE.BufferGeometry();
-// Calibrated from measured point spacing, not guessed: a live merged
-// cloud's nearest-neighbor spacing measured ~1.4cm median (live mode,
-// sparser/no ICP densification, ~2.1cm). Rendering at a size much larger
-// than that spacing makes adjacent points overlap into solid blobs --
-// confirmed visually (identical data re-rendered at ~1/4 this size went
-// from "mostly black blobs, no visible structure" to individual points
-// and real geometric edges being distinguishable). ~1.3-1.5x the
-// measured spacing is the standard point-cloud-rendering target: just
-// enough overlap to read as a continuous surface without blobbing.
-const POINT_SIZE = {merged: 0.018, live: 0.028};
-let material = new THREE.PointsMaterial({
-  size: POINT_SIZE.merged, vertexColors: true, sizeAttenuation: true,
-  map: discTexture, transparent: true, alphaTest: 0.1, depthWrite: true,
-});
-let pointsObj = new THREE.Points(geometry, material);
-scene.add(pointsObj);
-
-let mode = 'rgb';
-let source = 'merged';
-let lastXYZ = null, lastRGB = null, lastThermal = null;
-let haveFitOnce = false;
-let lastFetchWasNewData = false;
-let recentUpdateTimestamps = [];
-
-document.getElementById('mode-rgb').onclick = () => setMode('rgb');
-document.getElementById('mode-thermal').onclick = () => setMode('thermal');
-document.getElementById('src-merged').onclick = () => setSource('merged');
-document.getElementById('src-live').onclick = () => setSource('live');
-document.getElementById('fit-view').onclick = () => fitView();
-
-function setMode(m) {
-  mode = m;
-  document.getElementById('mode-rgb').classList.toggle('active', m === 'rgb');
-  document.getElementById('mode-thermal').classList.toggle('active', m === 'thermal');
-  applyColors();
-}
-
-function setSource(s) {
-  source = s;
-  material.size = POINT_SIZE[s];
-  document.getElementById('src-merged').classList.toggle('active', s === 'merged');
-  document.getElementById('src-live').classList.toggle('active', s === 'live');
-  recentUpdateTimestamps = [];
-  haveFitOnce = false; // re-fit once when the new source's first frame lands
-}
-
-function thermalColormap(t, tmin, tmax) {
-  const x = Math.max(0, Math.min(1, (t - tmin) / Math.max(1e-6, (tmax - tmin))));
-  // dark blue -> cyan -> yellow -> red
-  const stops = [
-    [0.02,0.02,0.20], [0.0,0.55,0.75], [0.95,0.85,0.15], [0.85,0.10,0.05]
-  ];
-  const seg = Math.min(2, Math.floor(x * 3));
-  const f = x * 3 - seg;
-  const a = stops[seg], b = stops[seg+1];
-  return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
-}
-
-function applyColors() {
-  if (!lastXYZ) return;
-  const n = lastXYZ.length / 3;
-  const colors = new Float32Array(n * 3);
-  if (mode === 'rgb') {
-    colors.set(lastRGB);
-  } else {
-    let tmin = Infinity, tmax = -Infinity;
-    for (let i = 0; i < n; i++) {
-      const t = lastThermal[i];
-      if (isFinite(t)) { if (t < tmin) tmin = t; if (t > tmax) tmax = t; }
-    }
-    if (!isFinite(tmin)) { tmin = 0; tmax = 1; }
-    for (let i = 0; i < n; i++) {
-      const t = lastThermal[i];
-      const c = isFinite(t) ? thermalColormap(t, tmin, tmax) : [0.15,0.15,0.15];
-      colors[i*3] = c[0]; colors[i*3+1] = c[1]; colors[i*3+2] = c[2];
-    }
-  }
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-}
-
-function fitView() {
-  geometry.computeBoundingSphere();
-  const sphere = geometry.boundingSphere;
-  if (!sphere || !isFinite(sphere.radius) || sphere.radius <= 0) return;
-  const dist = Math.max(1.5, sphere.radius * 2.4);
-  const c = sphere.center;
-  controls.target.set(c.x, c.y, c.z);
-  camera.position.set(c.x + dist*0.55, c.y - dist*0.85, c.z + dist*0.55);
-  camera.updateProjectionMatrix();
-  controls.update();
-}
-
-function recordUpdate() {
-  const now = performance.now();
-  recentUpdateTimestamps.push(now);
-  while (recentUpdateTimestamps.length && now - recentUpdateTimestamps[0] > 5000) {
-    recentUpdateTimestamps.shift();
-  }
-  const hzEl = document.getElementById('stat-hz');
-  if (recentUpdateTimestamps.length >= 2) {
-    const span = (recentUpdateTimestamps[recentUpdateTimestamps.length-1] - recentUpdateTimestamps[0]) / 1000;
-    const hz = (recentUpdateTimestamps.length - 1) / Math.max(1e-3, span);
-    hzEl.textContent = hz.toFixed(2) + ' Hz';
-    hzEl.classList.remove('stale');
-  }
-}
-
-async function poll() {
-  // A fetch() with no timeout can hang forever on a real network (a NAT'd
-  // hotspot connection going stale, a dropped ACK, anything) -- when that
-  // happened here, the whole polling loop died silently and permanently,
-  // since setTimeout(poll, ...) below never got scheduled again. Every
-  // single unexplained "loads once, then nothing" report traced back to
-  // this. AbortController + a hard timeout guarantees this function
-  // always returns and the loop always continues, no matter what the
-  // network does to any one request.
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4000);
-  const fetchStart = performance.now();
-  try {
-    const path = source === 'merged' ? '/merged.bin' : '/live.bin';
-    // 'no-cache' (not 'no-store'): always revalidate with the server, but
-    // let the browser send If-None-Match and reuse its cached body on a
-    // 304 -- critical over real WiFi, where re-downloading an unchanged
-    // multi-hundred-KB point cloud on every poll is the difference
-    // between smooth and unusable. The server also gzips the body
-    // (Content-Encoding: gzip) -- the browser decompresses this
-    // transparently before arrayBuffer() ever sees it, no code needed
-    // here for that part.
-    const res = await fetch(path, {cache:'no-cache', signal: controller.signal});
-    if (res.ok) {
-      const buf = await res.arrayBuffer();
-      // Quantized wire format (see _encode_cloud in the server): 24-byte
-      // header (n, seq, origin xyz, scale) then 11 bytes/point (3x int16
-      // xyz, relative to the origin and scaled up; 3x uint8 rgb, already
-      // 0-255 so no precision lost; 1x int16 thermal at 0.01 resolution,
-      // -32768 sentinel for "no value"). Was 7x float32 = 28 bytes/point
-      // -- over a real WiFi link transfer time of that, not the
-      // pipeline's own production rate, was the actual bottleneck on
-      // the refresh rate actually seen in the browser (measured: pipeline
-      // producing merged clouds at ~1.4Hz internally, this page only
-      // seeing ~0.7Hz). 11 bytes/point is a per-point size that isn't a
-      // multiple of 2 or 4, so points aren't 2-byte-aligned past the
-      // first one -- DataView (not a strided typed-array view) handles
-      // that correctly.
-      if (buf.byteLength >= 24) {
-        const dv = new DataView(buf);
-        const n = dv.getUint32(0, true);
-        const seq = dv.getUint32(4, true);
-        if (n > 0 && seq !== poll._lastSeq) {
-          poll._lastSeq = seq;
-          const ox = dv.getFloat32(8, true);
-          const oy = dv.getFloat32(12, true);
-          const oz = dv.getFloat32(16, true);
-          const scale = dv.getFloat32(20, true);
-          const xyz = new Float32Array(n * 3);
-          const rgb = new Float32Array(n * 3);
-          const thermal = new Float32Array(n);
-          let p = 24;
-          for (let i = 0; i < n; i++) {
-            xyz[i*3]   = ox + dv.getInt16(p, true) * scale;
-            xyz[i*3+1] = oy + dv.getInt16(p + 2, true) * scale;
-            xyz[i*3+2] = oz + dv.getInt16(p + 4, true) * scale;
-            rgb[i*3]   = dv.getUint8(p + 6) / 255;
-            rgb[i*3+1] = dv.getUint8(p + 7) / 255;
-            rgb[i*3+2] = dv.getUint8(p + 8) / 255;
-            const tq = dv.getInt16(p + 9, true);
-            thermal[i] = (tq === -32768) ? NaN : tq / 100;
-            p += 11;
-          }
-          lastXYZ = xyz; lastRGB = rgb; lastThermal = thermal;
-          geometry.setAttribute('position', new THREE.BufferAttribute(xyz, 3));
-          applyColors();
-          document.getElementById('stat-points').textContent = n.toLocaleString();
-          document.getElementById('stat-age').textContent = new Date().toLocaleTimeString();
-          recordUpdate();
-          if (!haveFitOnce) { fitView(); haveFitOnce = true; }
-        }
-      }
-    }
-  } catch (e) { /* keep polling -- covers network errors AND our own abort-on-timeout */ }
-  finally { clearTimeout(timeoutId); }
-  const staleMs = performance.now() - (recentUpdateTimestamps[recentUpdateTimestamps.length-1] || 0);
-  if (staleMs > 3000) document.getElementById('stat-hz').classList.add('stale');
-  // Adaptive, not a flat delay: on a fast (e.g. loopback) link the fetch
-  // finishes well under the target interval and this waits out the rest
-  // of it as before. On a slow link, where the fetch itself already took
-  // longer than the target interval, adding the *full* target delay on
-  // top of that again would compound an already-slow network into an
-  // even slower effective refresh rate -- this was a real, measurable
-  // contributor to the 1.4Hz-internal/0.7Hz-observed gap, not just the
-  // payload size. Floor of 20ms just yields the event loop rather than
-  // hammering the server back-to-back with zero gap.
-  const elapsed = performance.now() - fetchStart;
-  // 'live' was 60ms (~17 polls/s) -- raised to 120ms (~8/s) after a
-  // measured power test: even with keep-alive connections (removing the
-  // handshake/thread-spawn cost), real WiFi-connected viewing still hit
-  // CPU-core-current spikes up to 8.99A (vs 9.21A before keep-alive, only
-  // a modest drop) -- each poll's actual WiFi radio transmission has a
-  // real driver/interrupt cost keep-alive doesn't touch, so cutting poll
-  // *count* is the remaining lever. Halving live's rate roughly halves
-  // that per-second transmission count. 'merged' (the default/
-  // recommended mode, already a more modest 4Hz) is left as-is.
-  const targetInterval = source === 'merged' ? 250 : 120;
-  setTimeout(poll, Math.max(20, targetInterval - elapsed));
-}
-poll();
-
-function animate() {
-  requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-</script>
-</body>
-</html>
-"""
-
-
 class _ReusableThreadingTCPServer(socketserver.ThreadingTCPServer):
-    # Without this, a quick restart (or a killed/crashed prior instance)
-    # fails to rebind the port for ~a minute while it's in TIME_WAIT.
+    """Threaded HTTP server that can rebind its port straight after a restart."""
+
     allow_reuse_address = True
 
     def handle_error(self, request, client_address):
-        # A viewer that drops off flaky WiFi / closes its tab mid-request is
-        # routine; socketserver would otherwise print a full traceback each.
+        # A viewer dropping off WiFi mid-request is routine: stay quiet.
         exc = sys.exc_info()[1]
         if isinstance(exc, (ConnectionError, TimeoutError)):
             return
@@ -383,22 +43,17 @@ class _ReusableThreadingTCPServer(socketserver.ThreadingTCPServer):
 
 
 class _StreamState:
-    """One (buffer, sequence number) slot per served point cloud source.
+    """One served point cloud source: the gzipped payload, its sequence number and capture stamp.
 
-    The sequence number lets the client skip re-parsing a payload it
-    already has (it polls faster than either source necessarily updates,
-    especially the merged one at ~1Hz), without the server needing to
-    track per-client state.
+    The sequence number lets a client skip a payload it already has.
     """
+
     def __init__(self):
         self.lock = threading.Lock()
         self.buffer = gzip.compress(struct.pack('<II', 0, 0), compresslevel=6)
         self.seq = 0
-        # Lazy encoding: the ROS callback only remembers the newest cloud;
-        # quantize+gzip happens at most once per cloud, and only when an
-        # HTTP client actually asks for newer data. With no viewer
-        # connected this costs nothing (it used to encode every cloud at
-        # 10Hz regardless -- ~27% of a core measured idle).
+        # Lazy encoding: the ROS callback only keeps the newest cloud; it is quantised and
+        # gzipped when a client asks for newer data, so an idle server costs nothing.
         self.encode_lock = threading.Lock()
         self.latest_msg = None
         self.latest_id = 0
@@ -407,10 +62,12 @@ class _StreamState:
         self.stamp = 0.0    # header stamp (s) of the cloud currently served
 
     def offer(self, msg):
+        """Remember the newest cloud (called from the ROS callback)."""
         self.latest_msg = msg
         self.latest_id += 1
 
     def refresh(self):
+        """Encode the newest cloud if it has not been encoded yet."""
         if self.encoder is None or self.latest_id == self.encoded_id:
             return
         with self.encode_lock:
@@ -422,10 +79,7 @@ class _StreamState:
             self.encoded_id = lid
 
     def set_payload(self, n_points, payload_bytes, stamp=0.0):
-        # Compressed once here, per actual data update (~1-10Hz), not
-        # per poll (browsers poll faster than that to catch an update
-        # promptly -- compressing per-poll would redo this work for
-        # nothing on every single unchanged-data request).
+        # Compress once per data update, not once per poll.
         with self.lock:
             next_seq = self.seq + 1
             body = gzip.compress(
@@ -435,16 +89,15 @@ class _StreamState:
             self.buffer = body
             self.stamp = stamp
 
-    def get_buffer_and_seq(self):
-        with self.lock:
-            return self.buffer, self.seq
-
     def get_buffer_seq_stamp(self):
+        """Return (gzipped payload, sequence number, capture stamp) consistently."""
         with self.lock:
             return self.buffer, self.seq, self.stamp
 
 
 class _SharedState:
+    """The two cloud sources the server can serve."""
+
     def __init__(self):
         self.merged = _StreamState()
         self.live = _StreamState()
@@ -452,50 +105,15 @@ class _SharedState:
 
 class _Handler(http.server.BaseHTTPRequestHandler):
     shared_state: _SharedState = None
-    # path -> (body_bytes, content_type), loaded once at startup by
-    # FusionWebStreamer.__init__ -- see this module's docstring for why
-    # these are served locally instead of from a CDN.
-    static_assets: dict = None
-    # HTTP/1.1 with keep-alive: a real, measured cost on a Raspberry Pi 5
-    # running off a USB-C power bank. A browser actively viewing this page
-    # polls every 250ms (merged) or 60ms (live) -- with the old HTTP/1.0
-    # behavior (close the TCP connection after every response), *each poll*
-    # tore down and rebuilt a brand-new connection: a full TCP handshake
-    # through the real WiFi driver/radio stack, plus a new OS thread
-    # spawned and destroyed by ThreadingTCPServer for each one -- up to
-    # ~17/s in live mode. None of that happens over loopback (a "connection"
-    # there is nearly free and never touches the WiFi chip), which is
-    # exactly why a loopback-only test never showed it: a controlled
-    # comparison measured peak CPU-core current at 4.2-4.5A simulating this
-    # same poll rate over loopback, but up to 9.2A during actual real-WiFi
-    # viewing from a genuine client device -- more than double, and
-    # specifically correlated with hitting the real network stack, not
-    # with request rate or server-side compute (both of which the loopback
-    # test already exercised equally hard). On a mains-powered Pi that's
-    # invisible; on a USB-C power bank with limited peak current (e.g. one
-    # only offering 5V/3A), spikes this size are a plausible contributor to
-    # the power bank's overcurrent protection tripping.
-    #
-    # This used to be HTTP/1.0 specifically to dodge a different real bug:
-    # a persistent connection through the Pi's own NAT'd hotspot
-    # (NetworkManager's ipv4.method=shared) could go silently dead without
-    # either side seeing a clean FIN/RST, hanging the request until the
-    # OS's own much-longer TCP timeout gave up. That failure mode is now
-    # independently guarded against by the client's own 4-second
-    # AbortController timeout in poll() (added at the same time, see
-    # PAGE_HTML) -- a stale keep-alive connection now costs one missed
-    # refresh, same as any other failed request, not a silent permanent
-    # hang. keepalive=False (set via the 'http_keepalive' launch parameter)
-    # restores the old one-connection-per-request behavior if the hotspot
-    # path ever needs it reverted.
+    static_assets: dict = None   # path -> (body bytes, content type), loaded at startup
+    page_html: bytes = b''
+    # HTTP/1.1 keep-alive: avoids a new TCP connection per poll, which cost real CPU and
+    # peak current over WiFi. The 'http_keepalive' parameter switches back to HTTP/1.0.
     protocol_version = 'HTTP/1.1'
-    # Close an idle kept-alive connection (tab closed, device walked out
-    # of range) after this many seconds rather than holding its thread
-    # open forever.
-    timeout = 30
+    timeout = 30   # seconds before an idle keep-alive connection is closed
 
     def log_message(self, format_, *args):
-        pass
+        """Silence per-request logging."""
 
     def _serve_bytes(self, body, content_type):
         self.send_response(200)
@@ -510,26 +128,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             pass  # client (flaky WiFi, closed tab) disconnected mid-write
 
     def _serve_cloud(self, stream_state):
-        """Conditional GET keyed on the stream's sequence number.
-
-        Point clouds only actually change at ~1-10Hz while browsers poll
-        faster than that (to catch an update quickly once it lands), so
-        most polls would otherwise re-download an unchanged multi-hundred-
-        KB payload for nothing -- fatal to reliability on a real WiFi link
-        (this is the difference between the viewer being unusable and
-        smooth from another room). Standard HTTP 304 handling: an
-        unchanged sequence number gets a ~150-byte empty response instead
-        of the full binary body; the client's browser cache (via
-        fetch(..., {cache:'no-cache'}), which always revalidates) serves
-        the last real body transparently either way.
-        """
-        # The buffer is pre-gzipped once per data update in
-        # _StreamState.set_payload (not here, not per-poll) -- quantized
-        # point data compresses meaningfully better than noisy float32
-        # mantissas, on top of the ~2.55x the quantization itself already
-        # buys (see _encode_cloud). Content-Encoding: gzip means the
-        # browser decompresses transparently inside fetch(); no client-
-        # side change needed to receive the benefit.
+        """Serve a cloud as gzip, or a bodyless 304 if the client already has this sequence number."""
         try:
             stream_state.refresh()
         except Exception:
@@ -549,7 +148,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Cache-Control', 'no-cache')
         self.send_header('ETag', etag)
-        # Data age = X-Server-Time - X-Cloud-Stamp (both on the Pi's clock, so independent of the client's clock).
+        # Data age = X-Server-Time - X-Cloud-Stamp (both from the Pi's clock).
         self.send_header('X-Cloud-Stamp', f'{stamp:.3f}')
         self.send_header('X-Server-Time', f'{time.time():.3f}')
         self.send_header('Access-Control-Expose-Headers', 'X-Cloud-Stamp, X-Server-Time')
@@ -560,8 +159,9 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             pass  # client (flaky WiFi, closed tab) disconnected mid-write
 
     def do_GET(self):
+        """Route: page, merged/live clouds, static scripts, else 404."""
         if self.path in ('/', '/index.html'):
-            self._serve_bytes(PAGE_HTML.encode('utf-8'), 'text/html; charset=utf-8')
+            self._serve_bytes(self.page_html, 'text/html; charset=utf-8')
         elif self.path in ('/merged.bin', '/latest.bin'):
             self._serve_cloud(self.shared_state.merged)
         elif self.path == '/live.bin':
@@ -570,9 +170,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             body, content_type = self.static_assets[self.path]
             self._serve_bytes(body, content_type)
         else:
-            # Content-Length is required under HTTP/1.1 keep-alive: without it
-            # the client waits for a body that never comes (every browser's
-            # automatic /favicon.ico request hung until the 30s timeout).
+            # Content-Length is required under HTTP/1.1 keep-alive.
             self.send_response(404)
             self.send_header('Content-Length', '0')
             self.end_headers()
@@ -582,26 +180,11 @@ _THERMAL_SENTINEL = -32768  # int16 "no thermal value" marker (source was NaN)
 
 
 def _encode_cloud(msg, max_points, rng):
-    """Pack a cloud into a compact quantized wire format.
+    """Pack a cloud into the compact wire format the viewer reads.
 
-    Was 7 x float32 = 28 bytes/point. Over a real WiFi link (hotspot or
-    a router-mediated LAN), transfer time of that payload -- not the
-    pipeline's own production rate -- turned out to be the actual
-    bottleneck on the viewer's observed refresh rate (measured: pipeline
-    producing merged clouds at ~1.4Hz internally, browser only seeing
-    ~0.7Hz). Point position only needs to be accurate to the lidar's own
-    precision (millimeters), nowhere near float32's ~7 significant
-    digits over a scene a few meters across, so this quantizes xyz to
-    int16 relative to a per-message offset+scale (same idea as Draco's
-    quantized attributes, minus the external WASM decoder/encoder
-    dependency, which isn't worth the complexity or the offline-field
-    risk here) -- 24-byte header (n, seq, ox, oy, oz, scale) + 11
-    bytes/point (6 xyz + 3 rgb, already 0-255 so no precision lost at
-    all + 2 thermal, 0.01 resolution). That's a 2.55x reduction before
-    gzip (applied once per update in _StreamState.set_payload, not
-    per-poll) adds more on top -- quantized integers compress better
-    than noisy float32 mantissas. Quantization error is sub-millimeter
-    against this rig's ~1.4cm measured point spacing: invisible.
+    Header: origin xyz and scale (4 x float32). Then 11 bytes per point: xyz as int16 (origin + value * scale,
+    sub-millimetre error), rgb as 3 x uint8, thermal as int16 in 0.01 units (-32768 = no value).
+    Returns (number of points, payload bytes).
     """
     points = pc2.read_points_numpy(msg, field_names=['x', 'y', 'z', 'rgb', 'thermal'])
     if points.size == 0:
@@ -639,85 +222,34 @@ def _encode_cloud(msg, max_points, rng):
     return n, header + point_data.tobytes()
 
 
-_WEB_ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'web_assets')
+_WEB_ASSETS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'web_assets')
 
 
-def _load_static_assets():
-    """Read three.min.js/OrbitControls.js off disk once at startup.
+def _load_web_assets():
+    """Read the viewer page and its scripts from web_assets/ once at startup."""
+    def read(name):
+        with open(os.path.join(_WEB_ASSETS_DIR, name), 'rb') as f:
+            return f.read()
 
-    See this module's docstring for why these are files here instead of
-    CDN URLs in the page.
-    """
-    assets = {}
-    files = {
-        '/three.min.js': 'application/javascript',
-        '/OrbitControls.js': 'application/javascript',
-    }
-    for path, content_type in files.items():
-        file_path = os.path.join(_WEB_ASSETS_DIR, os.path.basename(path))
-        with open(file_path, 'rb') as f:
-            assets[path] = (f.read(), content_type)
-    return assets
+    scripts = {f'/{name}': (read(name), 'application/javascript') for name in ('three.min.js', 'OrbitControls.js')}
+    return read('viewer.html'), scripts
 
 
 class FusionWebStreamer(Node):
+    """ROS node that feeds the two cloud sources and runs the HTTP server."""
+
     def __init__(self):
         super().__init__('fusion_web_streamer')
 
         self.declare_parameter('merged_topic', '/landfill/fusion/points_merged')
         self.declare_parameter('live_topic', '/landfill/fusion/points_rgbt')
         self.declare_parameter('http_port', 8080)
-        # Sized for the standalone hotspot link, not just local loopback:
-        # with the conditional-GET fix, bandwidth is only spent when a
-        # stream actually updates, so these caps directly set the
-        # per-update transfer size. This cap costs bandwidth + a cheap
-        # numpy gather/pack here, NOT extra ICP compute in
-        # registration_merge_node (that cost is independent, already
-        # spent before this node ever sees the cloud).
-        #
-        # max_points_merged is a HARD RELIABILITY CONSTRAINT, not just a
-        # quality/bandwidth tradeoff: this project's CPU-core-current
-        # ceiling (see max_points_live's comment below) must stay under
-        # 5A at all times, because a Pi 5 running off a USB-C battery bank
-        # was repeatedly, fully losing power at higher draw -- a hard
-        # cutoff requiring a physical reconnect, not a graceful recovery.
-        # The default here used to be 35000 pts; a dedicated real-WiFi
-        # power sweep (Merged mode specifically, the recommended/default
-        # view -- not Live) found that config peaking at 6.29A, over the
-        # ceiling. 20000 pts was tested next and measured 4.34A and 4.51A
-        # peak (zero samples over 5A either time) across two separate
-        # ~100s real-WiFi viewing sessions -- consistent, with real margin
-        # below 5A. This is the highest point count that measured safely
-        # under the ceiling; raising it again should be re-validated with
-        # the same real-WiFi burst_monitor.py methodology
-        # (tools/power_monitoring/), not just reasoned about, since
-        # loopback-only testing was shown not to reproduce this effect at
-        # all (see fusion_web_streamer's HTTP/1.1 comment below).
-        #
-        # max_points_live cut 10000 -> 5000 (halves live's per-update
-        # payload) alongside the poll-interval change below, after the
-        # same style of measured power test on real hardware: a battery-
-        # powered Pi 5 showed repeated CPU-core-current spikes up to 9A
-        # specifically correlated with real WiFi-connected viewing (not
-        # loopback, not pipeline load), severe enough to trip the power
-        # bank's overcurrent protection. Switching the HTTP server to
-        # keep-alive connections only partly reduced this (9.21A -> 8.99A
-        # peak) -- the remaining cost is real WiFi radio transmission work
-        # that scales with poll count and payload size, not connection
-        # setup. Live mode was not re-swept to the same rigor as Merged
-        # above since Merged is this project's recommended/default and
-        # primary-use view; treat Live's cap as a reasonable but less
-        # thoroughly-validated value if it becomes the primary view again.
+        # Point caps per served cloud. They set the transfer size per update, and 20000 / 5000
+        # were measured to keep the peak input current under 5 A during real WiFi viewing.
         self.declare_parameter('max_points_merged', 20000)
         self.declare_parameter('max_points_live', 5000)
-        # Backward-compat: an explicit input_topic overrides merged_topic,
-        # matching the old single-stream parameter name.
+        # Older single-stream parameter name: overrides merged_topic when set.
         self.declare_parameter('input_topic', '')
-        # Escape hatch back to the old one-connection-per-poll behavior --
-        # see _Handler.protocol_version's comment for why HTTP/1.1
-        # keep-alive is now the default and why it should be safe even on
-        # the NAT'd hotspot, in case that ever needs re-verifying in the
-        # field.
         self.declare_parameter('http_keepalive', True)
 
         merged_topic = str(self.get_parameter('input_topic').value) or str(self.get_parameter('merged_topic').value)
@@ -725,24 +257,22 @@ class FusionWebStreamer(Node):
         self._http_port = int(self.get_parameter('http_port').value)
         self._max_points_merged = int(self.get_parameter('max_points_merged').value)
         self._max_points_live = int(self.get_parameter('max_points_live').value)
-        # The caps can be changed at runtime (`ros2 param set /fusion_web_streamer
-        # max_points_merged N`) so they can be tuned/swept without a restart; the
-        # change applies from the next encoded cloud.
+        # The caps can be changed at runtime: ros2 param set /fusion_web_streamer max_points_merged N
         self.add_on_set_parameters_callback(self._on_param_change)
 
         http_keepalive = bool(self.get_parameter('http_keepalive').value)
 
-        self._rng = np.random.default_rng(0)
         self._state = _SharedState()
         _rng_merged, _rng_live = np.random.default_rng(0), np.random.default_rng(1)
         self._state.merged.encoder = lambda m: _encode_cloud(m, self._max_points_merged, _rng_merged)
         self._state.live.encoder = lambda m: _encode_cloud(m, self._max_points_live, _rng_live)
-        static_assets = _load_static_assets()
+        page_html, static_assets = _load_web_assets()
         handler = type(
             'BoundHandler', (_Handler,),
             {
                 'shared_state': self._state,
                 'static_assets': static_assets,
+                'page_html': page_html,
                 'protocol_version': 'HTTP/1.1' if http_keepalive else 'HTTP/1.0',
             },
         )
@@ -751,8 +281,7 @@ class FusionWebStreamer(Node):
         self._server_thread = threading.Thread(target=self._server.serve_forever, daemon=True)
         self._server_thread.start()
 
-        # BEST_EFFORT: matches registration_merge_node.py/sensor_fusion_node.py's
-        # publisher QoS on these topics.
+        # Best-effort QoS, matching the publishers.
         self._merged_sub = self.create_subscription(
             PointCloud2, merged_topic, self._on_merged, qos_profile_sensor_data
         )
@@ -767,6 +296,7 @@ class FusionWebStreamer(Node):
         )
 
     def _on_param_change(self, params):
+        """Validate and apply runtime changes to the point caps."""
         for p in params:
             if p.name in ('max_points_merged', 'max_points_live'):
                 if not isinstance(p.value, int) or not (100 <= p.value <= 1_000_000):
@@ -779,24 +309,21 @@ class FusionWebStreamer(Node):
         return SetParametersResult(successful=True)
 
     def _on_merged(self, msg):
-        # Defensive, same gap/fix as sensor_fusion_node.py and
-        # registration_merge_node.py's subscription callbacks: an
-        # unexpected error here (e.g. a zero-extent cloud degenerate
-        # enough to upset the quantization scale math) would otherwise
-        # kill this entire node -- dropping the web viewer along with it
-        # -- rather than just skipping one update and keeping whatever
-        # was already being served.
+        """Keep the newest merged cloud."""
         self._state.merged.offer(msg)
 
     def _on_live(self, msg):
+        """Keep the newest live cloud."""
         self._state.live.offer(msg)
 
     def destroy_node(self):
+        """Stop the HTTP server, then the node."""
         self._server.shutdown()
         super().destroy_node()
 
 
 def main():
+    """Run the streamer node until interrupted."""
     rclpy.init()
     node = FusionWebStreamer()
     try:

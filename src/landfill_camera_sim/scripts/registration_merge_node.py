@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-"""Merge a rolling window of fused (RGB+thermal-colored) lidar scans.
+"""Merge a rolling window of fused scans into one denser point cloud.
 
-Buffers sensor_fusion_node.py's output for a fixed time window (1s by
-default), registers each scan against the accumulated map with point-to-
-point ICP to compensate for platform motion between scans, and publishes
-one denser merged point cloud per window.
-
-The running map is kept voxel-downsampled: ICP registers against that
-small map rather than against every raw point accumulated so far, which
-keeps per-window cost roughly linear in the number of scans instead of
-growing with the square of the points already merged.
+Scans are buffered for window_duration seconds, each is registered against the
+accumulated map with point-to-point ICP (to compensate platform motion), and
+one merged cloud is published per window. The map is kept voxel-downsampled so
+the cost grows linearly with the number of scans.
 """
 
 import queue
@@ -30,12 +25,7 @@ import cloud_io
 
 
 def voxel_downsample_indices(xyz, voxel_size):
-    """Indices of one representative point per voxel.
-
-    Hashes the 3 integer voxel coordinates into a single int64 key so the
-    dedupe is a 1-D sort; np.unique(..., axis=0) instead lexsorts an (N, 3)
-    array, which is markedly slower for the ~1e5-point clouds seen here.
-    """
+    """Return the indices of one representative point per voxel (voxel coordinates hashed to one int64 key)."""
     n = xyz.shape[0]
     if voxel_size <= 0.0 or n == 0:
         return np.arange(n)
@@ -43,7 +33,7 @@ def voxel_downsample_indices(xyz, voxel_size):
     keys = np.floor(np.asarray(xyz, dtype=np.float64) / voxel_size).astype(np.int64)
     keys -= keys.min(axis=0)
     dims = keys.max(axis=0) + 1
-    # Fall back when the voxel grid is too large to index with an int64 key.
+    # Grid too large for an int64 key: fall back to the slower row-wise unique.
     if float(dims[0]) * float(dims[1]) * float(dims[2]) >= 9.0e18:
         _, unique_indices = np.unique(keys, axis=0, return_index=True)
         return unique_indices
@@ -68,8 +58,7 @@ def _kabsch(source, target):
     return r, t
 
 
-# Below this many query points, scipy's per-call thread spawn costs more
-# than the parallel correspondence search saves.
+# Below this many query points a parallel KD-tree search costs more than it saves.
 PARALLEL_QUERY_THRESHOLD = 20000
 
 
@@ -90,7 +79,7 @@ def icp_point_to_point(source_xyz, target_xyz, max_iterations, max_correspondenc
     converged = False
 
     for _ in range(max_iterations):
-        # Correspondence search dominates ICP; spread it over all cores.
+        # Nearest-neighbour search dominates ICP cost.
         distances, indices = target_tree.query(
             working, distance_upper_bound=max_correspondence_dist, workers=workers
         )
@@ -113,52 +102,29 @@ def icp_point_to_point(source_xyz, target_xyz, max_iterations, max_correspondenc
 
 
 class RegistrationMergeNode(Node):
+    """Accumulate fused scans into windows and register/publish them on a worker thread."""
+
     def __init__(self):
         super().__init__('registration_merge_node')
 
         self.declare_parameter('input_topic', '/landfill/fusion/points_rgbt')
         self.declare_parameter('output_topic', '/landfill/fusion/points_merged')
         self.declare_parameter('window_duration', 1.0)
-        # ICP cost parameters below were cut after a real-world finding:
-        # this node's OWN log (the trustworthy rate source -- see the
-        # project's rate-measurement convention) showed it publishing at
-        # only 0.4-1.0Hz against a 1.0s/~1Hz nominal window target, with
-        # repeated "N of N scans did not converge" warnings. Root cause:
-        # _register_and_publish() runs synchronously inside the
-        # subscription callback, so while it's busy computing ICP, this
-        # node isn't consuming its (BEST_EFFORT, shallow-queue) input
-        # topic -- real incoming scans arriving during that busy window
-        # are silently dropped, which means it takes MORE real wall-clock
-        # time to accumulate 1.0s of actual scan data than it should,
-        # which is exactly what was observed. Cutting per-window ICP cost
-        # directly attacks this: less time busy per window -> fewer scans
-        # dropped while busy -> real elapsed time per window converges
-        # back toward the nominal 1.0s/~1Hz target. (This is distinct from
-        # fusion_web_streamer's point caps, which only affect transfer
-        # size/web-layer cost -- cutting those alone cannot fix a
-        # bottleneck that happens upstream of the web layer entirely.)
-        self.declare_parameter('icp_voxel_size', 0.1)       # was 0.2 (0.15 originally): halves the ICP error (32 -> 18 mm) for ~11 ms per scan
-        self.declare_parameter('max_icp_iterations', 10)    # was 20
+        # ICP settings: finer voxels are more accurate; fewer iterations and points are cheaper.
+        self.declare_parameter('icp_voxel_size', 0.1)
+        self.declare_parameter('max_icp_iterations', 10)
         self.declare_parameter('max_correspondence_distance', 0.5)
         self.declare_parameter('min_correspondences', 200)
-        # 1cm voxel: merges near-duplicate points where scans overlap
-        # without visibly thinning the cloud (0 keeps every raw point,
-        # e.g. 10 scans of 24000 points/scan -> 240000 points).
+        # Output voxel (m): merges near-duplicate points where scans overlap; 0 keeps every point.
         self.declare_parameter('output_voxel_size', 0.01)
-        # Cap the ICP target so a long window cannot grow the correspondence
-        # search without bound.
-        self.declare_parameter('max_icp_target_points', 10000)  # was 20000
-        # Consecutive scans are ~0.1s apart, so the pose delta ICP has to
-        # recover is centimetres; a few thousand well-spread points resolve
-        # that just as well as the full scan and dominate the window cost.
-        self.declare_parameter('max_icp_source_points', 1500)   # was 3000
+        # Caps on the points ICP uses (scans are ~0.1 s apart, so a sparse subset is enough).
+        self.declare_parameter('max_icp_target_points', 10000)
+        self.declare_parameter('max_icp_source_points', 1500)
 
         input_topic = str(self.get_parameter('input_topic').value)
         output_topic = str(self.get_parameter('output_topic').value)
         self._window_duration = float(self.get_parameter('window_duration').value)
-        # Safety valve: normally a window closes when scan stamps span window_duration
-        # (~10-15 scans). If stamps ever stall (frozen/odd clock) the buffer would grow
-        # without bound, so also close it after this many scans.
+        # A window also closes after this many scans, in case the stamps stall.
         self._max_window_scans = 60
         self._icp_voxel_size = float(self.get_parameter('icp_voxel_size').value)
         self._max_icp_iterations = int(self.get_parameter('max_icp_iterations').value)
@@ -174,25 +140,15 @@ class RegistrationMergeNode(Node):
         self._last_publish_wall_time = None
         self._rng = np.random.default_rng(0)
 
-        # ICP/merge used to run synchronously inside the subscription
-        # callback, so for ~360ms of every 500ms window (measured on the
-        # Pi) this node was not receiving new scans and dropped them,
-        # stretching each window in wall time and capping merged output
-        # at ~1.5Hz. The callback now only accumulates scans; a closed
-        # window is handed to this worker thread (numpy/scipy release the
-        # GIL in the heavy parts, so it genuinely runs on another core).
-        # One window may wait while one is processing; beyond that the
-        # newest window is dropped (and counted) rather than queueing
-        # unbounded latency.
+        # ICP runs on a worker thread so the callback keeps receiving scans. One window may
+        # wait while another is processed; older ones are dropped to keep latency bounded.
         self._work_q = queue.Queue(maxsize=1)
         self._max_window_age = 1.0
         self._dropped_windows = 0
         self._worker = threading.Thread(target=self._worker_loop, daemon=True)
         self._worker.start()
 
-        # BEST_EFFORT: matches sensor_fusion_node.py's output QoS (this
-        # node's input) and lets fusion_web_streamer.py's subscription to
-        # this node's output skip DDS's reliable-delivery bookkeeping too.
+        # Best-effort QoS, matching the fusion node's output.
         self._publisher = self.create_publisher(
             PointCloud2, output_topic, qos_profile_sensor_data
         )
@@ -221,11 +177,7 @@ class RegistrationMergeNode(Node):
 
     @staticmethod
     def _finite_points(msg):
-        """Return the cloud's (N, 6) array without non-finite points, or None if nothing is left.
-
-        Defence in depth: fusion already drops non-finite points, but one NaN reaching
-        ICP/SVD used to discard the whole 5-scan window.
-        """
+        """Return the cloud's (N, 6) array without non-finite points, or None if nothing is left."""
         points = cloud_io.read_fields(msg, cloud_io.XYZIRT_FIELDS, dtype=np.float32)
         if points.shape[0] == 0:
             return None
@@ -235,14 +187,7 @@ class RegistrationMergeNode(Node):
         return points if points.shape[0] else None
 
     def _reset_window_if_clock_rewound(self, stamp_sec):
-        """Start a fresh window if stamps jumped backwards by more than 1 s.
-
-        A sim restart rewinds the clock; without this the window never closes again because
-        stamp_sec stays below the stale start. The 1 s tolerance (matching sensor_fusion_node.py)
-        is deliberate: this Pi has no battery-backed RTC, so NTP steps the clock after every
-        boot, and small backward jitter used to reset the window every few seconds, tanking the
-        merged cloud's refresh rate for the first minutes after power-on.
-        """
+        """Start a fresh window if stamps jump backwards by more than 1 s (clock step or restart)."""
         if self._window_start is not None and stamp_sec < self._window_start - 1.0:
             self.get_logger().warn(
                 'Timestamps jumped backwards (%.3f < %.3f); resetting merge window'
@@ -252,17 +197,12 @@ class RegistrationMergeNode(Node):
             self._window_start = None
 
     def _window_is_complete(self, stamp_sec):
-        """A window closes when its scans span window_duration, or at the safety scan cap."""
+        """Return True once the window spans window_duration seconds, or at the scan cap."""
         return (stamp_sec - self._window_start >= self._window_duration
                 or len(self._buffer) >= self._max_window_scans)
 
     def _submit_window(self):
-        """Hand the closed window to the worker thread, replacing a stale waiting one.
-
-        Registration is real numerical code with edge cases (degenerate or NaN input); it runs
-        in the worker inside a try/except so one bad window never kills the node (systemd's
-        restart is only a much slower backstop).
-        """
+        """Hand the closed window to the worker thread, replacing a stale waiting one."""
         window, self._buffer = self._buffer, []
         self._window_start = None
         item = (time.monotonic(), window)
@@ -271,8 +211,7 @@ class RegistrationMergeNode(Node):
             return
         except queue.Full:
             pass
-        # Worker busy AND a window already waiting: the waiting one is now stale. Replace it
-        # with this fresher one (real-time: never build a backlog of old data).
+        # Worker busy and a window already waiting: keep only the newest.
         try:
             self._work_q.get_nowait()
         except queue.Empty:
@@ -288,6 +227,7 @@ class RegistrationMergeNode(Node):
             pass
 
     def _worker_loop(self):
+        """Register and publish queued windows; one bad window must not stop the node."""
         while rclpy.ok():
             try:
                 closed_at, window = self._work_q.get(timeout=0.5)
@@ -296,19 +236,19 @@ class RegistrationMergeNode(Node):
             if time.monotonic() - closed_at > self._max_window_age:
                 self._dropped_windows += 1
                 continue  # too old to be worth publishing in a live view
-            # Same defensive catch as before: one bad window (degenerate
-            # ICP input, a NaN slipping through) must not kill the node.
             try:
                 self._register_and_publish(window)
             except Exception as exc:
                 self.get_logger().error(f'Window registration/publish failed, skipping: {exc!r}')
 
     def _subsample(self, xyz, limit):
+        """Return a random subset of at most `limit` points (0 = no limit)."""
         if limit <= 0 or xyz.shape[0] <= limit:
             return xyz
         return xyz[self._rng.choice(xyz.shape[0], size=limit, replace=False)]
 
     def _register_and_publish(self, buffer):
+        """ICP-register every scan onto the running map, merge them and publish the result."""
         if not buffer:
             return
         buffer.sort(key=lambda entry: entry[0])
@@ -317,8 +257,7 @@ class RegistrationMergeNode(Node):
         merged_xyz = [first_xyz]
         merged_rest = [first_rest]
 
-        # Running map, held downsampled so ICP never searches the full
-        # accumulated cloud.
+        # Running map, kept downsampled for ICP.
         map_ds_xyz = np.asarray(
             first_xyz[voxel_downsample_indices(first_xyz, self._icp_voxel_size)],
             dtype=np.float64,
@@ -387,6 +326,7 @@ class RegistrationMergeNode(Node):
 
 
 def main():
+    """Run the merge node until interrupted."""
     rclpy.init()
     node = RegistrationMergeNode()
     try:

@@ -47,6 +47,7 @@ class LatestFrame:
         self._last_request = 0.0    # time.monotonic() of the last HTTP request for a picture
 
     def set(self, image):
+        """Store the newest frame."""
         with self._lock:
             self._image, self._stamp = image, time.monotonic()
 
@@ -90,6 +91,8 @@ def encode_jpeg():
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
+    """Serve the page, the MJPEG stream and single frames."""
+
     def log_message(self, *args):
         """Silence the default per-request logging."""
 
@@ -113,6 +116,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             time.sleep(STREAM_PERIOD_S)
 
     def do_GET(self):
+        """Route: stream, single frame, page, else 404."""
         try:
             if self.path.startswith('/stream.mjpg'):
                 self._stream()
@@ -127,16 +131,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 class Server(socketserver.ThreadingTCPServer):
+    """Threaded HTTP server that can rebind its port straight after a restart."""
+
     allow_reuse_address = True
     daemon_threads = True
 
 
 def on_image(msg):
+    """Keep the newest mono16 frame."""
     if msg.encoding == 'mono16':
         FRAME.set(np.frombuffer(msg.data, np.uint16).reshape(msg.height, msg.width))
 
 
 def main():
+    """Start the ROS subscription and the HTTP server."""
     rclpy.init()
     node = Node('thermal_view')
     state = {'subscription': None}

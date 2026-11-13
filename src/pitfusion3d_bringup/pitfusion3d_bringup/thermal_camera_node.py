@@ -1,42 +1,18 @@
 #!/usr/bin/env python3
-"""Publish the UVC thermal camera (640x512 YUYV) as sensor_msgs/Image.
+"""Publish the UVC thermal camera (640x512 YUYV) as sensor_msgs/Image (mono16).
 
-Opened by its /dev/v4l/by-id/ path (keyed to the device's USB serial),
-not a raw /dev/videoN number -- the Pi enumerates video devices in
-whatever order the kernel probes them at boot, and the RPi camera's
-internal CSI/ISP pipeline (rp1-cfe, several nodes) competes for the same
-numbering space as this USB UVC camera. A device that was /dev/video8
-one boot came back as /dev/video0 after a reboot in testing, which
-starves this node without touching the actual hardware -- the by-id path
-is stable across that.
-
-This module (USB VID 0x3474 "Thermal Cam Co.,Ltd") only exposes an 8-bit
-AGC'd YUYV video stream over UVC -- there is no vendor SDK available here
-to switch it into a raw14/TLinear radiometric mode. So this node samples
-the Y (luma) channel, which tracks scene temperature monotonically but is
-auto-gain-controlled, NOT an absolute radiometric measurement, and
-publishes it left-shifted into 'mono16' (value = Y * 256) so it fits
-PitFusion3D's sensor_fusion_node.py, which expects a single-channel
-uint16 image and recovers a value via `raw * thermal_resolution +
-thermal_min_temp`.
-
-Launch this with thermal_resolution=0.00390625 (1/256) and
-thermal_min_temp=0.0 so the recovered 'thermal' field in the fused cloud
-comes back as the original 0-255 Y value -- a relative hot/cold signal,
-not Kelvin. Swap in a radiometric driver later (e.g. once vendor raw16
-mode access is available) without touching anything downstream.
+* The device is opened by its /dev/v4l/by-id path, which stays stable across
+  reboots (plain /dev/videoN numbers move around).
+* The camera only offers an auto-gain 8-bit stream, so the luma channel is
+  published shifted into 16 bits (Y * 256). With thermal_resolution=1/256 and
+  thermal_min_temp=0 the fused cloud recovers the 0-255 value: a relative
+  hot/cold signal, not an absolute temperature.
 """
 import os
 import threading
 import time
 
 import cv2
-
-# See rgb_camera_node.py's comment: avoid OpenCV's own internal thread
-# pool (sized to core count by default) stacking with every other
-# OpenCV-using process in the pipeline on this 4-core board.
-cv2.setNumThreads(1)
-
 import numpy as np
 import rclpy
 from cv_bridge import CvBridge
@@ -44,6 +20,8 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
+
+cv2.setNumThreads(1)  # one OpenCV thread per process (4 shared cores)
 
 
 class _CaptureHealth:
@@ -68,6 +46,8 @@ class _CaptureHealth:
 
 
 class ThermalCameraNode(Node):
+    """Capture loop that waits for the camera, publishes frames and recovers from failures."""
+
     def __init__(self):
         super().__init__('thermal_camera_node')
 
@@ -79,30 +59,12 @@ class ThermalCameraNode(Node):
         )
         self.declare_parameter('width', 640)
         self.declare_parameter('height', 512)
-        # Unlike the RGB camera, this module's UVC mode only offers two
-        # discrete frame intervals (30fps/60fps -- see its
-        # --list-formats-ext output); requesting 15fps here is silently
-        # clamped back to 30fps by the driver, so there's no point
-        # pretending otherwise. The real CPU savings for this node come
-        # from publish_preview=False and cv2.setNumThreads(1) below, not
-        # from a framerate this hardware can't actually do.
+        # The camera only offers 30 or 60 fps; lower values are clamped to 30.
         self.declare_parameter('framerate', 30)
-        # Off by default: applyColorMap on every frame is pure overhead
-        # once you're viewing the fused cloud in the web viewer instead of
-        # this raw feed; flip on only for direct thermal-camera debugging.
+        # Colourised preview image; off by default (debugging only).
         self.declare_parameter('publish_preview', False)
         self.declare_parameter('preview_topic', '/landfill/thermal/image_preview')
-        # This module is physically mounted rotated a full 180 degrees
-        # relative to the RGB camera/rig, not just upside down -- a
-        # vertical-only flip fixed up/down (confirmed visually: a person
-        # standing upright went from head-down/feet-up to upright) but
-        # left/right then came back inverted (walking left in the real
-        # world showed as walking right), which is exactly what a 180
-        # degree in-plane rotation produces when only one axis is
-        # corrected. Flipping both axes is a full rotation, which fixes
-        # both at once. A parameter rather than a hardcoded flip so it's
-        # one launch arg to flip back if the physical mounting ever
-        # changes, not a code edit.
+        # The camera is mounted rotated 180 degrees: flipping both axes restores the orientation.
         self.declare_parameter('vflip', True)
         self.declare_parameter('hflip', True)
 
@@ -116,9 +78,7 @@ class ThermalCameraNode(Node):
         self._hflip = bool(self.get_parameter('hflip').value)
 
         self._bridge = CvBridge()
-        # BEST_EFFORT: see rgb_camera_node.py's comment on the same
-        # change -- sensor_fusion_node.py and camera_viewer.py's
-        # subscriptions to this topic must match.
+        # Best-effort QoS (subscribers must match).
         self._publisher = self.create_publisher(
             Image, str(self.get_parameter('topic').value), qos_profile_sensor_data
         )
@@ -128,15 +88,8 @@ class ThermalCameraNode(Node):
                 Image, str(self.get_parameter('preview_topic').value), qos_profile_sensor_data
             )
 
-        # Observed 2026-11-11: this camera can come up after (warm) boot
-        # in a state where it enumerates but then fails every read, drops
-        # off the USB bus ("USB disconnect", error -71) and re-enumerates
-        # dozens of times. Reopening it the instant its device node
-        # reappears (mid-enumeration) and again immediately after each
-        # failed streak kept it in that loop for hours; the fusion node
-        # needs thermal frames to sync, so the viewer stayed blank. Wait
-        # for the node to be stable before opening, and cool down for a
-        # growing interval after each failed streak.
+        # A misbehaving camera can reset and re-enumerate repeatedly. Wait for the device
+        # to be stable before opening it, and back off after each failed streak.
         self.declare_parameter('device_settle_s', 3.0)
         self.declare_parameter('recovery_cooldown_max_s', 20.0)
         self._settle_s = float(self.get_parameter('device_settle_s').value)
@@ -153,8 +106,7 @@ class ThermalCameraNode(Node):
             time.sleep(0.25)
 
     def _wait_for_device(self):
-        """Block until the device node has existed continuously for
-        device_settle_s (i.e. USB enumeration has finished, not just begun)."""
+        """Block until the device node has existed for device_settle_s (enumeration finished)."""
         since = None
         waited_since = time.monotonic()
         last_note = waited_since
@@ -188,13 +140,10 @@ class ThermalCameraNode(Node):
         return cap
 
     def _capture_loop(self):
-        """Self-healing capture loop: wait for the device, open it, read, publish, recover.
+        """Wait for the device, open it, read and publish frames, and recover from failures.
 
-        On boot (systemd/lingering, nobody watching) this USB device can take seconds to
-        enumerate, and a cable hiccup in the field must not need a human. The loop therefore
-        retries instead of raising: an exception would kill only this thread (or, if raised in
-        __init__, the node's process, which ros2 launch does not propagate), leaving a
-        healthy-looking node that never publishes again.
+        Errors are retried rather than raised: an exception here would stop only this thread
+        and leave a node that looks healthy but never publishes.
         """
         health = _CaptureHealth()
         while self._running and rclpy.ok():
@@ -235,10 +184,8 @@ class ThermalCameraNode(Node):
     def _on_read_failure(self, health):
         """Count a failed read; after 10 in a row release the device and cool down.
 
-        A handful of isolated drops is normal; many in a row means the device is gone or
-        misbehaving. Reopen after a growing cool-down (3 s doubling to the configured maximum)
-        rather than busy-looping on a dead capture: reopening instantly was observed to keep a
-        faulty camera in a reset loop for hours.
+        The cool-down grows from 3 s up to the configured maximum, so a faulty camera
+        is not reopened in a tight loop.
         """
         health.read_failures += 1
         health.good_frames = 0
@@ -256,12 +203,7 @@ class ThermalCameraNode(Node):
         self._sleep_while_running(health.cooldown)
 
     def _publish_frame(self, raw):
-        """Convert a raw YUYV frame to rotated mono16 and publish it.
-
-        Runs in a daemon thread, so an uncaught exception (e.g. raw not actually being
-        height*width*2 bytes although read() reported success) would silently kill only this
-        thread; catch and skip the frame instead.
-        """
+        """Convert a raw YUYV frame to rotated mono16 and publish it (bad frames are skipped)."""
         try:
             luma = raw.reshape(self._height, self._width, 2)[:, :, 0]
             if self._vflip:
@@ -284,10 +226,9 @@ class ThermalCameraNode(Node):
         publisher.publish(msg)
 
     def destroy_node(self):
-        # Stop the capture thread and WAIT for it before closing the device. Releasing the
-        # capture from this thread while the other is inside cap.read() is a race, and an
-        # unclean close of a streaming session has been observed to leave this camera
-        # unable to stream again until it is power-cycled (2026-11-12).
+        """Stop the capture thread, then release the camera."""
+        # Join the capture thread before releasing the device: closing it while a read is in
+        # progress can leave this camera unable to stream.
         self._running = False
         if self._thread.is_alive() and self._thread is not threading.current_thread():
             self._thread.join(timeout=3.0)
@@ -298,6 +239,7 @@ class ThermalCameraNode(Node):
 
 
 def main(args=None):
+    """Run the thermal camera node until interrupted."""
     rclpy.init(args=args)
     node = ThermalCameraNode()
     try:

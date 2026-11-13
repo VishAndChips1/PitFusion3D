@@ -19,6 +19,8 @@ from sensor_msgs.msg import Image
 
 
 class CameraViewer(Node):
+    """Show RGB and thermal side by side with the time offset between them."""
+
     def __init__(self):
         super().__init__('camera_viewer')
         self.declare_parameter('rgb_topic', '/landfill/rgb/image_raw')
@@ -42,6 +44,7 @@ class CameraViewer(Node):
         self.get_logger().info(f'Camera Viewer started: {rgb_topic} + {thermal_topic}')
 
     def synced_callback(self, rgb_msg, thermal_msg):
+        """Draw one synchronised RGB + thermal pair."""
         rgb_ts = rgb_msg.header.stamp.sec + rgb_msg.header.stamp.nanosec * 1e-9
         thermal_ts = thermal_msg.header.stamp.sec + thermal_msg.header.stamp.nanosec * 1e-9
         diff_ms = abs(rgb_ts - thermal_ts) * 1000
@@ -70,11 +73,13 @@ class CameraViewer(Node):
         cv2.waitKey(1)
 
     def destroy_node(self):
+        """Close the preview windows, then the node."""
         cv2.destroyAllWindows()
         super().destroy_node()
 
 
 def main(args=None):
+    """Run the viewer until interrupted."""
     rclpy.init(args=args)
     node = CameraViewer()
     try:

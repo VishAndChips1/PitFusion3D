@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
-"""Publish the Raspberry Pi (imx477) camera as sensor_msgs/Image.
+"""Publish the Raspberry Pi HQ camera (IMX477) as sensor_msgs/Image (rgb8).
 
-Captures raw YUV420 frames from `rpicam-vid` over a pipe -- the same
-capture path already validated standalone:
-
-    rpicam-vid -t 0 --width 1280 --height 720 --framerate 30 \\
-        --codec yuv420 -o -
-
-and republishes them as 'rgb8' so PitFusion3D's sensor_fusion_node.py
-(which packs channel 0/1/2 directly as R/G/B with no encoding check) gets
-the channel order it expects.
+Frames come from `rpicam-vid` as raw YUV420 over a pipe, are converted to RGB
+and published with the capture time as the header stamp.
 """
 import ctypes
 import signal
@@ -18,17 +11,6 @@ import threading
 import time
 
 import cv2
-
-# OpenCV defaults to spawning an internal thread pool sized to the core
-# count (4 on this Pi) in *every* process that imports it. With this
-# node, thermal_camera_node, and anything else in the pipeline all doing
-# that independently, that's severe oversubscription on a 4-core board --
-# measured as this node staying pinned near 50% CPU with declining
-# throughput under load even after cutting its capture rate. A single
-# cvtColor call per frame doesn't benefit from multi-threading anyway;
-# forcing single-threaded mode avoids the thread-pool contention instead.
-cv2.setNumThreads(1)
-
 import numpy as np
 import rclpy
 from cv_bridge import CvBridge
@@ -37,18 +19,21 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
+# One OpenCV thread per process: the nodes share 4 cores and one cvtColor per frame gains nothing from a pool.
+cv2.setNumThreads(1)
+
 
 def _die_with_parent():
-    # If this node is killed (kill -9, OOM), the kernel sends rpicam-vid a
-    # SIGTERM so it can't be left orphaned holding the camera, which made
-    # the respawned node unable to open it (PR_SET_PDEATHSIG = 1).
+    """Ask the kernel to SIGTERM rpicam-vid if this node dies, so it never keeps the camera busy."""
     try:
-        ctypes.CDLL('libc.so.6', use_errno=True).prctl(1, signal.SIGTERM)
+        ctypes.CDLL('libc.so.6', use_errno=True).prctl(1, signal.SIGTERM)  # PR_SET_PDEATHSIG
     except Exception:
         pass
 
 
 class RgbCameraNode(Node):
+    """Capture loop around rpicam-vid that respawns the process if the stream ends."""
+
     def __init__(self):
         super().__init__('rgb_camera_node')
 
@@ -56,33 +41,9 @@ class RgbCameraNode(Node):
         self.declare_parameter('frame_id', 'camera_platform/rgb_optical_frame')
         self.declare_parameter('width', 1280)
         self.declare_parameter('height', 720)
-        # The Livox publishes at 10Hz, so anything captured/converted past
-        # ~15Hz is CPU spent on frames the ApproximateTimeSynchronizer will
-        # never use (fusion measured this node alone at ~49% of a core at
-        # 30fps; 15fps still keeps frame age well inside the 0.15s sync
-        # slop with room to spare).
+        # The LiDAR runs at 10 Hz, so 15 fps is enough for the synchroniser.
         self.declare_parameter('framerate', 15)
-        # Measured the actual default (1.0) output: mean HSV saturation
-        # ~0.137 across a real captured frame -- genuinely washed out,
-        # not just a subjective impression (a normally-saturated photo is
-        # more like 0.2-0.4+). This is rpicam-vid's own ISP saturation
-        # control, applied before the lossy YUV420 encode -- strictly
-        # better than boosting saturation in software afterward on an
-        # already 8-bit-quantized, chroma-subsampled image, and free (the
-        # ISP does this work regardless of the value). It's specifically
-        # the HSV "S" channel: hue is unaffected, only color intensity
-        # changes -- not a contrast/brightness/hue change.
-        #
-        # 1.6 on that same low-chroma test scene (mostly white walls, a
-        # backlit window) only moved measured saturation to ~0.178 (1.29x,
-        # not 1.6x) -- a real but modest change, and probably an
-        # understatement of the effect on genuinely colorful subjects:
-        # boosting an already-near-zero-chroma pixel does very little (it
-        # has nothing to amplify), while a pixel with real color in it
-        # gets proportionally more boost. Pushed to 1.8 as a more
-        # assertive default given how strongly "couldn't tell the colors
-        # apart" came through -- adjust from here based on how it looks
-        # against an actual colorful subject, not just this room.
+        # ISP colour saturation (1.0 = camera default, which looks washed out).
         self.declare_parameter('saturation', 1.8)
 
         self._frame_id = str(self.get_parameter('frame_id').value)
@@ -90,15 +51,11 @@ class RgbCameraNode(Node):
         self._height = int(self.get_parameter('height').value)
         framerate = int(self.get_parameter('framerate').value)
         self._saturation = float(self.get_parameter('saturation').value)
-        self._frame_size = self._width * self._height * 3 // 2  # I420
+        self._frame_size = self._width * self._height * 3 // 2  # bytes per I420 frame
 
         self._bridge = CvBridge()
-        # BEST_EFFORT (not the default RELIABLE): a live camera feed has a
-        # newer frame arriving immediately anyway, so retransmitting a
-        # dropped one is pure overhead. Every downstream subscriber to
-        # this topic must use a compatible (BEST_EFFORT-or-looser) QoS or
-        # DDS will silently refuse to connect them -- see
-        # sensor_fusion_node.py and camera_viewer.py.
+        # Best-effort QoS: a newer frame is always on its way, so never retransmit.
+        # Subscribers must use a compatible (best-effort) profile.
         self._publisher = self.create_publisher(
             Image, str(self.get_parameter('topic').value), qos_profile_sensor_data
         )
@@ -119,7 +76,7 @@ class RgbCameraNode(Node):
                 '--codec', 'yuv420',
                 '--saturation', str(self._saturation),
                 '--nopreview',
-                '--flush',   # write each frame out immediately (otherwise frames reach the pipe in bursts)
+                '--flush',   # write every frame immediately instead of in bursts
                 '-o', '-',
             ],
             stdout=subprocess.PIPE,
@@ -133,6 +90,7 @@ class RgbCameraNode(Node):
         )
 
     def _read_exact(self, n):
+        """Read exactly n bytes from the pipe; None if the process ended."""
         buf = bytearray()
         while len(buf) < n:
             if self._process.poll() is not None:
@@ -144,12 +102,10 @@ class RgbCameraNode(Node):
         return bytes(buf)
 
     def _publish_frame(self, raw, stamp):
-        """Convert one yuv420 frame to rgb8 and publish it with the given stamp.
+        """Convert one YUV420 frame to rgb8 and publish it.
 
-        This runs in a daemon thread, so an uncaught exception (a malformed frame, a shape
-        mismatch) would silently kill only this thread: no exception reaches rclpy.spin(), no
-        process exits for systemd to notice, and the node would look healthy while never
-        publishing again. Catch and skip the frame instead.
+        Runs in a daemon thread, so a bad frame is logged and skipped: an
+        uncaught exception here would silently stop publishing.
         """
         try:
             yuv = np.frombuffer(raw, dtype=np.uint8).reshape((self._height * 3 // 2, self._width))
@@ -162,15 +118,8 @@ class RgbCameraNode(Node):
             self.get_logger().error(f'Failed to process/publish frame, skipping: {exc!r}')
 
     def _capture_loop(self):
-        # Self-healing: on boot (systemd/lingering, no one watching) the
-        # imx477/unicam device can take a few seconds to be ready, and
-        # rpicam-vid can be killed or glitch mid-run. Respawning here with
-        # backoff means a transient hiccup fixes itself in seconds instead
-        # of leaving this node's thread dead and the node silently
-        # publishing nothing forever -- the node itself keeps running (no
-        # exception reaches rclpy.spin), so nothing would otherwise notice
-        # or restart it.
-        subprocess.run(['pkill', '-x', 'rpicam-vid'], check=False)  # orphan from a previous crash
+        """Run rpicam-vid and publish its frames; respawn with backoff if it stops."""
+        subprocess.run(['pkill', '-x', 'rpicam-vid'], check=False)  # clear an orphan from a previous crash
         time.sleep(0.5)
         backoff = 1.0
         while self._running and rclpy.ok():
@@ -187,8 +136,7 @@ class RgbCameraNode(Node):
                 raw = self._read_exact(self._frame_size)
                 if raw is None:
                     break
-                # Stamp the moment the complete frame has been read: stamping after the colour
-                # conversion and message build added a variable 10-40 ms and made stamps cluster.
+                # Stamp as soon as the frame is read, before the colour conversion.
                 stamp = self.get_clock().now().to_msg()
                 stream_started = True
                 backoff = 1.0  # a good frame proves the stream recovered
@@ -213,12 +161,14 @@ class RgbCameraNode(Node):
                 self._process.kill()
 
     def destroy_node(self):
+        """Stop capturing and end the rpicam-vid process."""
         self._running = False
         self._terminate_process()
         super().destroy_node()
 
 
 def main(args=None):
+    """Run the RGB camera node until interrupted."""
     rclpy.init(args=args)
     node = RgbCameraNode()
     try:

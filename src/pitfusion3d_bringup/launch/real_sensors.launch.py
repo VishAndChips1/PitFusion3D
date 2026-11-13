@@ -1,27 +1,14 @@
-"""Bring up the physical sensor rig: Livox Avia + RPi RGB camera + UVC thermal camera.
+"""Bring up the physical sensors: Livox Avia, Raspberry Pi RGB camera and UVC thermal camera.
 
-This replaces landfill_camera_sim's Gazebo scenario launches
-(landfill_camera_sim.launch.py / scan_test_sim.launch.py) for real
-hardware -- it publishes the same topics/frames those simulated sensors
-did, so sensor_fusion.launch.py and web_stream.launch.py from
-landfill_camera_sim run against it unmodified.
+Publishes the topics and frames that sensor_fusion.launch.py and
+web_stream.launch.py (landfill_camera_sim) expect:
 
     ros2 launch pitfusion3d_bringup real_sensors.launch.py
     ros2 launch landfill_camera_sim sensor_fusion.launch.py
     ros2 launch landfill_camera_sim web_stream.launch.py
 
-The Livox driver is launched here (rather than reusing
-livox_ros2_avia's own launch file) purely to set its frame_id to what
-sensor_fusion_node.py expects by default (camera_platform/lidar_frame)
--- the underlying node/config (livox_ros2_avia_node,
-config/livox_lidar_config.json) is untouched.
-
-Its raw `livox/lidar` output has its timestamp epoch corrected by
-livox_restamp_node before reaching /landfill/livox/points -- see that
-node's docstring: the driver stamps clouds with the lidar's own internal
-clock (timesync is disabled in livox_lidar_config.json), which never
-lines up with the camera nodes' host-clock stamps inside
-sensor_fusion_node's sync slop otherwise.
+The Livox driver's output is re-stamped into the host clock by
+livox_restamp_node before it reaches /landfill/livox/points.
 """
 import os
 
@@ -32,12 +19,8 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    # Redundant with pitfusion3d_full.launch.py's copy of this when
-    # launched through it (SetEnvironmentVariable is idempotent) --
-    # kept here too so `ros2 launch pitfusion3d_bringup
-    # real_sensors.launch.py` alone still avoids each OpenCV/numpy-using
-    # node spawning its own core-count-sized thread pool. See that
-    # launch file for the full rationale.
+    """Describe the sensor nodes, with the camera nodes started a little after the LiDAR."""
+    # One BLAS/OpenMP/OpenCV thread per process (the nodes share 4 cores).
     limit_threads = [
         SetEnvironmentVariable('OMP_NUM_THREADS', '1'),
         SetEnvironmentVariable('OPENBLAS_NUM_THREADS', '1'),
@@ -46,19 +29,13 @@ def generate_launch_description():
         SetEnvironmentVariable('OPENCV_NUM_THREADS', '1'),
     ]
 
-    # Every node here runs on this one machine, so DDS discovery has no
-    # business depending on wlan0's subnet (the environment default,
-    # ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET, makes it do exactly that --
-    # see pitfusion3d_full.launch.py for the full incident this fixes).
+    # All nodes run on this machine: keep DDS discovery on localhost, independent of the network.
     localhost_only_discovery = SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST')
 
     livox_config_path = os.path.join(
         get_package_share_directory('livox_ros2_avia'), 'config', 'livox_lidar_config.json'
     )
-    # livox_ros2_avia only installs launch/ + package assets by default;
-    # config is looked up relative to the install share dir the same way
-    # its own launch file does. Fall back to the source-tree path if the
-    # share-dir config isn't present (symlink-install workspaces).
+    # Fall back to the source tree if the config is not in the install share directory.
     if not os.path.isfile(livox_config_path):
         livox_config_path = os.path.join(
             get_package_share_directory('livox_ros2_avia'), '..', '..', '..', '..',
@@ -110,7 +87,7 @@ def generate_launch_description():
             'frame_id': 'camera_platform/rgb_optical_frame',
             'width': 1280,
             'height': 720,
-            'framerate': 10,  # lidar is 10Hz; frames above that are never fused (was 15)
+            'framerate': 10,  # the LiDAR runs at 10 Hz, so faster frames are never fused
         }],
     )
 
@@ -122,15 +99,12 @@ def generate_launch_description():
         respawn_delay=2.0,
         output='screen',
         parameters=[{
-            # 'device' deliberately omitted -- falls back to
-            # thermal_camera_node's own by-id default, which survives
-            # /dev/videoN renumbering across reboots (see that node's
-            # docstring).
+            # 'device' is omitted on purpose: the node defaults to its stable /dev/v4l/by-id path.
             'topic': '/landfill/thermal/image_raw',
             'frame_id': 'camera_platform/thermal_optical_frame',
             'width': 640,
             'height': 512,
-            'framerate': 30,  # hardware only offers 30/60fps -- see thermal_camera_node.py
+            'framerate': 30,  # the camera only offers 30 or 60 fps
         }],
     )
 
@@ -145,21 +119,12 @@ def generate_launch_description():
             'image_frame_id': 'camera_platform/camera_link',
             'rgb_camera_info_topic': '/landfill/rgb/camera_info',
             'thermal_camera_info_topic': '/landfill/thermal/camera_info',
-            # This data is loaded once from YAML at startup and never
-            # changes -- republishing it at the 30Hz default is pure
-            # waste. 2Hz is still instant for any RViz/rqt display that
-            # comes up expecting it soon, without a timer firing 15x more
-            # often than the data can possibly differ.
+            # Static data from YAML: a slow republish rate is enough.
             'publish_rate': 2.0,
         }],
     )
 
-    # Staggered for the same reason as pitfusion3d_full.launch.py's outer
-    # groups: each camera node's own device-enumeration (USB/CSI open +
-    # format negotiation) plus numpy/OpenCV import is its own small CPU
-    # burst, and starting all 5 of these at once stacks every burst into
-    # the same instant. Lidar driver + its restamp companion first (the
-    # lidar needs the longest settle time), cameras spread out after.
+    # Staggered start: spreads the start-up CPU burst of each node over a few seconds.
     rgb_camera_delayed = TimerAction(period=1.0, actions=[rgb_camera])
     thermal_camera_delayed = TimerAction(period=2.0, actions=[thermal_camera])
 

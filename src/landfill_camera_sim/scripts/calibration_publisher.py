@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-
-import yaml
-
+"""Publish the calibration: static extrinsic transforms (tf) and CameraInfo for the RGB and thermal cameras."""
 import rclpy
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import TransformStamped
 from rclpy.executors import ExternalShutdownException
@@ -13,6 +12,7 @@ from tf2_ros import StaticTransformBroadcaster
 
 
 def _package_path(relative):
+    """Absolute path of a file installed with the package."""
     return get_package_share_directory('landfill_camera_sim') + '/' + relative
 
 
@@ -75,6 +75,7 @@ def load_camera_intrinsics(path, camera_key):
 
 
 def make_camera_info(intrinsics, frame_id):
+    """Build a CameraInfo message from the intrinsics dictionary."""
     info = CameraInfo()
     info.header.frame_id = frame_id
     info.width = intrinsics['width']
@@ -89,6 +90,8 @@ def make_camera_info(intrinsics, frame_id):
 
 
 class CalibrationPublisher(Node):
+    """Broadcasts the static transforms once and republishes CameraInfo on a timer."""
+
     def __init__(self):
         super().__init__('calibration_publisher')
 
@@ -144,6 +147,7 @@ class CalibrationPublisher(Node):
         return transform
 
     def _on_timer(self):
+        """Republish both CameraInfo messages with a fresh stamp."""
         now = self.get_clock().now().to_msg()
         self._rgb_info.header.stamp = now
         self._thermal_info.header.stamp = now
@@ -152,6 +156,7 @@ class CalibrationPublisher(Node):
 
 
 def main():
+    """Run the publisher until interrupted."""
     rclpy.init()
     node = CalibrationPublisher()
     try:

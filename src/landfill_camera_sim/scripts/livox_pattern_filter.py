@@ -79,6 +79,8 @@ def _load_scan_pattern(csv_path):
 
 
 class LivoxPatternFilter(Node):
+    """Resample a simulated LiDAR cloud into the real Livox Avia scan pattern (simulation only)."""
+
     def __init__(self):
         super().__init__('livox_pattern_filter')
 
@@ -326,6 +328,7 @@ class LivoxPatternFilter(Node):
 
 
 def main():
+    """Run the pattern filter until interrupted."""
     rclpy.init()
     node = LivoxPatternFilter()
     try:

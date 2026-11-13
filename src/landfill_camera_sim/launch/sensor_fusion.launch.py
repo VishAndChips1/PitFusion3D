@@ -1,23 +1,19 @@
+"""Launch the fusion pipeline: colour the LiDAR cloud (sensor_fusion_node) and merge a rolling window (registration_merge_node).
+
+    ros2 launch landfill_camera_sim sensor_fusion.launch.py
+
+Override the *_topic arguments to fuse a different set of topics.
+"""
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-
-# Standalone fusion pipeline: run this alongside either
-# landfill_camera_sim.launch.py or scan_test_sim.launch.py (whichever
-# scenario is already running) to colorize the lidar cloud with RGB +
-# thermal samples and merge a rolling window into a denser map.
-#
-#   ros2 launch landfill_camera_sim landfill_camera_sim.launch.py
-#   ros2 launch landfill_camera_sim sensor_fusion.launch.py
-#
-# For scan_test_sim.launch.py, override the *_topic arguments to the
-# /scan_test/... names (see config/scan_test_sim.yaml topics.output).
 PACKAGE_NAME = 'landfill_camera_sim'
 
 
 def generate_launch_description():
+    """Declare the launch arguments and the two fusion nodes."""
     return LaunchDescription([
         DeclareLaunchArgument('lidar_points_topic', default_value='/landfill/livox/points'),
         DeclareLaunchArgument('rgb_image_topic', default_value='/landfill/rgb/image_raw'),

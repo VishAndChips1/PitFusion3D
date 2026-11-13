@@ -1,42 +1,16 @@
 #!/usr/bin/env python3
-"""Re-stamp the Livox driver's PointCloud2 into the host's clock domain.
+"""Re-stamp the Livox driver's PointCloud2 into the host clock.
 
-livox_ros2_avia (xfer_format=0, PointCloud2 path) stamps each cloud with
-the lidar's own internal hardware counter -- nanoseconds since the
-sensor booted (lddc.cpp: `cloud.header.stamp = rclcpp::Time(timestamp)`
-from `GetStoragePacketTimestamp`), not the host clock. That's correct
-only when `enable_timesync` bridges it to PTP/GPS/PPS, which our
-livox_lidar_config.json has disabled -- measured live, the device clock
-reads ~3034s (uptime) against a host time of ~1.79e9s (Unix epoch), an
-offset of billions of seconds. Left alone, that gap never falls inside
-sensor_fusion_node's ApproximateTimeSynchronizer slop against the
-RGB/thermal nodes' host-clock stamps: lidar/rgb/thermal all publish
-fine standalone, but points_rgbt stays silent forever.
+The driver stamps each cloud with the LiDAR's own counter (seconds since the
+sensor booted), which never lines up with the camera stamps, so nothing would
+fuse. The LiDAR's relative timing is precise, so only the epoch is shifted:
 
-The lidar's *relative* timing is hardware-precise (packet-to-packet
-deltas measured ~100.00ms +/- <1ms at the configured 10Hz), so the right
-fix is an epoch shift, not a wholesale re-stamp with arrival time --
-re-stamping with raw arrival time would fold ~8ms of measured
-network/ROS scheduling jitter into every point's timestamp instead.
-
-Offset estimation: for each message, sample_offset = arrival_host_ns -
-device_ns. True offset + (network/scheduling latency, which is >= 0) is
-what we observe, so the minimum sample_offset over a trailing window is
-the best estimate of the true fixed offset (the same "min-delay" idea
-NTP/PTP filtering uses). Re-derived from a rolling window (not a single
-startup sample) so it can track slow crystal drift between the lidar's
-free-running oscillator and the host clock over a long-running session.
-A large drop in device_ns (driver/sensor restart) resets the window
-immediately rather than slowly re-converging.
-
-Host clock steps (this Pi has no RTC, so NTP steps its clock by minutes to
-days shortly after boot): the lidar counter and the host clock normally
-advance by the same amount between two scans. If they disagree by more than
-`clock_step_threshold_s`, the host clock was stepped. A *forward* step would
-otherwise be invisible to the min-filter for a whole window (~20s) -- every
-new sample is larger, so the old minimum keeps winning and the lidar stamps
-stay behind the camera stamps, so nothing fuses. The window is reset
-immediately instead, in either direction.
+* offset = min(arrival_time - device_time) over a rolling window (the minimum
+  discards network/scheduling delay, like NTP/PTP filtering), which also
+  tracks slow clock drift;
+* the window is reset when the device clock jumps backwards (sensor restart) or
+  when the host clock steps relative to the LiDAR clock (the Pi has no RTC, so
+  NTP steps its clock shortly after boot).
 """
 from collections import deque
 
@@ -48,6 +22,8 @@ from sensor_msgs.msg import PointCloud2
 
 
 class LivoxRestampNode(Node):
+    """Subscribes to the raw driver topic and republishes with corrected stamps."""
+
     def __init__(self):
         super().__init__('livox_restamp_node')
         self.declare_parameter('input_topic', 'livox/lidar')
@@ -66,14 +42,8 @@ class LivoxRestampNode(Node):
         self._msg_count = 0
         self.clock_resets = 0
 
-        # BEST_EFFORT: a lidar scan arriving at 10Hz makes retransmitting a
-        # dropped one pointless, and it removes DDS's ACK/retransmit
-        # bookkeeping from this node and sensor_fusion_node.py (its
-        # subscriber). The raw livox/lidar topic (input side) is published
-        # RELIABLE by the compiled driver and can't be changed, but a
-        # BEST_EFFORT *request* is compatible with a RELIABLE *offer* (DDS
-        # only refuses to match when the request is stricter than what's
-        # offered), so this is safe here too.
+        # Best-effort QoS: a dropped 10 Hz scan is not worth retransmitting. The driver's
+        # reliable output still matches a best-effort subscription.
         self._publisher = self.create_publisher(
             PointCloud2, str(self.get_parameter('output_topic').value), qos_profile_sensor_data
         )
@@ -88,9 +58,7 @@ class LivoxRestampNode(Node):
         )
 
     def _estimate(self, arrival_ns, device_ns):
-        """Update the offset estimate for one scan; returns the corrected stamp (ns).
-        Pure function of its inputs plus the filter state, so it can be unit-tested
-        without a running clock."""
+        """Update the offset estimate for one scan and return the corrected stamp (ns)."""
         if self._last_device_ns is not None:
             if device_ns < self._last_device_ns - 1_000_000_000:
                 self.get_logger().warn(
@@ -133,6 +101,7 @@ class LivoxRestampNode(Node):
 
 
 def main(args=None):
+    """Run the re-stamp node until interrupted."""
     rclpy.init(args=args)
     node = LivoxRestampNode()
     try:

@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Remove Fast DDS shared-memory files in /dev/shm that no running process
-has mapped/open. Fast DDS only deletes its segments on a clean exit, so a
-crash / kill -9 / OOM leaves one segment per participant behind; with the
-64MB segments used here that is ~0.5GB of RAM per unclean shutdown.
-Only touches this user's fastrtps files and never a file a live process
-uses (so it is safe even if another ROS tool is running).
-Usage: clean_stale_shm.py [--dry-run]"""
-import glob, os, sys, time
+"""Remove Fast DDS shared-memory files in /dev/shm that no running process uses.
+
+Fast DDS only deletes its segments on a clean exit, so a crash leaves behind
+about 0.5 GB of RAM per unclean shutdown. Only this user's fastrtps files are
+touched, and never one a live process has open.
+
+Usage: clean_stale_shm.py [--dry-run]
+"""
+import glob
+import os
+import sys
+import time
+
 import psutil
 
 dry = '--dry-run' in sys.argv
