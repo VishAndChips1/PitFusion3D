@@ -2,3 +2,5 @@
 max-line-length = 160
 # D107: the class docstring covers __init__. I100/I201: import grouping follows ROS conventions. Q000: f-strings with nested quotes.
 extend-ignore = D107,I100,I201,Q000,A003
+per-file-ignores =
+    */test/*:D103
