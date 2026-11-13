@@ -57,8 +57,12 @@ def settle_check(wait=90):
 def ladder(status):
     dev = camera_sysdir(); tried = []
     ports = onboard_ports()
-    if ports and all(writable(p) for p in ports):          # step 0: the only method that really removes power from the camera
+    VBUS_GAP_S = 6 * 3600                                   # a power cut also drops keyboard/mouse: at most once per 6 h unless it has ever worked
+    skip_vbus = status.get('last_vbus', 0) and time.time() - status['last_vbus'] < VBUS_GAP_S and not status['recoveries'].get('vbus_cycle')
+    if skip_vbus: tried.append(('vbus_cycle', 'skipped (done <6 h ago and never worked)'))
+    elif ports and all(writable(p) for p in ports):          # step 0: the only method that really removes power from the camera
         log(f'ACTION vbus_cycle (all {len(ports)} onboard USB ports off for {VBUS_HOLD_S}s)' + (' [dry run]' if DRY else ''))
+        status['last_vbus'] = time.time()
         if not DRY:
             try: vbus_cycle()
             except OSError as e: log(f'vbus_cycle failed: {e}'); tried.append(('vbus_cycle', repr(e)))
