@@ -80,6 +80,9 @@ def _load_camera_intrinsics(path, camera_key):
         data = yaml.safe_load(yaml_file) or {}
     camera = data[camera_key]
     matrix = camera['camera_matrix']
+    # plumb_bob order: k1, k2, p1, p2, k3 (all zero = ideal pinhole)
+    dist = [float(v) for v in camera.get('distortion_coefficients', [])][:5]
+    dist += [0.0] * (5 - len(dist))
     return {
         'width': int(camera['image_width']),
         'height': int(camera['image_height']),
@@ -87,6 +90,7 @@ def _load_camera_intrinsics(path, camera_key):
         'fy': float(matrix['fy']),
         'cx': float(matrix['cx']),
         'cy': float(matrix['cy']),
+        'dist': tuple(dist),
     }
 
 
@@ -104,16 +108,27 @@ def lidar_to_camera_transform(extrinsic_frames, lidar_frame, camera_frame):
     return m, b
 
 
-def project_to_pixels(points_camera_frame, fx, fy, cx, cy, width, height):
-    """Rig/robot axis convention (x forward, y left, z up) -> pixel coords."""
+def project_to_pixels(points_camera_frame, fx, fy, cx, cy, width, height, dist=None):
+    """Rig/robot axis convention (x forward, y left, z up) -> pixel coords.
+
+    dist = (k1, k2, p1, p2, k3) applies the lens model (OpenCV plumb_bob); None or all zeros is an ideal pinhole.
+    """
     x = points_camera_frame[:, 0]
     y = points_camera_frame[:, 1]
     z = points_camera_frame[:, 2]
     in_front = x > 0.05
     inv_x = np.zeros_like(x)
     np.divide(1.0, x, out=inv_x, where=in_front)
-    ui = np.rint(fx * (-y * inv_x) + cx).astype(np.int32)
-    vi = np.rint(fy * (-z * inv_x) + cy).astype(np.int32)
+    xn = -y * inv_x   # normalised image coordinates (right, down)
+    yn = -z * inv_x
+    if dist is not None and any(dist):
+        k1, k2, p1, p2, k3 = dist
+        r2 = xn * xn + yn * yn
+        radial = 1.0 + r2 * (k1 + r2 * (k2 + r2 * k3))
+        xn, yn = (xn * radial + 2.0 * p1 * xn * yn + p2 * (r2 + 2.0 * xn * xn),
+                  yn * radial + p1 * (r2 + 2.0 * yn * yn) + 2.0 * p2 * xn * yn)
+    ui = np.rint(fx * xn + cx).astype(np.int32)
+    vi = np.rint(fy * yn + cy).astype(np.int32)
     valid = in_front & (ui >= 0) & (ui < width) & (vi >= 0) & (vi < height)
     # Keep gathers in-bounds; `valid` decides which samples are actually used.
     np.clip(ui, 0, width - 1, out=ui)
@@ -299,7 +314,7 @@ class SensorFusionNode(Node):
         m, b = self._rgb_transform
         ui, vi, valid_rgb = project_to_pixels(
             xyz @ m + b, rgb_intr['fx'], rgb_intr['fy'], rgb_intr['cx'], rgb_intr['cy'],
-            rgb_intr['width'], rgb_intr['height'],
+            rgb_intr['width'], rgb_intr['height'], rgb_intr['dist'],
         )
 
         thermal_intr = self._thermal_intrinsics
@@ -312,7 +327,7 @@ class SensorFusionNode(Node):
             ti, tj, valid_thermal = project_to_pixels(
                 xyz @ m + b, thermal_intr['fx'], thermal_intr['fy'],
                 thermal_intr['cx'], thermal_intr['cy'],
-                thermal_intr['width'], thermal_intr['height'],
+                thermal_intr['width'], thermal_intr['height'], thermal_intr['dist'],
             )
 
         cloud_out = np.empty((n, 6), dtype=np.float32)

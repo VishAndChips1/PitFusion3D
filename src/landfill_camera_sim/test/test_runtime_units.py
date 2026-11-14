@@ -54,6 +54,27 @@ def test_projection_centre_and_out_of_view():
     assert not valid[2]            # behind the camera
 
 
+def test_projection_with_lens_distortion_matches_opencv():
+    cv2 = pytest.importorskip('cv2')
+    rng = np.random.default_rng(1)
+    pts = np.column_stack([rng.uniform(1.5, 5.0, 300), rng.uniform(-1.5, 1.5, 300), rng.uniform(-1.0, 1.0, 300)]).astype(np.float32)
+    k, dist = (1330.0, 1330.0, 617.0, 369.0), (-0.476, 0.223, 0.001, -0.002, 0.0)
+    ui, vi, valid = fusion.project_to_pixels(pts, *k, 1280, 720, dist)
+    optical = np.column_stack([-pts[:, 1], -pts[:, 2], pts[:, 0]])
+    matrix = np.array([[k[0], 0, k[2]], [0, k[1], k[3]], [0, 0, 1.0]])
+    ref, _ = cv2.projectPoints(optical.astype(np.float64), np.zeros(3), np.zeros(3), matrix, np.array(dist))
+    ref = ref.reshape(-1, 2)
+    assert valid.any()
+    assert np.abs(ui[valid] - ref[valid, 0]).max() <= 1 and np.abs(vi[valid] - ref[valid, 1]).max() <= 1
+
+
+def test_projection_without_distortion_is_unchanged():
+    pts = np.array([[2.0, 0.3, -0.2]], dtype=np.float32)
+    plain = fusion.project_to_pixels(pts, 1000.0, 1000.0, 640.0, 360.0, 1280, 720)
+    zero = fusion.project_to_pixels(pts, 1000.0, 1000.0, 640.0, 360.0, 1280, 720, (0.0,) * 5)
+    assert all(np.array_equal(a, b) for a, b in zip(plain, zero))
+
+
 def test_lidar_to_camera_identity_without_extrinsics():
     m, b = fusion.lidar_to_camera_transform({}, 'lidar', 'camera')
     assert np.allclose(m, np.eye(3)) and np.allclose(b, 0)

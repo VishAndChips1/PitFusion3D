@@ -26,17 +26,21 @@
 # (thermal cameras need a heated/printed checkerboard target -- a laser
 # print on cardstock backed by a warm surface works for AGC'd modules
 # like this one). Then recompute fx/fy/cx/cy here from the result.
+# RGB camera: MEASURED 2026-11-14 from the 5 checkerboard bags (5x7 squares, 58 mm; 4x6 inner corners).
+# Reprojection error 0.11 px; leave-one-bag-out focal length varies +-1.7 %; the focal length also agrees with the
+# LiDAR-measured board distances to about 1 %. The lens has strong barrel distortion (k1 = -0.48), which the fusion
+# node now applies. Previous placeholder (f = 1065, no distortion) is in git history / calibration backups.
 rgb_camera:
   frame_id: camera_platform/rgb_optical_frame
   image_width: 1280
   image_height: 720
   distortion_model: plumb_bob
-  distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+  distortion_coefficients: [-0.4762, 0.2228, 0.0, 0.0, 0.0]
   camera_matrix:
-    fx: 1065.0
-    fy: 1065.0
-    cx: 640.0
-    cy: 360.0
+    fx: 1330.7
+    fy: 1330.7
+    cx: 616.7
+    cy: 369.3
   rectification_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
 
 thermal_camera:

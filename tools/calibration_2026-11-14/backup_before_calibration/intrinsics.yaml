@@ -1,0 +1,53 @@
+# Intrinsic calibration for the RGB and thermal cameras, in the standard
+# sensor_msgs/CameraInfo layout (camera_matrix = K, distortion_coefficients
+# = D, rectification_matrix = R, projection_matrix = P).
+#
+# Edit and relaunch to change them -- read at startup by
+# scripts/calibration_publisher.py, which republishes CameraInfo on the
+# rgb/thermal camera_info topics from these values (instead of Gazebo's
+# own camera_info bridge), and used by scripts/sensor_fusion_node.py to
+# project lidar points into each image.
+#
+# --- REAL HARDWARE (edited for the physical rig, not the Gazebo sim) ---
+# These values are PLACEHOLDERS, not a measured calibration:
+#   rgb_camera     -- imx477 (RPi HQ camera) via rpicam-vid at 1280x720.
+#                     fx/fy assume a ~62 deg horizontal FOV (typical 6mm
+#                     CS-mount lens); the actual lens on this rig may differ.
+#   thermal_camera -- 640x512 UVC thermal module (/dev/video8). fx/fy
+#                     solved from a live person-as-target capture (see
+#                     extrinsics.yaml's thermal_optical_frame comment and
+#                     scripts/calib_solve.py) after the ~25 deg HFOV
+#                     guess was confirmed too narrow in person (thermal
+#                     heat blob rendered visibly smaller than the real
+#                     lidar/RGB silhouette) -- real HFOV is closer to 38 deg.
+# Run a proper checkerboard calibration for real numbers, e.g.:
+#   ros2 run camera_calibration cameracalibrator --size 8x6 --square 0.025 \
+#     image:=/landfill/rgb/image_raw camera:=/landfill/rgb
+# (thermal cameras need a heated/printed checkerboard target -- a laser
+# print on cardstock backed by a warm surface works for AGC'd modules
+# like this one). Then recompute fx/fy/cx/cy here from the result.
+rgb_camera:
+  frame_id: camera_platform/rgb_optical_frame
+  image_width: 1280
+  image_height: 720
+  distortion_model: plumb_bob
+  distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+  camera_matrix:
+    fx: 1065.0
+    fy: 1065.0
+    cx: 640.0
+    cy: 360.0
+  rectification_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+thermal_camera:
+  frame_id: camera_platform/thermal_optical_frame
+  image_width: 640
+  image_height: 512
+  distortion_model: plumb_bob
+  distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+  camera_matrix:
+    fx: 919.0
+    fy: 919.0
+    cx: 320.0
+    cy: 256.0
+  rectification_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]

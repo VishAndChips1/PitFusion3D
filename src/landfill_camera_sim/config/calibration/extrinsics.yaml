@@ -43,8 +43,11 @@ transforms:
     translation: {x: 0.0, y: -0.003, z: 0.061}
     rotation_rpy: {roll: 0.0, pitch: 0.0, yaw: 0.0}
   camera_platform/lidar_frame:
-    translation: {x: 0.0, y: 0.0, z: 0.0}
-    rotation_rpy: {roll: 0.0, pitch: 0.0, yaw: 0.0}
+    # Measured 2026-11-14 from the 5 checkerboard bags: LiDAR pose relative to the RGB camera. Held-out board overlap
+    # with the image rose from 55 % (old identity + placeholder lens) to 83 %. Uncertainty from leave-one-pose-out:
+    # about +-0.6 deg rotation and +-2 cm translation.
+    translation: {x: -0.0384, y: 0.0051, z: -0.0515}
+    rotation_rpy: {roll: -0.03477, pitch: -0.00880, yaw: -0.00964}
 
 # Optional boresight correction (supported by sensor_fusion_node, currently DISABLED): a rotation in the camera frame applied after the
 # transforms above. An edge-alignment survey on 2026-11-13 suggested the RGB camera and LiDAR may differ by roughly 1.5-3.5 deg in yaw, but the
