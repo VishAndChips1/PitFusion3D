@@ -1,0 +1,257 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PitFusion3D live view</title>
+<style>
+  html, body { margin:0; height:100%; background:#0b0f14; color:#e6edf3;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif; overflow:hidden; }
+  #hud { position:absolute; top:12px; left:12px; z-index:2; background:rgba(15,20,27,0.75);
+    border:1px solid #26313f; border-radius:10px; padding:10px 14px; backdrop-filter: blur(6px);
+    min-width:190px; }
+  #hud h1 { font-size:14px; margin:0 0 6px; font-weight:600; letter-spacing:.02em; color:#9fd3ff; }
+  #hud div.row { font-size:12px; color:#9aa7b4; margin-top:2px; }
+  #hud .group { margin-top:8px; display:flex; gap:6px; }
+  #hud button { background:#1b2734; color:#e6edf3; border:1px solid #33445a;
+    border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; flex:1; }
+  #hud button:hover { background:#243447; }
+  #hud button.active { background:#2563eb; border-color:#2563eb; }
+  #hud button.fit { margin-top:8px; width:100%; }
+  #stat-hz { color:#7ee787; font-weight:600; }
+  #stat-hz.stale { color:#f0883e; }
+  canvas { display:block; }
+</style>
+</head>
+<body>
+<div id="hud">
+  <h1>PitFusion3D &middot; live fused cloud</h1>
+  <div class="row">points: <span id="stat-points">--</span></div>
+  <div class="row">refresh: <span id="stat-hz">--</span></div>
+  <div class="row">last update: <span id="stat-age">--</span></div>
+  <div class="group">
+    <button id="mode-rgb" class="active">RGB</button>
+    <button id="mode-thermal">Thermal</button>
+  </div>
+  <div class="group">
+    <button id="src-merged" class="active">Merged (dense)</button>
+    <button id="src-live">Live (fast)</button>
+  </div>
+  <button id="fit-view" class="fit">Fit view</button>
+</div>
+<script src="/three.min.js"></script>
+<script src="/OrbitControls.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0f14);
+// Fog fades distant points into the background for a depth cue.
+scene.fog = new THREE.Fog(0x0b0f14, 3, 30);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.05, 500);
+camera.position.set(6, -10, 6);
+camera.up.set(0, 0, 1);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+// Match the display density (capped at 2x) so points are not blocky on high-DPI screens.
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.target.set(0,0,0);
+
+const grid = new THREE.GridHelper(40, 40, 0x2a3a4d, 0x1a2531);
+grid.rotation.x = Math.PI/2;
+scene.add(grid);
+scene.add(new THREE.AxesHelper(1.5));
+
+// Soft round point sprite instead of the default hard-edged square.
+function makeDiscTexture() {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+  gradient.addColorStop(0.0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.7, 'rgba(255,255,255,1)');
+  gradient.addColorStop(1.0, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+const discTexture = makeDiscTexture();
+
+let geometry = new THREE.BufferGeometry();
+// Point sizes (m): about 1.3x the measured point spacing (merged ~1.4 cm, live ~2.1 cm).
+const POINT_SIZE = {merged: 0.018, live: 0.028};
+let material = new THREE.PointsMaterial({
+  size: POINT_SIZE.merged, vertexColors: true, sizeAttenuation: true,
+  map: discTexture, transparent: true, alphaTest: 0.1, depthWrite: true,
+});
+let pointsObj = new THREE.Points(geometry, material);
+scene.add(pointsObj);
+
+let mode = 'rgb';
+let source = 'merged';
+let lastXYZ = null, lastRGB = null, lastThermal = null;
+let haveFitOnce = false;
+let lastFetchWasNewData = false;
+let recentUpdateTimestamps = [];
+
+document.getElementById('mode-rgb').onclick = () => setMode('rgb');
+document.getElementById('mode-thermal').onclick = () => setMode('thermal');
+document.getElementById('src-merged').onclick = () => setSource('merged');
+document.getElementById('src-live').onclick = () => setSource('live');
+document.getElementById('fit-view').onclick = () => fitView();
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('mode-rgb').classList.toggle('active', m === 'rgb');
+  document.getElementById('mode-thermal').classList.toggle('active', m === 'thermal');
+  applyColors();
+}
+
+function setSource(s) {
+  source = s;
+  material.size = POINT_SIZE[s];
+  document.getElementById('src-merged').classList.toggle('active', s === 'merged');
+  document.getElementById('src-live').classList.toggle('active', s === 'live');
+  recentUpdateTimestamps = [];
+  haveFitOnce = false; // re-fit once when the new source's first frame lands
+}
+
+function thermalColormap(t, tmin, tmax) {
+  const x = Math.max(0, Math.min(1, (t - tmin) / Math.max(1e-6, (tmax - tmin))));
+  // dark blue -> cyan -> yellow -> red
+  const stops = [
+    [0.02,0.02,0.20], [0.0,0.55,0.75], [0.95,0.85,0.15], [0.85,0.10,0.05]
+  ];
+  const seg = Math.min(2, Math.floor(x * 3));
+  const f = x * 3 - seg;
+  const a = stops[seg], b = stops[seg+1];
+  return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
+}
+
+function applyColors() {
+  if (!lastXYZ) return;
+  const n = lastXYZ.length / 3;
+  const colors = new Float32Array(n * 3);
+  if (mode === 'rgb') {
+    colors.set(lastRGB);
+  } else {
+    let tmin = Infinity, tmax = -Infinity;
+    for (let i = 0; i < n; i++) {
+      const t = lastThermal[i];
+      if (isFinite(t)) { if (t < tmin) tmin = t; if (t > tmax) tmax = t; }
+    }
+    if (!isFinite(tmin)) { tmin = 0; tmax = 1; }
+    for (let i = 0; i < n; i++) {
+      const t = lastThermal[i];
+      const c = isFinite(t) ? thermalColormap(t, tmin, tmax) : [0.15,0.15,0.15];
+      colors[i*3] = c[0]; colors[i*3+1] = c[1]; colors[i*3+2] = c[2];
+    }
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+}
+
+function fitView() {
+  geometry.computeBoundingSphere();
+  const sphere = geometry.boundingSphere;
+  if (!sphere || !isFinite(sphere.radius) || sphere.radius <= 0) return;
+  const dist = Math.max(1.5, sphere.radius * 2.4);
+  const c = sphere.center;
+  controls.target.set(c.x, c.y, c.z);
+  camera.position.set(c.x + dist*0.55, c.y - dist*0.85, c.z + dist*0.55);
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
+function recordUpdate() {
+  const now = performance.now();
+  recentUpdateTimestamps.push(now);
+  while (recentUpdateTimestamps.length && now - recentUpdateTimestamps[0] > 5000) {
+    recentUpdateTimestamps.shift();
+  }
+  const hzEl = document.getElementById('stat-hz');
+  if (recentUpdateTimestamps.length >= 2) {
+    const span = (recentUpdateTimestamps[recentUpdateTimestamps.length-1] - recentUpdateTimestamps[0]) / 1000;
+    const hz = (recentUpdateTimestamps.length - 1) / Math.max(1e-3, span);
+    hzEl.textContent = hz.toFixed(2) + ' Hz';
+    hzEl.classList.remove('stale');
+  }
+}
+
+async function poll() {
+  // A hard timeout guarantees the polling loop always continues, even if one request hangs.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  const fetchStart = performance.now();
+  try {
+    const path = source === 'merged' ? '/merged.bin' : '/live.bin';
+    // 'no-cache' revalidates every time, so an unchanged cloud costs only a small 304 reply.
+    const res = await fetch(path, {cache:'no-cache', signal: controller.signal});
+    if (res.ok) {
+      const buf = await res.arrayBuffer();
+      // Wire format: 24-byte header (n, seq, origin xyz, scale), then 11 bytes per point:
+      // int16 xyz (origin + value * scale), uint8 rgb, int16 thermal / 100 (-32768 = none).
+      if (buf.byteLength >= 24) {
+        const dv = new DataView(buf);
+        const n = dv.getUint32(0, true);
+        const seq = dv.getUint32(4, true);
+        if (n > 0 && seq !== poll._lastSeq) {
+          poll._lastSeq = seq;
+          const ox = dv.getFloat32(8, true);
+          const oy = dv.getFloat32(12, true);
+          const oz = dv.getFloat32(16, true);
+          const scale = dv.getFloat32(20, true);
+          const xyz = new Float32Array(n * 3);
+          const rgb = new Float32Array(n * 3);
+          const thermal = new Float32Array(n);
+          let p = 24;
+          for (let i = 0; i < n; i++) {
+            xyz[i*3]   = ox + dv.getInt16(p, true) * scale;
+            xyz[i*3+1] = oy + dv.getInt16(p + 2, true) * scale;
+            xyz[i*3+2] = oz + dv.getInt16(p + 4, true) * scale;
+            rgb[i*3]   = dv.getUint8(p + 6) / 255;
+            rgb[i*3+1] = dv.getUint8(p + 7) / 255;
+            rgb[i*3+2] = dv.getUint8(p + 8) / 255;
+            const tq = dv.getInt16(p + 9, true);
+            thermal[i] = (tq === -32768) ? NaN : tq / 100;
+            p += 11;
+          }
+          lastXYZ = xyz; lastRGB = rgb; lastThermal = thermal;
+          geometry.setAttribute('position', new THREE.BufferAttribute(xyz, 3));
+          applyColors();
+          document.getElementById('stat-points').textContent = n.toLocaleString();
+          document.getElementById('stat-age').textContent = new Date().toLocaleTimeString();
+          recordUpdate();
+          if (!haveFitOnce) { fitView(); haveFitOnce = true; }
+        }
+      }
+    }
+  } catch (e) { /* keep polling -- covers network errors AND our own abort-on-timeout */ }
+  finally { clearTimeout(timeoutId); }
+  const staleMs = performance.now() - (recentUpdateTimestamps[recentUpdateTimestamps.length-1] || 0);
+  if (staleMs > 3000) document.getElementById('stat-hz').classList.add('stale');
+  // Wait out the rest of the target interval, but never less than 20 ms.
+  const elapsed = performance.now() - fetchStart;
+  // Poll gently: fewer requests mean less WiFi radio work and lower peak current.
+  const targetInterval = source === 'merged' ? 250 : 120;
+  setTimeout(poll, Math.max(20, targetInterval - elapsed));
+}
+poll();
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

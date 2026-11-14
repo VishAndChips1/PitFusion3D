@@ -1,0 +1,439 @@
+[INFO] [launch]: All log files can be found below /home/vish/.ros/log/2026-11-14-17-58-02-914409-vish-desktop-58935
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [livox_ros2_avia_node-1]: process started with pid [58952]
+[INFO] [livox_restamp_node-2]: process started with pid [58953]
+[INFO] [calibration_publisher.py-3]: process started with pid [58954]
+[livox_ros2_avia_node-1] [INFO] [1794639483.246431268] [livox_lidar_publisher]: Livox Ros Driver Version: 0.0.1
+[livox_ros2_avia_node-1] [INFO] [1794639483.247206146] [livox_lidar_publisher]: Data Source is raw lidar.
+[livox_ros2_avia_node-1] [INFO] [1794639483.247265744] [livox_lidar_publisher]: Config file : /home/vish/ros2_ws/install/livox_ros2_avia/share/livox_ros2_avia/config/livox_lidar_config.json
+[livox_ros2_avia_node-1] [INFO] [1794639483.249301615] [livox_lidar_publisher]: Init lds lidar success!
+[livox_restamp_node-2] [INFO] [1794639484.023742401] [livox_restamp_node]: Re-stamping livox/lidar -> /landfill/livox/points (min-offset over a 200-sample window)
+[INFO] [rgb_camera_node-4]: process started with pid [59005]
+[livox_ros2_avia_node-1] [INFO] [1794639484.285382134] [livox_lidar_publisher]: livox/lidar publish use PointCloud2 format
+[livox_ros2_avia_node-1] [INFO] [1794639484.291979916] [livox_lidar_publisher]: livox/imu publish use imu format
+[calibration_publisher.py-3] [INFO] [1794639484.641061306] [calibration_publisher]: Publishing 3 static extrinsic transform(s) from camera_platform/camera_link (/home/vish/ros2_ws/install/landfill_camera_sim/share/landfill_camera_sim/config/calibration/extrinsics.yaml) and calibrated CameraInfo on /landfill/rgb/camera_info, /landfill/thermal/camera_info (from /home/vish/ros2_ws/install/landfill_camera_sim/share/landfill_camera_sim/config/calibration/intrinsics.yaml)
+[INFO] [thermal_camera_node-5]: process started with pid [59037]
+[INFO] [sensor_fusion_node.py-6]: process started with pid [59072]
+[INFO] [registration_merge_node.py-7]: process started with pid [59073]
+[rgb_camera_node-4] [INFO] [1794639486.097021832] [rgb_camera_node]: rpicam-vid capture started (1280x720@10), publishing rgb8 on /landfill/rgb/image_raw
+[registration_merge_node.py-7] [INFO] [1794639487.272719588] [registration_merge_node]: Merging /landfill/fusion/points_rgbt -> /landfill/fusion/points_merged over 0.75s windows with ICP motion compensation
+[livox_ros2_avia_node-1] Commandline input bd:livox0000000001
+[livox_ros2_avia_node-1] Invalid bd:livox0000000001!
+[livox_ros2_avia_node-1] Livox SDK version 2.3.0
+[livox_ros2_avia_node-1] broadcast code[3JEDLAJ001G0651] : 1 1 0 0 1 0
+[livox_ros2_avia_node-1] Add Raw user config : 3JEDLAJ001G0651 
+[livox_ros2_avia_node-1] broadcast code[0TFDG3U99101431] : 0 1 0 0 1 0
+[livox_ros2_avia_node-1] Disable timesync
+[livox_ros2_avia_node-1] Disable auto connect mode!
+[livox_ros2_avia_node-1] List all broadcast code in whiltelist:
+[livox_ros2_avia_node-1] 3JEDLAJ001G0651
+[livox_ros2_avia_node-1] Livox-SDK init success!
+[livox_ros2_avia_node-1] Lidar[3JEDLAJ001G0651] status_code[0] working state[5] feature[0]
+[livox_ros2_avia_node-1] firmware version: 11.8.0.6
+[livox_ros2_avia_node-1] Lidar[3JEDLAJ001G0651] status_code[0] working state[1] feature[0]
+[livox_ros2_avia_node-1] Set coordinate success!
+[livox_ros2_avia_node-1] Set return mode success!
+[livox_ros2_avia_node-1] Set imu rate success!
+[livox_ros2_avia_node-1] Lidar start sample success
+[livox_ros2_avia_node-1] Lidar[0][3JEDLAJ001G0651] DataType[2] PacketInterval[400032] PublishPackets[250]
+[livox_ros2_avia_node-1] Lidar[00][3JEDLAJ001G0651] storage queue size : 500 512
+[livox_ros2_avia_node-1] Lidar[00][3JEDLAJ001G0651] imu storage queue size : 256 256
+[sensor_fusion_node.py-6] [INFO] [1794639488.535023628] [sensor_fusion_node]: Fusing /landfill/livox/points + /landfill/rgb/image_raw + /landfill/thermal/image_raw -> /landfill/fusion/points_rgbt (slop 0.150s, shared rgb/thermal transform: False)
+[INFO] [fusion_web_streamer.py-8]: process started with pid [59171]
+[sensor_fusion_node.py-6] [WARN] [1794639489.431992686] [sensor_fusion_node]: No lidar+RGB+thermal fusion for >1s (thermal missing or not time-matched) -- fusing lidar + RGB only (thermal = NaN) until it returns
+[thermal_camera_node-5] [INFO] [1794639489.911047880] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[fusion_web_streamer.py-8] [INFO] [1794639490.560367578] [fusion_web_streamer]: Serving merged=/landfill/fusion/points_merged (max 20000 pts) + live=/landfill/fusion/points_rgbt (max 5000 pts) at http://0.0.0.0:8080/ (keep-alive: True)
+[registration_merge_node.py-7] [INFO] [1794639490.862371855] [registration_merge_node]: Published merged cloud: 132883 pts (9 scans, 216000 raw pts, 0.80s window) @ 0.00 Hz
+[registration_merge_node.py-7] [INFO] [1794639491.409509593] [registration_merge_node]: Published merged cloud: 132376 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.83 Hz
+[livox_restamp_node-2] [INFO] [1794639491.827774331] [livox_restamp_node]: offset=1794637943.818864s window_jitter=86.03ms (n=50)
+[registration_merge_node.py-7] [INFO] [1794639492.279416493] [registration_merge_node]: Published merged cloud: 131289 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639493.185192387] [registration_merge_node]: Published merged cloud: 132375 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639494.099103852] [registration_merge_node]: Published merged cloud: 133452 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639494.993664223] [registration_merge_node]: Published merged cloud: 132897 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639495.868512050] [registration_merge_node]: Published merged cloud: 132686 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639496.787069660] [registration_merge_node]: Published merged cloud: 132484 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639496.827212452] [livox_restamp_node]: offset=1794637943.818864s window_jitter=86.03ms (n=100)
+[registration_merge_node.py-7] [INFO] [1794639497.681744104] [registration_merge_node]: Published merged cloud: 132747 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639498.579562044] [registration_merge_node]: Published merged cloud: 133023 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639499.471894253] [registration_merge_node]: Published merged cloud: 132396 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[thermal_camera_node-5] [ WARN:0@14.270] global ./modules/videoio/src/cap_v4l.cpp (1013) tryIoctl VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): select() timeout.
+[thermal_camera_node-5] [WARN] [1794639499.926380927] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639500.380342205] [registration_merge_node]: Published merged cloud: 132603 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[thermal_camera_node-5] [WARN] [1794639500.834377693] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639500.835312770] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 3s cool-down
+[thermal_camera_node-5] [ WARN:0@15.181] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639501.301497640] [registration_merge_node]: Published merged cloud: 131525 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639501.826208049] [livox_restamp_node]: offset=1794637943.818864s window_jitter=86.03ms (n=150)
+[registration_merge_node.py-7] [INFO] [1794639502.172884583] [registration_merge_node]: Published merged cloud: 133201 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639503.079466797] [registration_merge_node]: Published merged cloud: 132974 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639503.979209797] [registration_merge_node]: Published merged cloud: 132180 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639504.890790672] [registration_merge_node]: Published merged cloud: 131871 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639505.776332891] [registration_merge_node]: Published merged cloud: 132079 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639506.690681912] [registration_merge_node]: Published merged cloud: 132782 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639506.828671870] [livox_restamp_node]: offset=1794637943.818864s window_jitter=86.03ms (n=200)
+[thermal_camera_node-5] [INFO] [1794639507.103205632] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[registration_merge_node.py-7] [INFO] [1794639507.579138270] [registration_merge_node]: Published merged cloud: 132287 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639508.464022534] [registration_merge_node]: Published merged cloud: 132364 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639509.380833023] [registration_merge_node]: Published merged cloud: 133337 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639510.284147884] [registration_merge_node]: Published merged cloud: 133132 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639511.173040838] [registration_merge_node]: Published merged cloud: 132481 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[livox_restamp_node-2] [INFO] [1794639511.826229732] [livox_restamp_node]: offset=1794637943.822221s window_jitter=6.91ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639512.074728391] [registration_merge_node]: Published merged cloud: 132757 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639512.985836380] [registration_merge_node]: Published merged cloud: 132858 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639513.886462637] [registration_merge_node]: Published merged cloud: 133266 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639514.761887010] [registration_merge_node]: Published merged cloud: 132329 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639515.680065826] [registration_merge_node]: Published merged cloud: 133367 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639516.580374213] [registration_merge_node]: Published merged cloud: 132980 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639516.825825044] [livox_restamp_node]: offset=1794637943.822449s window_jitter=7.53ms (n=200)
+[thermal_camera_node-5] [WARN] [1794639517.102738970] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639517.485951029] [registration_merge_node]: Published merged cloud: 132725 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[thermal_camera_node-5] [WARN] [1794639518.005315909] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639518.006337604] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 6s cool-down
+[thermal_camera_node-5] [ WARN:0@32.351] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639518.397466347] [registration_merge_node]: Published merged cloud: 132917 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639519.270507119] [registration_merge_node]: Published merged cloud: 132907 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639520.184096636] [registration_merge_node]: Published merged cloud: 133309 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639521.083872242] [registration_merge_node]: Published merged cloud: 132310 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639521.828329753] [livox_restamp_node]: offset=1794637943.822968s window_jitter=11.29ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639521.977635889] [registration_merge_node]: Published merged cloud: 133272 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639522.881642166] [registration_merge_node]: Published merged cloud: 133456 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639523.766598232] [registration_merge_node]: Published merged cloud: 132212 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639524.677319239] [registration_merge_node]: Published merged cloud: 133022 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639525.571863640] [registration_merge_node]: Published merged cloud: 133314 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639526.486831286] [registration_merge_node]: Published merged cloud: 133142 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639526.827442269] [livox_restamp_node]: offset=1794637943.823130s window_jitter=11.12ms (n=200)
+[thermal_camera_node-5] [INFO] [1794639527.279224503] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[registration_merge_node.py-7] [INFO] [1794639527.392767355] [registration_merge_node]: Published merged cloud: 132694 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639528.275091338] [registration_merge_node]: Published merged cloud: 133091 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639529.175512485] [registration_merge_node]: Published merged cloud: 132661 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639530.075234906] [registration_merge_node]: Published merged cloud: 133203 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639530.987440884] [registration_merge_node]: Published merged cloud: 133251 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[livox_restamp_node-2] [INFO] [1794639531.832893505] [livox_restamp_node]: offset=1794637943.823136s window_jitter=11.12ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639531.881266206] [registration_merge_node]: Published merged cloud: 132943 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639532.806157123] [registration_merge_node]: Published merged cloud: 133178 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639533.691694002] [registration_merge_node]: Published merged cloud: 133457 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639534.578722832] [registration_merge_node]: Published merged cloud: 133042 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639535.479519804] [registration_merge_node]: Published merged cloud: 132495 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639536.480496121] [registration_merge_node]: Published merged cloud: 132390 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.00 Hz
+[livox_restamp_node-2] [INFO] [1794639536.826793945] [livox_restamp_node]: offset=1794637943.823483s window_jitter=14.39ms (n=200)
+[thermal_camera_node-5] [WARN] [1794639537.279226678] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639537.437984745] [registration_merge_node]: Published merged cloud: 132565 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.04 Hz
+[registration_merge_node.py-7] [INFO] [1794639538.170149297] [registration_merge_node]: Published merged cloud: 132975 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.37 Hz
+[thermal_camera_node-5] [WARN] [1794639538.182049937] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639538.182858152] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 12s cool-down
+[thermal_camera_node-5] [ WARN:0@52.528] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639539.097713078] [registration_merge_node]: Published merged cloud: 132624 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639539.994644202] [registration_merge_node]: Published merged cloud: 132543 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639540.898359175] [registration_merge_node]: Published merged cloud: 133667 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639541.804670339] [registration_merge_node]: Published merged cloud: 133392 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[livox_restamp_node-2] [INFO] [1794639541.828463249] [livox_restamp_node]: offset=1794637943.823886s window_jitter=13.99ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639542.681527016] [registration_merge_node]: Published merged cloud: 132355 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639543.595014669] [registration_merge_node]: Published merged cloud: 132926 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639544.474082096] [registration_merge_node]: Published merged cloud: 132964 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639545.369869500] [registration_merge_node]: Published merged cloud: 132669 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639546.281082534] [registration_merge_node]: Published merged cloud: 132556 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[livox_restamp_node-2] [INFO] [1794639546.827981537] [livox_restamp_node]: offset=1794637943.823886s window_jitter=13.99ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639547.175522748] [registration_merge_node]: Published merged cloud: 132054 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639548.103715943] [registration_merge_node]: Published merged cloud: 133607 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639549.012045955] [registration_merge_node]: Published merged cloud: 132370 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639549.883684703] [registration_merge_node]: Published merged cloud: 132186 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639550.794953265] [registration_merge_node]: Published merged cloud: 132794 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639551.727647447] [registration_merge_node]: Published merged cloud: 132980 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[livox_restamp_node-2] [INFO] [1794639551.829620751] [livox_restamp_node]: offset=1794637943.823886s window_jitter=15.73ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639552.607174074] [registration_merge_node]: Published merged cloud: 132486 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[thermal_camera_node-5] [INFO] [1794639553.468041153] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[registration_merge_node.py-7] [INFO] [1794639553.565945013] [registration_merge_node]: Published merged cloud: 132177 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.04 Hz
+[registration_merge_node.py-7] [INFO] [1794639554.385875056] [registration_merge_node]: Published merged cloud: 132478 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.22 Hz
+[registration_merge_node.py-7] [INFO] [1794639555.340480760] [registration_merge_node]: Published merged cloud: 133299 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.05 Hz
+[registration_merge_node.py-7] [INFO] [1794639556.253979692] [registration_merge_node]: Published merged cloud: 132052 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[livox_restamp_node-2] [INFO] [1794639556.832239243] [livox_restamp_node]: offset=1794637943.824431s window_jitter=21.50ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639557.146790004] [registration_merge_node]: Published merged cloud: 133857 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639558.055700444] [registration_merge_node]: Published merged cloud: 132922 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639558.916286560] [registration_merge_node]: Published merged cloud: 132473 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.16 Hz
+[registration_merge_node.py-7] [INFO] [1794639559.847287005] [registration_merge_node]: Published merged cloud: 132226 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639560.734750054] [registration_merge_node]: Published merged cloud: 133422 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639561.600399576] [registration_merge_node]: Published merged cloud: 132965 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[livox_restamp_node-2] [INFO] [1794639561.832466773] [livox_restamp_node]: offset=1794637943.824692s window_jitter=21.24ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639562.518145560] [registration_merge_node]: Published merged cloud: 132746 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639563.417293486] [registration_merge_node]: Published merged cloud: 133090 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[thermal_camera_node-5] [WARN] [1794639563.464825409] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639564.302902784] [registration_merge_node]: Published merged cloud: 133455 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[thermal_camera_node-5] [WARN] [1794639564.367207245] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639564.368086446] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 20s cool-down
+[thermal_camera_node-5] [ WARN:0@78.713] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639565.233943349] [registration_merge_node]: Published merged cloud: 132689 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639566.118305298] [registration_merge_node]: Published merged cloud: 133089 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[livox_restamp_node-2] [INFO] [1794639566.834795744] [livox_restamp_node]: offset=1794637943.825288s window_jitter=21.89ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639567.035779767] [registration_merge_node]: Published merged cloud: 132764 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639567.919617317] [registration_merge_node]: Published merged cloud: 132646 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639568.805484512] [registration_merge_node]: Published merged cloud: 132796 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639569.720983906] [registration_merge_node]: Published merged cloud: 132447 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639570.593667132] [registration_merge_node]: Published merged cloud: 132590 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639571.511067992] [registration_merge_node]: Published merged cloud: 133190 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639571.835009045] [livox_restamp_node]: offset=1794637943.825503s window_jitter=21.67ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639572.427576647] [registration_merge_node]: Published merged cloud: 133399 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639573.299469930] [registration_merge_node]: Published merged cloud: 132504 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639574.207668789] [registration_merge_node]: Published merged cloud: 132718 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639575.114482144] [registration_merge_node]: Published merged cloud: 132839 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639576.007179771] [registration_merge_node]: Published merged cloud: 132297 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[livox_restamp_node-2] [INFO] [1794639576.839683847] [livox_restamp_node]: offset=1794637943.827808s window_jitter=19.37ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639576.937593978] [registration_merge_node]: Published merged cloud: 133473 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[registration_merge_node.py-7] [INFO] [1794639577.805219940] [registration_merge_node]: Published merged cloud: 133102 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639578.770571329] [registration_merge_node]: Published merged cloud: 131786 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.04 Hz
+[registration_merge_node.py-7] [INFO] [1794639579.607400640] [registration_merge_node]: Published merged cloud: 132473 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.19 Hz
+[registration_merge_node.py-7] [INFO] [1794639580.502367330] [registration_merge_node]: Published merged cloud: 132931 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639581.403142604] [registration_merge_node]: Published merged cloud: 132132 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639581.849797158] [livox_restamp_node]: offset=1794637943.828316s window_jitter=18.86ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639582.297476146] [registration_merge_node]: Published merged cloud: 132795 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639583.269519850] [registration_merge_node]: Published merged cloud: 133529 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[registration_merge_node.py-7] [INFO] [1794639584.155224515] [registration_merge_node]: Published merged cloud: 133329 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639584.997236888] [registration_merge_node]: Published merged cloud: 132708 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.19 Hz
+[registration_merge_node.py-7] [INFO] [1794639585.928447361] [registration_merge_node]: Published merged cloud: 133002 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639586.840781048] [registration_merge_node]: Published merged cloud: 133202 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[livox_restamp_node-2] [INFO] [1794639586.852229558] [livox_restamp_node]: offset=1794637943.828316s window_jitter=18.09ms (n=200)
+[thermal_camera_node-5] [INFO] [1794639587.670124471] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[registration_merge_node.py-7] [INFO] [1794639587.694408918] [registration_merge_node]: Published merged cloud: 131735 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[registration_merge_node.py-7] [INFO] [1794639588.593356342] [registration_merge_node]: Published merged cloud: 132247 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639589.506265646] [registration_merge_node]: Published merged cloud: 132992 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639590.408642568] [registration_merge_node]: Published merged cloud: 132901 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639591.310097913] [registration_merge_node]: Published merged cloud: 132012 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639591.835736539] [livox_restamp_node]: offset=1794637943.828626s window_jitter=17.78ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639592.209647361] [registration_merge_node]: Published merged cloud: 132344 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639593.103679263] [registration_merge_node]: Published merged cloud: 132461 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639594.035919802] [registration_merge_node]: Published merged cloud: 133101 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639594.917509998] [registration_merge_node]: Published merged cloud: 133054 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639595.867135806] [registration_merge_node]: Published merged cloud: 132974 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.06 Hz
+[registration_merge_node.py-7] [INFO] [1794639596.753677829] [registration_merge_node]: Published merged cloud: 132218 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[livox_restamp_node-2] [INFO] [1794639596.837024415] [livox_restamp_node]: offset=1794637943.828626s window_jitter=17.78ms (n=200)
+[thermal_camera_node-5] [WARN] [1794639597.675395556] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639597.843147165] [registration_merge_node]: Published merged cloud: 132404 pts (9 scans, 216000 raw pts, 0.80s window) @ 0.92 Hz
+[registration_merge_node.py-7] [INFO] [1794639598.572271809] [registration_merge_node]: Published merged cloud: 132771 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.38 Hz
+[thermal_camera_node-5] [WARN] [1794639598.581830812] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639598.583726523] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 20s cool-down
+[thermal_camera_node-5] [ WARN:0@112.930] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639599.504796417] [registration_merge_node]: Published merged cloud: 132407 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[registration_merge_node.py-7] [INFO] [1794639600.319667931] [registration_merge_node]: Published merged cloud: 132261 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.22 Hz
+[registration_merge_node.py-7] [INFO] [1794639601.239017606] [registration_merge_node]: Published merged cloud: 132549 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639601.835147625] [livox_restamp_node]: offset=1794637943.829528s window_jitter=24.12ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639602.143805370] [registration_merge_node]: Published merged cloud: 132717 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639603.006330512] [registration_merge_node]: Published merged cloud: 133112 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.16 Hz
+[registration_merge_node.py-7] [INFO] [1794639603.935501724] [registration_merge_node]: Published merged cloud: 132590 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639604.805942548] [registration_merge_node]: Published merged cloud: 132554 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639605.745659304] [registration_merge_node]: Published merged cloud: 133425 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.06 Hz
+[registration_merge_node.py-7] [INFO] [1794639606.664352101] [registration_merge_node]: Published merged cloud: 133534 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639606.834980646] [livox_restamp_node]: offset=1794637943.829743s window_jitter=23.91ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639607.503374262] [registration_merge_node]: Published merged cloud: 131881 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.19 Hz
+[registration_merge_node.py-7] [INFO] [1794639608.391016076] [registration_merge_node]: Published merged cloud: 132206 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639609.310288063] [registration_merge_node]: Published merged cloud: 132756 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639610.242514663] [registration_merge_node]: Published merged cloud: 133097 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[registration_merge_node.py-7] [INFO] [1794639611.136874502] [registration_merge_node]: Published merged cloud: 132700 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[livox_restamp_node-2] [INFO] [1794639611.842979134] [livox_restamp_node]: offset=1794637943.829743s window_jitter=23.91ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639612.054058350] [registration_merge_node]: Published merged cloud: 132567 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639612.909450319] [registration_merge_node]: Published merged cloud: 131929 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[registration_merge_node.py-7] [INFO] [1794639613.804952506] [registration_merge_node]: Published merged cloud: 131951 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639614.772549559] [registration_merge_node]: Published merged cloud: 133487 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.04 Hz
+[registration_merge_node.py-7] [INFO] [1794639615.636715296] [registration_merge_node]: Published merged cloud: 132698 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639616.501375682] [registration_merge_node]: Published merged cloud: 132770 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.16 Hz
+[livox_restamp_node-2] [INFO] [1794639616.835607893] [livox_restamp_node]: offset=1794637943.830655s window_jitter=22.99ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639617.413543074] [registration_merge_node]: Published merged cloud: 132465 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639618.312563004] [registration_merge_node]: Published merged cloud: 132132 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639619.265380378] [registration_merge_node]: Published merged cloud: 133399 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.06 Hz
+[registration_merge_node.py-7] [INFO] [1794639620.132468939] [registration_merge_node]: Published merged cloud: 132579 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639621.013647778] [registration_merge_node]: Published merged cloud: 132351 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[livox_restamp_node-2] [INFO] [1794639621.849917839] [livox_restamp_node]: offset=1794637943.831181s window_jitter=17.72ms (n=200)
+[thermal_camera_node-5] [INFO] [1794639621.879568630] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[registration_merge_node.py-7] [INFO] [1794639621.955657138] [registration_merge_node]: Published merged cloud: 132805 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.06 Hz
+[registration_merge_node.py-7] [INFO] [1794639622.815899265] [registration_merge_node]: Published merged cloud: 132939 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.16 Hz
+[registration_merge_node.py-7] [INFO] [1794639623.710739102] [registration_merge_node]: Published merged cloud: 132924 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639624.642070417] [registration_merge_node]: Published merged cloud: 133057 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639625.514167211] [registration_merge_node]: Published merged cloud: 133612 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639626.401078398] [registration_merge_node]: Published merged cloud: 132372 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[livox_restamp_node-2] [INFO] [1794639626.835779582] [livox_restamp_node]: offset=1794637943.831642s window_jitter=17.26ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639627.290597704] [registration_merge_node]: Published merged cloud: 132090 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639628.241726203] [registration_merge_node]: Published merged cloud: 132564 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.05 Hz
+[thermal_camera_node-5] [WARN] [1794639628.491789594] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639629.170321733] [registration_merge_node]: Published merged cloud: 133146 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[thermal_camera_node-5] [WARN] [1794639629.393994859] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639629.394725270] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 20s cool-down
+[thermal_camera_node-5] [ WARN:0@143.740] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639630.010529788] [registration_merge_node]: Published merged cloud: 132345 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.19 Hz
+[registration_merge_node.py-7] [INFO] [1794639630.909499194] [registration_merge_node]: Published merged cloud: 132182 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639631.812385325] [registration_merge_node]: Published merged cloud: 132530 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639631.845706618] [livox_restamp_node]: offset=1794637943.832078s window_jitter=19.28ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639632.698183190] [registration_merge_node]: Published merged cloud: 132370 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639633.654320404] [registration_merge_node]: Published merged cloud: 132199 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.05 Hz
+[registration_merge_node.py-7] [INFO] [1794639634.547575097] [registration_merge_node]: Published merged cloud: 133067 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639635.402261401] [registration_merge_node]: Published merged cloud: 132360 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[registration_merge_node.py-7] [INFO] [1794639636.340578657] [registration_merge_node]: Published merged cloud: 132319 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[livox_restamp_node-2] [INFO] [1794639636.838019603] [livox_restamp_node]: offset=1794637943.832761s window_jitter=18.60ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639637.318053349] [registration_merge_node]: Published merged cloud: 132424 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[registration_merge_node.py-7] [INFO] [1794639638.101851030] [registration_merge_node]: Published merged cloud: 132193 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.27 Hz
+[registration_merge_node.py-7] [INFO] [1794639639.009553878] [registration_merge_node]: Published merged cloud: 132203 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639639.897672107] [registration_merge_node]: Published merged cloud: 131760 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639640.874357099] [registration_merge_node]: Published merged cloud: 132787 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.02 Hz
+[registration_merge_node.py-7] [INFO] [1794639641.711797541] [registration_merge_node]: Published merged cloud: 132606 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.19 Hz
+[livox_restamp_node-2] [INFO] [1794639641.837893164] [livox_restamp_node]: offset=1794637943.833170s window_jitter=18.19ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639642.634795224] [registration_merge_node]: Published merged cloud: 131713 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639643.492972005] [registration_merge_node]: Published merged cloud: 131806 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.16 Hz
+[registration_merge_node.py-7] [INFO] [1794639644.466073772] [registration_merge_node]: Published merged cloud: 132698 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[registration_merge_node.py-7] [INFO] [1794639645.409219224] [registration_merge_node]: Published merged cloud: 132586 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.06 Hz
+[registration_merge_node.py-7] [INFO] [1794639646.207612272] [registration_merge_node]: Published merged cloud: 132615 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.25 Hz
+[livox_restamp_node-2] [INFO] [1794639646.836718988] [livox_restamp_node]: offset=1794637943.833211s window_jitter=18.15ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639647.094591935] [registration_merge_node]: Published merged cloud: 132513 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639648.073633181] [registration_merge_node]: Published merged cloud: 133630 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.02 Hz
+[registration_merge_node.py-7] [INFO] [1794639648.902051064] [registration_merge_node]: Published merged cloud: 132560 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.21 Hz
+[registration_merge_node.py-7] [INFO] [1794639649.805690233] [registration_merge_node]: Published merged cloud: 132059 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639650.682638703] [registration_merge_node]: Published merged cloud: 132489 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639651.599384623] [registration_merge_node]: Published merged cloud: 132342 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639651.838300447] [livox_restamp_node]: offset=1794637943.833739s window_jitter=17.60ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639652.491754645] [registration_merge_node]: Published merged cloud: 132740 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[thermal_camera_node-5] [INFO] [1794639652.698179614] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[registration_merge_node.py-7] [INFO] [1794639653.397815153] [registration_merge_node]: Published merged cloud: 132701 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639654.290868266] [registration_merge_node]: Published merged cloud: 132213 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639655.196001251] [registration_merge_node]: Published merged cloud: 132965 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639656.113483762] [registration_merge_node]: Published merged cloud: 133455 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639656.838289182] [livox_restamp_node]: offset=1794637943.834163s window_jitter=17.17ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639656.999814358] [registration_merge_node]: Published merged cloud: 132351 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639657.894352069] [registration_merge_node]: Published merged cloud: 133518 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639658.792394640] [registration_merge_node]: Published merged cloud: 132858 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639659.689311227] [registration_merge_node]: Published merged cloud: 132838 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639660.664100574] [registration_merge_node]: Published merged cloud: 133554 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[registration_merge_node.py-7] [INFO] [1794639661.497880101] [registration_merge_node]: Published merged cloud: 132030 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.20 Hz
+[livox_restamp_node-2] [INFO] [1794639661.839641978] [livox_restamp_node]: offset=1794637943.834163s window_jitter=16.47ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639662.415227852] [registration_merge_node]: Published merged cloud: 132291 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[thermal_camera_node-5] [WARN] [1794639662.669695275] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639663.381374453] [registration_merge_node]: Published merged cloud: 132686 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.05 Hz
+[thermal_camera_node-5] [WARN] [1794639663.574491390] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639663.575210171] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 20s cool-down
+[thermal_camera_node-5] [ WARN:0@177.920] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639664.304416630] [registration_merge_node]: Published merged cloud: 133835 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[registration_merge_node.py-7] [INFO] [1794639665.119713591] [registration_merge_node]: Published merged cloud: 132246 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.23 Hz
+[registration_merge_node.py-7] [INFO] [1794639666.006042198] [registration_merge_node]: Published merged cloud: 132083 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[livox_restamp_node-2] [INFO] [1794639666.846768026] [livox_restamp_node]: offset=1794637943.834745s window_jitter=24.67ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639666.976540759] [registration_merge_node]: Published merged cloud: 132514 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[registration_merge_node.py-7] [INFO] [1794639667.815778059] [registration_merge_node]: Published merged cloud: 132447 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.19 Hz
+[registration_merge_node.py-7] [INFO] [1794639668.693930384] [registration_merge_node]: Published merged cloud: 132521 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639669.631721072] [registration_merge_node]: Published merged cloud: 132520 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[registration_merge_node.py-7] [INFO] [1794639670.516319180] [registration_merge_node]: Published merged cloud: 132725 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639671.486681355] [registration_merge_node]: Published merged cloud: 133559 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[livox_restamp_node-2] [INFO] [1794639671.841452917] [livox_restamp_node]: offset=1794637943.834945s window_jitter=24.47ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639672.295387029] [registration_merge_node]: Published merged cloud: 132084 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.23 Hz
+[registration_merge_node.py-7] [INFO] [1794639673.226328895] [registration_merge_node]: Published merged cloud: 132959 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[registration_merge_node.py-7] [INFO] [1794639674.108080953] [registration_merge_node]: Published merged cloud: 132356 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639675.058882547] [registration_merge_node]: Published merged cloud: 132310 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.05 Hz
+[registration_merge_node.py-7] [INFO] [1794639675.949962862] [registration_merge_node]: Published merged cloud: 133441 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[livox_restamp_node-2] [INFO] [1794639676.850568900] [livox_restamp_node]: offset=1794637943.835525s window_jitter=23.89ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639676.865558159] [registration_merge_node]: Published merged cloud: 133824 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639677.748202747] [registration_merge_node]: Published merged cloud: 132879 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639678.621344375] [registration_merge_node]: Published merged cloud: 132125 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639679.545710681] [registration_merge_node]: Published merged cloud: 132797 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639680.438535912] [registration_merge_node]: Published merged cloud: 133722 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639681.295139207] [registration_merge_node]: Published merged cloud: 131980 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[livox_restamp_node-2] [INFO] [1794639681.839905944] [livox_restamp_node]: offset=1794637943.835988s window_jitter=23.43ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639682.212388614] [registration_merge_node]: Published merged cloud: 132026 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639683.113922088] [registration_merge_node]: Published merged cloud: 132414 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639684.020149538] [registration_merge_node]: Published merged cloud: 132228 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639684.901755054] [registration_merge_node]: Published merged cloud: 131964 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639685.809910455] [registration_merge_node]: Published merged cloud: 131886 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639686.701288469] [registration_merge_node]: Published merged cloud: 132700 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[livox_restamp_node-2] [INFO] [1794639686.844478014] [livox_restamp_node]: offset=1794637943.837179s window_jitter=16.12ms (n=200)
+[thermal_camera_node-5] [INFO] [1794639686.877878034] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[registration_merge_node.py-7] [INFO] [1794639687.637714156] [registration_merge_node]: Published merged cloud: 134012 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[registration_merge_node.py-7] [INFO] [1794639688.501546829] [registration_merge_node]: Published merged cloud: 131716 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.16 Hz
+[registration_merge_node.py-7] [INFO] [1794639689.417299976] [registration_merge_node]: Published merged cloud: 132777 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639690.317678276] [registration_merge_node]: Published merged cloud: 132744 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639691.201260744] [registration_merge_node]: Published merged cloud: 131926 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[livox_restamp_node-2] [INFO] [1794639691.843991979] [livox_restamp_node]: offset=1794637943.837764s window_jitter=15.54ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639692.123956601] [registration_merge_node]: Published merged cloud: 132761 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639693.012975602] [registration_merge_node]: Published merged cloud: 132404 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639693.894256065] [registration_merge_node]: Published merged cloud: 132579 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639694.819316761] [registration_merge_node]: Published merged cloud: 132020 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639695.739302617] [registration_merge_node]: Published merged cloud: 133036 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639696.623172233] [registration_merge_node]: Published merged cloud: 132319 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[livox_restamp_node-2] [INFO] [1794639696.845897946] [livox_restamp_node]: offset=1794637943.838102s window_jitter=15.20ms (n=200)
+[thermal_camera_node-5] [ WARN:0@211.232] global ./modules/videoio/src/cap_v4l.cpp (1013) tryIoctl VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): select() timeout.
+[thermal_camera_node-5] [WARN] [1794639696.888528940] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639697.592406307] [registration_merge_node]: Published merged cloud: 132864 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[thermal_camera_node-5] [WARN] [1794639697.794258560] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639697.794922466] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 20s cool-down
+[thermal_camera_node-5] [ WARN:0@212.140] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639698.439407804] [registration_merge_node]: Published merged cloud: 132250 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.18 Hz
+[registration_merge_node.py-7] [INFO] [1794639699.354683088] [registration_merge_node]: Published merged cloud: 132336 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639700.203396001] [registration_merge_node]: Published merged cloud: 132618 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[registration_merge_node.py-7] [INFO] [1794639701.167532842] [registration_merge_node]: Published merged cloud: 132220 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.04 Hz
+[livox_restamp_node-2] [INFO] [1794639701.843093767] [livox_restamp_node]: offset=1794637943.838721s window_jitter=21.61ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639702.018573942] [registration_merge_node]: Published merged cloud: 132853 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[registration_merge_node.py-7] [INFO] [1794639702.915758767] [registration_merge_node]: Published merged cloud: 133058 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639703.814889380] [registration_merge_node]: Published merged cloud: 132464 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639704.705737927] [registration_merge_node]: Published merged cloud: 131575 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639705.679651911] [registration_merge_node]: Published merged cloud: 132645 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[registration_merge_node.py-7] [INFO] [1794639706.597255583] [registration_merge_node]: Published merged cloud: 133028 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[livox_restamp_node-2] [INFO] [1794639706.848840073] [livox_restamp_node]: offset=1794637943.838982s window_jitter=21.34ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639707.419542391] [registration_merge_node]: Published merged cloud: 131769 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.22 Hz
+[registration_merge_node.py-7] [INFO] [1794639708.331570774] [registration_merge_node]: Published merged cloud: 132110 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639709.201607417] [registration_merge_node]: Published merged cloud: 131741 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639710.114163767] [registration_merge_node]: Published merged cloud: 132230 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639711.015561911] [registration_merge_node]: Published merged cloud: 132044 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639711.856027085] [livox_restamp_node]: offset=1794637943.839109s window_jitter=21.22ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639711.901991072] [registration_merge_node]: Published merged cloud: 131878 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639712.816269152] [registration_merge_node]: Published merged cloud: 132406 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639713.719593987] [registration_merge_node]: Published merged cloud: 131939 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639714.716948394] [registration_merge_node]: Published merged cloud: 131761 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.01 Hz
+[registration_merge_node.py-7] [INFO] [1794639715.534519127] [registration_merge_node]: Published merged cloud: 132109 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.22 Hz
+[registration_merge_node.py-7] [INFO] [1794639716.411693994] [registration_merge_node]: Published merged cloud: 132112 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[livox_restamp_node-2] [INFO] [1794639716.846623944] [livox_restamp_node]: offset=1794637943.839587s window_jitter=20.74ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639717.317206504] [registration_merge_node]: Published merged cloud: 132068 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639718.274469844] [registration_merge_node]: Published merged cloud: 133868 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.04 Hz
+[registration_merge_node.py-7] [INFO] [1794639719.121906621] [registration_merge_node]: Published merged cloud: 132634 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.18 Hz
+[registration_merge_node.py-7] [INFO] [1794639720.002340010] [registration_merge_node]: Published merged cloud: 131506 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639720.919424961] [registration_merge_node]: Published merged cloud: 131889 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[thermal_camera_node-5] [INFO] [1794639721.103454627] [thermal_camera_node]: /dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0 capture started (640x512@30), publishing mono16 on /landfill/thermal/image_raw (relative AGC signal, not radiometric Kelvin)
+[registration_merge_node.py-7] [INFO] [1794639721.820926734] [registration_merge_node]: Published merged cloud: 132708 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639721.850857544] [livox_restamp_node]: offset=1794637943.840279s window_jitter=17.52ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639722.775091059] [registration_merge_node]: Published merged cloud: 132909 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.05 Hz
+[registration_merge_node.py-7] [INFO] [1794639723.612578242] [registration_merge_node]: Published merged cloud: 132002 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.19 Hz
+[registration_merge_node.py-7] [INFO] [1794639724.504797553] [registration_merge_node]: Published merged cloud: 132322 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639725.445921663] [registration_merge_node]: Published merged cloud: 133144 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.06 Hz
+[registration_merge_node.py-7] [INFO] [1794639726.313365806] [registration_merge_node]: Published merged cloud: 132141 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[livox_restamp_node-2] [INFO] [1794639726.847346401] [livox_restamp_node]: offset=1794637943.840536s window_jitter=17.27ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639727.219654892] [registration_merge_node]: Published merged cloud: 132819 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639728.140375522] [registration_merge_node]: Published merged cloud: 132440 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639729.011168250] [registration_merge_node]: Published merged cloud: 132943 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.15 Hz
+[registration_merge_node.py-7] [INFO] [1794639729.939998355] [registration_merge_node]: Published merged cloud: 132954 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639730.813834239] [registration_merge_node]: Published merged cloud: 132246 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[thermal_camera_node-5] [WARN] [1794639731.101736869] [thermal_camera_node]: Failed to read frame from thermal camera (1 in a row)
+[registration_merge_node.py-7] [INFO] [1794639731.786901484] [registration_merge_node]: Published merged cloud: 132568 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.03 Hz
+[livox_restamp_node-2] [INFO] [1794639731.845784468] [livox_restamp_node]: offset=1794637943.841199s window_jitter=16.60ms (n=200)
+[thermal_camera_node-5] [WARN] [1794639732.004131947] [thermal_camera_node]: Failed to read frame from thermal camera (10 in a row)
+[thermal_camera_node-5] [ERROR] [1794639732.004877933] [thermal_camera_node]: Too many consecutive read failures; reopening device after a 20s cool-down
+[thermal_camera_node-5] [ WARN:0@246.350] global ./modules/videoio/src/cap_v4l.cpp (814) requestBuffers VIDEOIO(V4L2:/dev/v4l/by-id/usb-Thermal_Cam_Co._Ltd_Camera_202206223-video-index0): failed VIDIOC_REQBUFS: errno=19 (No such device)
+[registration_merge_node.py-7] [INFO] [1794639732.680261585] [registration_merge_node]: Published merged cloud: 132265 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639733.511852171] [registration_merge_node]: Published merged cloud: 132125 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.21 Hz
+[registration_merge_node.py-7] [INFO] [1794639734.435097374] [registration_merge_node]: Published merged cloud: 132881 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639735.360325960] [registration_merge_node]: Published merged cloud: 133132 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639736.210380992] [registration_merge_node]: Published merged cloud: 132020 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[livox_restamp_node-2] [INFO] [1794639736.845568255] [livox_restamp_node]: offset=1794637943.841576s window_jitter=19.15ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639737.159219871] [registration_merge_node]: Published merged cloud: 132693 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.05 Hz
+[registration_merge_node.py-7] [INFO] [1794639738.049297368] [registration_merge_node]: Published merged cloud: 133207 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.12 Hz
+[registration_merge_node.py-7] [INFO] [1794639738.907105050] [registration_merge_node]: Published merged cloud: 132161 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[registration_merge_node.py-7] [INFO] [1794639739.805394106] [registration_merge_node]: Published merged cloud: 131830 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639740.711550411] [registration_merge_node]: Published merged cloud: 132442 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639741.612795112] [registration_merge_node]: Published merged cloud: 132941 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639741.847951775] [livox_restamp_node]: offset=1794637943.841987s window_jitter=18.74ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639742.558405836] [registration_merge_node]: Published merged cloud: 133565 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.06 Hz
+[registration_merge_node.py-7] [INFO] [1794639743.476475315] [registration_merge_node]: Published merged cloud: 132926 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639744.346862185] [registration_merge_node]: Published merged cloud: 132607 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.14 Hz
+[registration_merge_node.py-7] [INFO] [1794639745.255072728] [registration_merge_node]: Published merged cloud: 132151 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.10 Hz
+[registration_merge_node.py-7] [INFO] [1794639746.107741135] [registration_merge_node]: Published merged cloud: 132310 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.17 Hz
+[livox_restamp_node-2] [INFO] [1794639746.847609516] [livox_restamp_node]: offset=1794637943.842031s window_jitter=18.70ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639747.044875442] [registration_merge_node]: Published merged cloud: 132304 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz
+[registration_merge_node.py-7] [INFO] [1794639747.924511898] [registration_merge_node]: Published merged cloud: 133016 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.13 Hz
+[registration_merge_node.py-7] [INFO] [1794639748.878970599] [registration_merge_node]: Published merged cloud: 133461 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.05 Hz
+[registration_merge_node.py-7] [INFO] [1794639749.722057240] [registration_merge_node]: Published merged cloud: 132587 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.19 Hz
+[registration_merge_node.py-7] [INFO] [1794639750.621290216] [registration_merge_node]: Published merged cloud: 132383 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[registration_merge_node.py-7] [INFO] [1794639751.519199176] [registration_merge_node]: Published merged cloud: 132277 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.11 Hz
+[livox_restamp_node-2] [INFO] [1794639751.847878847] [livox_restamp_node]: offset=1794637943.842836s window_jitter=17.90ms (n=200)
+[registration_merge_node.py-7] [INFO] [1794639752.444822950] [registration_merge_node]: Published merged cloud: 132039 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.08 Hz
+[registration_merge_node.py-7] [INFO] [1794639753.367292763] [registration_merge_node]: Published merged cloud: 133263 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.09 Hz
+[registration_merge_node.py-7] [INFO] [1794639754.188988624] [registration_merge_node]: Published merged cloud: 132766 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.21 Hz
+[registration_merge_node.py-7] [INFO] [1794639755.124091742] [registration_merge_node]: Published merged cloud: 132421 pts (9 scans, 216000 raw pts, 0.80s window) @ 1.07 Hz

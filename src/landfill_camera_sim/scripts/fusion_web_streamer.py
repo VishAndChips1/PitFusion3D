@@ -42,57 +42,60 @@ class _ReusableThreadingTCPServer(socketserver.ThreadingTCPServer):
         super().handle_error(request, client_address)
 
 
-class _StreamState:
-    """One served point cloud source: the gzipped payload, its sequence number and capture stamp.
+# Point counts a client may ask for with /merged.bin?n=...; the server's cap is always the top level.
+TIERS = (8000, 20000, 40000, 60000, 80000, 120000)
+LIVE_IDLE_S = 20.0   # stop receiving the live cloud this long after the last /live.bin request
 
-    The sequence number lets a client skip a payload it already has.
+
+class _StreamState:
+    """One served point cloud source, encoded lazily at the point count each client asks for.
+
+    A viewer on a weak link asks for fewer points (?n=); each (cloud, level) pair is encoded once and shared by every
+    client. The sequence number encodes both the cloud and the level, so a level change is never mistaken for old data.
     """
 
     def __init__(self):
-        self.lock = threading.Lock()
-        self.buffer = gzip.compress(struct.pack('<II', 0, 0), compresslevel=6)
-        self.seq = 0
-        # Lazy encoding: the ROS callback only keeps the newest cloud; it is quantised and
-        # gzipped when a client asks for newer data, so an idle server costs nothing.
         self.encode_lock = threading.Lock()
         self.latest_msg = None
         self.latest_id = 0
-        self.encoded_id = 0
-        self.encoder = None
-        self.stamp = 0.0    # header stamp (s) of the cloud currently served
+        self.encoder = None         # encoder(msg, max_points) -> (n_points, payload bytes)
+        self.max_points = 20000     # the server-side ceiling (the max_points_* parameter)
+        self.last_request = 0.0     # monotonic time of the last client request
+        self._cache = {}            # level -> (gzipped payload, seq, capture stamp) for cloud _cache_id
+        self._cache_id = 0
+        self._empty = (gzip.compress(struct.pack('<II', 0, 0), compresslevel=6), 0, 0.0)
 
     def offer(self, msg):
         """Remember the newest cloud (called from the ROS callback)."""
         self.latest_msg = msg
         self.latest_id += 1
 
-    def refresh(self):
-        """Encode the newest cloud if it has not been encoded yet."""
-        if self.encoder is None or self.latest_id == self.encoded_id:
-            return
+    def levels(self):
+        """List the selectable point counts, ending at the server ceiling."""
+        return [t for t in TIERS if t < self.max_points] + [self.max_points]
+
+    def get(self, requested=None):
+        """Return (gzipped payload, seq, stamp) of the newest cloud at the largest level not above `requested`."""
+        self.last_request = time.monotonic()
+        levels = self.levels()
+        idx = len(levels) - 1
+        if requested is not None:
+            idx = max([i for i, t in enumerate(levels) if t <= requested], default=0)
+        if self.encoder is None:
+            return self._empty
         with self.encode_lock:
             lid, msg = self.latest_id, self.latest_msg
-            if msg is None or lid == self.encoded_id:
-                return
-            n, payload = self.encoder(msg)
-            self.set_payload(n, payload, msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9)
-            self.encoded_id = lid
-
-    def set_payload(self, n_points, payload_bytes, stamp=0.0):
-        # Compress once per data update, not once per poll.
-        with self.lock:
-            next_seq = self.seq + 1
-            body = gzip.compress(
-                struct.pack('<II', n_points, next_seq) + payload_bytes, compresslevel=6
-            )
-            self.seq = next_seq
-            self.buffer = body
-            self.stamp = stamp
-
-    def get_buffer_seq_stamp(self):
-        """Return (gzipped payload, sequence number, capture stamp) consistently."""
-        with self.lock:
-            return self.buffer, self.seq, self.stamp
+            if msg is None:
+                return self._empty
+            if lid != self._cache_id:
+                self._cache, self._cache_id = {}, lid
+            entry = self._cache.get(levels[idx])
+            if entry is None:
+                n, payload = self.encoder(msg, levels[idx])
+                body = gzip.compress(struct.pack('<II', n, lid * 16 + idx) + payload, compresslevel=6)
+                stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+                entry = self._cache[levels[idx]] = (body, lid * 16 + idx, stamp)
+            return entry
 
 
 class _SharedState:
@@ -127,13 +130,12 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass  # client (flaky WiFi, closed tab) disconnected mid-write
 
-    def _serve_cloud(self, stream_state):
+    def _serve_cloud(self, stream_state, requested=None):
         """Serve a cloud as gzip, or a bodyless 304 if the client already has this sequence number."""
         try:
-            stream_state.refresh()
+            body, seq, stamp = stream_state.get(requested)
         except Exception:
-            pass  # serve the previous payload rather than fail the request
-        body, seq, stamp = stream_state.get_buffer_seq_stamp()
+            body, seq, stamp = stream_state._empty   # serve an empty cloud rather than fail the request
         etag = f'"{seq}"'
         if self.headers.get('If-None-Match') == etag:
             self.send_response(304)
@@ -159,15 +161,20 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             pass  # client (flaky WiFi, closed tab) disconnected mid-write
 
     def do_GET(self):
-        """Route: page, merged/live clouds, static scripts, else 404."""
-        if self.path in ('/', '/index.html'):
+        """Route: page, merged/live clouds (merged takes ?n=<points>), static scripts, else 404."""
+        path, _, query = self.path.partition('?')
+        requested = None
+        for part in query.split('&'):
+            if part.startswith('n=') and part[2:].isdigit():
+                requested = int(part[2:])
+        if path in ('/', '/index.html'):
             self._serve_bytes(self.page_html, 'text/html; charset=utf-8')
-        elif self.path in ('/merged.bin', '/latest.bin'):
-            self._serve_cloud(self.shared_state.merged)
-        elif self.path == '/live.bin':
+        elif path in ('/merged.bin', '/latest.bin'):
+            self._serve_cloud(self.shared_state.merged, requested)
+        elif path == '/live.bin':
             self._serve_cloud(self.shared_state.live)
-        elif self.static_assets and self.path in self.static_assets:
-            body, content_type = self.static_assets[self.path]
+        elif self.static_assets and path in self.static_assets:
+            body, content_type = self.static_assets[path]
             self._serve_bytes(body, content_type)
         else:
             # Content-Length is required under HTTP/1.1 keep-alive.
@@ -244,9 +251,9 @@ class FusionWebStreamer(Node):
         self.declare_parameter('merged_topic', '/landfill/fusion/points_merged')
         self.declare_parameter('live_topic', '/landfill/fusion/points_rgbt')
         self.declare_parameter('http_port', 8080)
-        # Point caps per served cloud. They set the transfer size per update, and 20000 / 5000
-        # were measured to keep the peak input current under 5 A during real WiFi viewing.
-        self.declare_parameter('max_points_merged', 20000)
+        # Ceiling on points per served cloud. Viewers on weaker links ask for fewer (?n=). 80000 was measured over a
+        # 20-minute soak with real WiFi-radio load: 1.5 updates/s, about 7.5 Mbit/s, worst-case input current 3.1 A.
+        self.declare_parameter('max_points_merged', 80000)
         self.declare_parameter('max_points_live', 5000)
         # Older single-stream parameter name: overrides merged_topic when set.
         self.declare_parameter('input_topic', '')
@@ -255,8 +262,6 @@ class FusionWebStreamer(Node):
         merged_topic = str(self.get_parameter('input_topic').value) or str(self.get_parameter('merged_topic').value)
         live_topic = str(self.get_parameter('live_topic').value)
         self._http_port = int(self.get_parameter('http_port').value)
-        self._max_points_merged = int(self.get_parameter('max_points_merged').value)
-        self._max_points_live = int(self.get_parameter('max_points_live').value)
         # The caps can be changed at runtime: ros2 param set /fusion_web_streamer max_points_merged N
         self.add_on_set_parameters_callback(self._on_param_change)
 
@@ -264,8 +269,10 @@ class FusionWebStreamer(Node):
 
         self._state = _SharedState()
         _rng_merged, _rng_live = np.random.default_rng(0), np.random.default_rng(1)
-        self._state.merged.encoder = lambda m: _encode_cloud(m, self._max_points_merged, _rng_merged)
-        self._state.live.encoder = lambda m: _encode_cloud(m, self._max_points_live, _rng_live)
+        self._state.merged.max_points = int(self.get_parameter('max_points_merged').value)
+        self._state.live.max_points = int(self.get_parameter('max_points_live').value)
+        self._state.merged.encoder = lambda m, n: _encode_cloud(m, n, _rng_merged)
+        self._state.live.encoder = lambda m, n: _encode_cloud(m, n, _rng_live)
         page_html, static_assets = _load_web_assets()
         handler = type(
             'BoundHandler', (_Handler,),
@@ -285,13 +292,14 @@ class FusionWebStreamer(Node):
         self._merged_sub = self.create_subscription(
             PointCloud2, merged_topic, self._on_merged, qos_profile_sensor_data
         )
-        self._live_sub = self.create_subscription(
-            PointCloud2, live_topic, self._on_live, qos_profile_sensor_data
-        )
+        # The live cloud (10 Hz) is only received while a client is asking for it: merged-only viewing then costs no live work.
+        self._live_topic = live_topic
+        self._live_sub = None
+        self.create_timer(1.0, self._manage_live_subscription)
 
         self.get_logger().info(
             'Serving merged=%s (max %d pts) + live=%s (max %d pts) at http://0.0.0.0:%d/ (keep-alive: %s)'
-            % (merged_topic, self._max_points_merged, live_topic, self._max_points_live,
+            % (merged_topic, self._state.merged.max_points, live_topic, self._state.live.max_points,
                self._http_port, http_keepalive)
         )
 
@@ -303,10 +311,20 @@ class FusionWebStreamer(Node):
                     return SetParametersResult(successful=False, reason='must be an int in [100, 1000000]')
         for p in params:
             if p.name == 'max_points_merged':
-                self._max_points_merged = int(p.value)
+                self._state.merged.max_points = int(p.value)
             elif p.name == 'max_points_live':
-                self._max_points_live = int(p.value)
+                self._state.live.max_points = int(p.value)
         return SetParametersResult(successful=True)
+
+    def _manage_live_subscription(self):
+        """Receive the live cloud only while /live.bin was requested within LIVE_IDLE_S."""
+        wanted = time.monotonic() - self._state.live.last_request < LIVE_IDLE_S and self._state.live.last_request > 0
+        if wanted and self._live_sub is None:
+            self._live_sub = self.create_subscription(PointCloud2, self._live_topic, self._on_live, qos_profile_sensor_data)
+        elif not wanted and self._live_sub is not None:
+            self.destroy_subscription(self._live_sub)
+            self._live_sub = None
+            self._state.live.latest_msg = None
 
     def _on_merged(self, msg):
         """Keep the newest merged cloud."""

@@ -1,0 +1,23 @@
+[18:28:26] campaign soak/stress_soak: gates {'ext5v_min': 4.75, 'est_in_max': 4.4, 'temp_max': 82.0, 'core_abs': 12.0}; gateway 192.168.1.1; throttle baseline 0x0
+[18:29:41]   soak {'min': 1.0, 'upd_per_s': 1.57, 'temp_c': 71.0, 'streamer_rss_mb': 355.6, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:30:41]   soak {'min': 2.0, 'upd_per_s': 1.52, 'temp_c': 71.6, 'streamer_rss_mb': 364.9, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:31:41]   soak {'min': 3.0, 'upd_per_s': 1.52, 'temp_c': 71.6, 'streamer_rss_mb': 356.3, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:32:41]   soak {'min': 4.0, 'upd_per_s': 1.53, 'temp_c': 71.6, 'streamer_rss_mb': 356.3, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:33:41]   soak {'min': 5.0, 'upd_per_s': 1.48, 'temp_c': 71.6, 'streamer_rss_mb': 357.2, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:34:42]   soak {'min': 6.0, 'upd_per_s': 1.52, 'temp_c': 71.6, 'streamer_rss_mb': 357.3, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:35:42]   soak {'min': 7.0, 'upd_per_s': 1.5, 'temp_c': 72.7, 'streamer_rss_mb': 360.9, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:36:41]   soak {'min': 8.0, 'upd_per_s': 1.5, 'temp_c': 71.6, 'streamer_rss_mb': 356.3, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:37:41]   soak {'min': 9.0, 'upd_per_s': 1.53, 'temp_c': 72.7, 'streamer_rss_mb': 357.1, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:38:41]   soak {'min': 10.0, 'upd_per_s': 1.53, 'temp_c': 72.2, 'streamer_rss_mb': 357.0, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:39:41]   soak {'min': 11.0, 'upd_per_s': 1.5, 'temp_c': 72.2, 'streamer_rss_mb': 351.2, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:40:41]   soak {'min': 12.0, 'upd_per_s': 1.52, 'temp_c': 73.2, 'streamer_rss_mb': 364.9, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:41:42]   soak {'min': 13.0, 'upd_per_s': 1.5, 'temp_c': 73.8, 'streamer_rss_mb': 357.0, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:42:41]   soak {'min': 14.0, 'upd_per_s': 1.53, 'temp_c': 74.3, 'streamer_rss_mb': 357.2, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:43:41]   soak {'min': 15.0, 'upd_per_s': 1.5, 'temp_c': 73.2, 'streamer_rss_mb': 356.3, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:44:41]   soak {'min': 16.0, 'upd_per_s': 1.5, 'temp_c': 73.2, 'streamer_rss_mb': 357.2, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:45:41]   soak {'min': 17.0, 'upd_per_s': 1.52, 'temp_c': 72.7, 'streamer_rss_mb': 357.2, 'merge_rss_mb': 237.1, 'aborts': 0, 'throttled': '0x0'}
+[18:46:41]   soak {'min': 18.0, 'upd_per_s': 1.53, 'temp_c': 73.8, 'streamer_rss_mb': 356.0, 'merge_rss_mb': 238.6, 'aborts': 0, 'throttled': '0x0'}
+[18:47:42]   soak {'min': 19.0, 'upd_per_s': 1.52, 'temp_c': 73.8, 'streamer_rss_mb': 356.5, 'merge_rss_mb': 238.6, 'aborts': 0, 'throttled': '0x0'}
+[18:48:42]   soak {'min': 20.0, 'upd_per_s': 1.52, 'temp_c': 73.2, 'streamer_rss_mb': 356.5, 'merge_rss_mb': 238.6, 'aborts': 0, 'throttled': '0x0'}
+[18:48:45] stress_soak_soak_cap80000: 79888.0 pts, 1.52 upd/s (viewers [1.52]), 604.1 KB, 7.52 Mbit/s, aborts [0], age p50 504.4424533843994, streamer 23.7%, pipeline 111.3%, est in 3.046474968447173, wlan tx 7.056 Mbit/s, T 74.35
+[18:48:48] done; abort=None; cap restored to 20000

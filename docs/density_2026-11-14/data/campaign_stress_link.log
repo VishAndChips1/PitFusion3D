@@ -1,0 +1,9 @@
+[18:14:13] campaign link/stress_link: gates {'ext5v_min': 4.75, 'est_in_max': 4.4, 'temp_max': 82.0, 'core_abs': 12.0}; gateway 192.168.1.1; throttle baseline 0x0
+[18:15:49] stress_link_link20_cap80000: 80000.0 pts, 1.591 upd/s (viewers [1.591]), 603.9 KB, 7.871 Mbit/s, aborts [0], age p50 853.6491394042969, streamer 23.1%, pipeline 112.6%, est in 2.615084508811557, wlan tx 6.468 Mbit/s, T 72.7
+[18:17:28] stress_link_link10_cap80000: 69298.0 pts, 1.504 upd/s (viewers [1.504]), 522.4 KB, 6.438 Mbit/s, aborts [0], age p50 1016.2051916122437, streamer 20.1%, pipeline 110.2%, est in 2.7263668012412596, wlan tx 5.44 Mbit/s, T 72.15
+[18:19:05] stress_link_link5_cap80000: 29760.0 pts, 1.653 upd/s (viewers [1.653]), 224.8 KB, 3.044 Mbit/s, aborts [0], age p50 812.3149871826172, streamer 10.4%, pipeline 105.0%, est in 2.6914437481301268, wlan tx 2.811 Mbit/s, T 71.6
+[18:20:42] stress_link_link3_cap80000: 14316.0 pts, 1.77 upd/s (viewers [1.77]), 108.5 KB, 1.573 Mbit/s, aborts [0], age p50 704.7133445739746, streamer 7.1%, pipeline 106.4%, est in 2.617090399618723, wlan tx 1.462 Mbit/s, T 71.05
+[18:22:19] stress_link_link2_cap80000: 12800.0 pts, 1.581 upd/s (viewers [1.581]), 97.0 KB, 1.256 Mbit/s, aborts [0], age p50 712.8859758377075, streamer 5.6%, pipeline 103.7%, est in 2.7047574538255423, wlan tx 1.163 Mbit/s, T 70.5
+[18:24:00] stress_link_link1_cap80000: 8000.0 pts, 1.7 upd/s (viewers [1.7]), 60.8 KB, 0.847 Mbit/s, aborts [0], age p50 892.7822113037109, streamer 4.3%, pipeline 103.3%, est in 2.6729794102017013, wlan tx 0.751 Mbit/s, T 70.5
+[18:24:25] param set timeout 1/4
+[18:24:31] done; abort=None; cap restored to 20000

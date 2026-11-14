@@ -28,6 +28,8 @@
   <div class="row">points: <span id="stat-points">--</span></div>
   <div class="row">refresh: <span id="stat-hz">--</span></div>
   <div class="row">last update: <span id="stat-age">--</span></div>
+  <div class="row">quality: <span id="stat-tier">--</span></div>
+  <div class="row">download / decode: <span id="stat-timing">--</span></div>
   <div class="group">
     <button id="mode-rgb" class="active">RGB</button>
     <button id="mode-thermal">Thermal</button>
@@ -180,17 +182,43 @@ function recordUpdate() {
   }
 }
 
+// <tier-controller>
+// Adaptive quality: ask the server for fewer points when downloads are slow, and creep back up when the link is fast.
+const TierController = {
+  levels: [8000, 20000, 40000, 60000, 80000, 120000],   // the server clamps to its own ceiling
+  index: 5, goodRun: 0, blockedUntil: 0,
+  requested() { return this.levels[this.index]; },
+  // Report one finished request (download time in ms, or aborted); returns the level index to use next.
+  report(downloadMs, aborted, nowMs) {
+    if (aborted) {
+      this.index = Math.max(0, this.index - 2); this.goodRun = 0; this.blockedUntil = nowMs + 60000;
+    } else if (downloadMs > 900) {
+      if (this.index > 0) { this.index -= 1; this.blockedUntil = nowMs + 60000; }
+      this.goodRun = 0;
+    } else if (downloadMs < 400) {
+      this.goodRun += 1;
+      if (this.goodRun >= 8 && this.index < this.levels.length - 1 && nowMs >= this.blockedUntil) { this.index += 1; this.goodRun = 0; }
+    } else {
+      this.goodRun = 0;
+    }
+    return this.index;
+  },
+};
+// </tier-controller>
+
 async function poll() {
   // A hard timeout guarantees the polling loop always continues, even if one request hangs.
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
   const fetchStart = performance.now();
   try {
-    const path = source === 'merged' ? '/merged.bin' : '/live.bin';
+    const path = source === 'merged' ? '/merged.bin?n=' + TierController.requested() : '/live.bin';
     // 'no-cache' revalidates every time, so an unchanged cloud costs only a small 304 reply.
     const res = await fetch(path, {cache:'no-cache', signal: controller.signal});
     if (res.ok) {
       const buf = await res.arrayBuffer();
+      const downloadMs = performance.now() - fetchStart;
+      if (source === 'merged') TierController.report(downloadMs, false, performance.now());
       // Wire format: 24-byte header (n, seq, origin xyz, scale), then 11 bytes per point:
       // int16 xyz (origin + value * scale), uint8 rgb, int16 thermal / 100 (-32768 = none).
       if (buf.byteLength >= 24) {
@@ -203,6 +231,7 @@ async function poll() {
           const oy = dv.getFloat32(12, true);
           const oz = dv.getFloat32(16, true);
           const scale = dv.getFloat32(20, true);
+          const decodeStart = performance.now();
           const xyz = new Float32Array(n * 3);
           const rgb = new Float32Array(n * 3);
           const thermal = new Float32Array(n);
@@ -218,7 +247,12 @@ async function poll() {
             thermal[i] = (tq === -32768) ? NaN : tq / 100;
             p += 11;
           }
+          const decodeMs = performance.now() - decodeStart;
           lastXYZ = xyz; lastRGB = rgb; lastThermal = thermal;
+          // Point spacing grows as fewer points are shown (about 1.8 cm at 20k, 1.2 cm at 80k): size the discs to match.
+          if (source === 'merged') material.size = Math.max(0.012, Math.min(0.03, 1.3 * 0.0183 * Math.pow(n / 20000, -0.29)));
+          document.getElementById('stat-tier').textContent = (source === 'merged' ? 'up to ' + TierController.requested().toLocaleString() + ' points' : 'live');
+          document.getElementById('stat-timing').textContent = downloadMs.toFixed(0) + ' ms / ' + decodeMs.toFixed(0) + ' ms';
           geometry.setAttribute('position', new THREE.BufferAttribute(xyz, 3));
           applyColors();
           document.getElementById('stat-points').textContent = n.toLocaleString();
@@ -228,7 +262,10 @@ async function poll() {
         }
       }
     }
-  } catch (e) { /* keep polling -- covers network errors AND our own abort-on-timeout */ }
+  } catch (e) {
+    // Keep polling: covers network errors and our own abort-on-timeout (which also lowers the quality level).
+    if (source === 'merged' && e && e.name === 'AbortError') TierController.report(null, true, performance.now());
+  }
   finally { clearTimeout(timeoutId); }
   const staleMs = performance.now() - (recentUpdateTimestamps[recentUpdateTimestamps.length-1] || 0);
   if (staleMs > 3000) document.getElementById('stat-hz').classList.add('stale');

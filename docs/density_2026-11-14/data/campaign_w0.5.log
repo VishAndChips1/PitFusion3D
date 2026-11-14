@@ -1,0 +1,6 @@
+[17:45:08] campaign ladder/w0.5: gates {'ext5v_min': 4.75, 'est_in_max': 4.4, 'temp_max': 82.0, 'core_abs': 12.0}; gateway 192.168.1.1; throttle baseline 0x0
+[17:46:57] w0.5_cap20000: 20000.0 pts, 1.563 upd/s (viewers [1.563]), 168.0 KB, 2.151 Mbit/s, aborts [0], age p50 475.15177726745605, streamer 12.2%, pipeline 111.5%, est in 2.6374853500303064, wlan tx 2.022 Mbit/s, T 69.4
+[17:48:43] w0.5_cap40000: 40000.0 pts, 1.578 upd/s (viewers [1.578]), 335.3 KB, 4.333 Mbit/s, aborts [0], age p50 443.1096315383911, streamer 15.9%, pipeline 101.4%, est in 2.7713794384852495, wlan tx 4.093 Mbit/s, T 66.65
+[17:50:31] w0.5_cap80000: 80000.0 pts, 1.587 upd/s (viewers [1.587]), 669.2 KB, 8.703 Mbit/s, aborts [0], age p50 532.6234102249146, streamer 28.1%, pipeline 116.1%, est in 2.7641524388983463, wlan tx 7.707 Mbit/s, T 68.3
+[17:52:19] w0.5_cap150000: 100075.0 pts, 1.561 upd/s (viewers [1.561]), 706.2 KB, 9.028 Mbit/s, aborts [0], age p50 614.1688823699951, streamer 28.4%, pipeline 118.4%, est in 2.559422055841584, wlan tx 7.911 Mbit/s, T 68.3
+[17:52:22] done; abort=None; cap restored to 20000

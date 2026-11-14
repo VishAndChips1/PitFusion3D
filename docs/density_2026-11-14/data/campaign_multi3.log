@@ -1,0 +1,3 @@
+[18:50:58] campaign multi/multi3: gates {'ext5v_min': 4.75, 'est_in_max': 4.4, 'temp_max': 82.0, 'core_abs': 12.0}; gateway 192.168.1.1; throttle baseline 0x0
+[18:53:18] multi3_3viewers_cap80000: 70629.0 pts, 1.448 upd/s (viewers [1.448, 1.465, 1.481]), 530.7 KB, 15.673 Mbit/s, aborts [0, 0, 0], age p50 808.7176084518433, streamer 33.3%, pipeline 154.8%, est in 2.385635208696506, wlan tx 9.0 Mbit/s, T 76.0
+[18:53:24] done; abort=None; cap restored to 20000

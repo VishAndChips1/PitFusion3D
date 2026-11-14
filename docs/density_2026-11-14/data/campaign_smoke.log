@@ -1,0 +1,5 @@
+[17:42:07] campaign ladder/smoke: gates {'ext5v_min': 4.75, 'est_in_max': 4.4, 'temp_max': 82.0, 'core_abs': 12.0}; gateway 192.168.1.1; throttle baseline 0x0
+[17:42:27] done; abort=None; cap restored to 20000
+[17:42:40] campaign ladder/smoke: gates {'ext5v_min': 4.75, 'est_in_max': 4.4, 'temp_max': 82.0, 'core_abs': 12.0}; gateway 192.168.1.1; throttle baseline 0x0
+[17:43:28] smoke_cap60000: 54978.0 pts, 1.15 upd/s (viewers [1.15]), 438.5 KB, 4.131 Mbit/s, aborts [0], age p50 483.9639663696289, streamer 15.5%, pipeline 104.3%, est in 2.332897507349045, wlan tx 3.452 Mbit/s, T 67.2
+[17:43:32] done; abort=None; cap restored to 20000

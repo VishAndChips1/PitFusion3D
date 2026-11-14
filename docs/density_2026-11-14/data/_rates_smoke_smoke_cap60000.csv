@@ -1,0 +1,16 @@
+timestamp,phase,topic,hz,n_msgs,mean_size,lat_mean_ms
+2026-11-14 17:43:08,smoke_cap60000,/landfill/livox/points,3.969,30,24000.0,29.1
+2026-11-14 17:43:08,smoke_cap60000,/landfill/rgb/image_raw,9.979,84,2764800.0,38.6
+2026-11-14 17:43:08,smoke_cap60000,/landfill/thermal/image_raw,0.000,0,0.0,
+2026-11-14 17:43:08,smoke_cap60000,/landfill/fusion/points_rgbt,4.614,35,24000.0,47.7
+2026-11-14 17:43:08,smoke_cap60000,/landfill/fusion/points_merged,1.148,9,63900.0,206.0
+2026-11-14 17:43:18,smoke_cap60000,/landfill/livox/points,2.608,25,24000.0,33.3
+2026-11-14 17:43:18,smoke_cap60000,/landfill/rgb/image_raw,9.996,100,2764800.0,42.8
+2026-11-14 17:43:18,smoke_cap60000,/landfill/thermal/image_raw,0.000,0,0.0,
+2026-11-14 17:43:18,smoke_cap60000,/landfill/fusion/points_rgbt,3.846,36,24000.0,54.9
+2026-11-14 17:43:18,smoke_cap60000,/landfill/fusion/points_merged,1.020,9,60391.4,223.9
+2026-11-14 17:43:28,smoke_cap60000,/landfill/livox/points,3.939,40,24000.0,31.7
+2026-11-14 17:43:28,smoke_cap60000,/landfill/rgb/image_raw,9.997,100,2764800.0,41.8
+2026-11-14 17:43:28,smoke_cap60000,/landfill/thermal/image_raw,0.000,0,0.0,
+2026-11-14 17:43:28,smoke_cap60000,/landfill/fusion/points_rgbt,3.572,36,24000.0,50.6
+2026-11-14 17:43:28,smoke_cap60000,/landfill/fusion/points_merged,1.028,10,57967.6,223.0

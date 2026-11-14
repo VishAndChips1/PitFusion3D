@@ -1,0 +1,5 @@
+[18:24:35] campaign link/stress_link_old: gates {'ext5v_min': 4.75, 'est_in_max': 4.4, 'temp_max': 82.0, 'core_abs': 12.0}; gateway 192.168.1.1; throttle baseline 0x0
+[18:26:13] stress_link_old_link2_cap80000: 80000.0 pts, 0.396 upd/s (viewers [0.396]), 601.1 KB, 1.951 Mbit/s, aborts [0], age p50 3214.509963989258, streamer 7.0%, pipeline 94.9%, est in 3.032140941323602, wlan tx 1.722 Mbit/s, T 71.05
+[18:26:38] param set timeout 1/4
+[18:28:18] stress_link_old_link1_cap80000: None pts, 0.0 upd/s (viewers [0.0]), None KB, 0.0 Mbit/s, aborts [20], age p50 None, streamer 5.2%, pipeline 96.0%, est in 2.7197130819330004, wlan tx 0.012 Mbit/s, T 69.95
+[18:28:22] done; abort=None; cap restored to 20000

@@ -25,7 +25,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument('http_port', default_value='8080'),
         # Point caps per served cloud (see fusion_web_streamer.py).
-        DeclareLaunchArgument('max_points_merged', default_value='20000'),
+        DeclareLaunchArgument('max_points_merged', default_value='80000'),
         DeclareLaunchArgument('max_points_live', default_value='5000'),
 
         Node(
