@@ -73,6 +73,15 @@ def test_each_level_is_encoded_once_per_cloud_and_seq_differs_by_level():
     assert c[1] != a[1] and c[2] == 101.0                   # a new cloud gets a new seq and its own stamp
 
 
+def test_changing_the_ceiling_never_reuses_a_sequence_number():
+    state = make_state(80000)
+    state.offer(make_msg(100000))
+    before = state.get(None)
+    state.max_points = 50000                                # runtime parameter change
+    after = state.get(None)
+    assert after[1] != before[1] and header(after[0])[0] == 50000
+
+
 def test_no_cloud_yet_serves_an_empty_payload_and_records_the_request():
     state = make_state()
     assert header(state.get(None)[0])[0] == 0

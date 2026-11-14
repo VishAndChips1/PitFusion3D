@@ -51,24 +51,23 @@ class _StreamState:
     """One served point cloud source, encoded lazily at the point count each client asks for.
 
     A viewer on a weak link asks for fewer points (?n=); each (cloud, level) pair is encoded once and shared by every
-    client. The sequence number encodes both the cloud and the level, so a level change is never mistaken for old data.
+    client. Every encoded payload gets its own increasing sequence number, so a level change is never mistaken for old data.
     """
 
     def __init__(self):
         self.encode_lock = threading.Lock()
-        self.latest_msg = None
-        self.latest_id = 0
+        self.latest = (0, None)     # (cloud id, message), replaced as one object so readers never see a mixed pair
         self.encoder = None         # encoder(msg, max_points) -> (n_points, payload bytes)
         self.max_points = 20000     # the server-side ceiling (the max_points_* parameter)
         self.last_request = 0.0     # monotonic time of the last client request
         self._cache = {}            # level -> (gzipped payload, seq, capture stamp) for cloud _cache_id
         self._cache_id = 0
+        self._seq = 0               # increases with every payload encoded, so a payload is never mistaken for another
         self._empty = (gzip.compress(struct.pack('<II', 0, 0), compresslevel=6), 0, 0.0)
 
     def offer(self, msg):
         """Remember the newest cloud (called from the ROS callback)."""
-        self.latest_msg = msg
-        self.latest_id += 1
+        self.latest = (self.latest[0] + 1, msg)
 
     def levels(self):
         """List the selectable point counts, ending at the server ceiling."""
@@ -84,7 +83,7 @@ class _StreamState:
         if self.encoder is None:
             return self._empty
         with self.encode_lock:
-            lid, msg = self.latest_id, self.latest_msg
+            lid, msg = self.latest
             if msg is None:
                 return self._empty
             if lid != self._cache_id:
@@ -92,9 +91,10 @@ class _StreamState:
             entry = self._cache.get(levels[idx])
             if entry is None:
                 n, payload = self.encoder(msg, levels[idx])
-                body = gzip.compress(struct.pack('<II', n, lid * 16 + idx) + payload, compresslevel=6)
+                self._seq += 1
+                body = gzip.compress(struct.pack('<II', n, self._seq) + payload, compresslevel=6)
                 stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-                entry = self._cache[levels[idx]] = (body, lid * 16 + idx, stamp)
+                entry = self._cache[levels[idx]] = (body, self._seq, stamp)
             return entry
 
 
@@ -324,7 +324,7 @@ class FusionWebStreamer(Node):
         elif not wanted and self._live_sub is not None:
             self.destroy_subscription(self._live_sub)
             self._live_sub = None
-            self._state.live.latest_msg = None
+            self._state.live.latest = (self._state.live.latest[0], None)
 
     def _on_merged(self, msg):
         """Keep the newest merged cloud."""

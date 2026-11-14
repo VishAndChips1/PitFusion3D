@@ -218,7 +218,6 @@ async function poll() {
     if (res.ok) {
       const buf = await res.arrayBuffer();
       const downloadMs = performance.now() - fetchStart;
-      if (source === 'merged') TierController.report(downloadMs, false, performance.now());
       // Wire format: 24-byte header (n, seq, origin xyz, scale), then 11 bytes per point:
       // int16 xyz (origin + value * scale), uint8 rgb, int16 thermal / 100 (-32768 = none).
       if (buf.byteLength >= 24) {
@@ -227,6 +226,8 @@ async function poll() {
         const seq = dv.getUint32(4, true);
         if (n > 0 && seq !== poll._lastSeq) {
           poll._lastSeq = seq;
+          // Only a new cloud tells us about the link; a cached 'unchanged' reply is instant and would look like a fast download.
+          if (source === 'merged') TierController.report(downloadMs, false, performance.now());
           const ox = dv.getFloat32(8, true);
           const oy = dv.getFloat32(12, true);
           const oz = dv.getFloat32(16, true);

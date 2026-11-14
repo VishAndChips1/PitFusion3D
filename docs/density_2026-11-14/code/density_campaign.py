@@ -256,6 +256,18 @@ def set_cap(n):
     return False
 
 
+def current_cap():
+    """Read the streamer's present ceiling (falls back to 80000, the production default)."""
+    for _ in range(3):
+        try:
+            r = subprocess.run(['ros2', 'param', 'get', '/fusion_web_streamer', 'max_points_merged'], capture_output=True, text=True, timeout=25)
+            m = re.search(r'(\d+)', r.stdout)
+            if m: return int(m.group(1))
+        except subprocess.TimeoutExpired: pass
+        time.sleep(2)
+    return 80000
+
+
 def procs():
     out = {}
     for p in psutil.process_iter(['cmdline']):
@@ -371,7 +383,8 @@ def run_step(pw, viewers, radio, label, cap, secs, link_mbit=None, snap_every=0)
 
 def main():
     os.makedirs(DATA, exist_ok=True); start_proxy()
-    pw = Power(); pw.on_abort = lambda: set_cap(20000); pw.start()
+    original_cap = current_cap()   # put back whatever the running service had, never a fixed number
+    pw = Power(); pw.on_abort = lambda: set_cap(original_cap); pw.start()
     n_view = int(sys.argv[4]) if PHASE == 'multi' else 1
     viewers = [Viewer() for _ in range(n_view)]; [v.start() for v in viewers]; radio = Radio(viewers); radio.start(); time.sleep(2)
     log(f'campaign {PHASE}/{TAG}: gates {SAFE}; gateway {GATEWAY}; throttle baseline 0x{pw.thr0:x}')
@@ -393,8 +406,8 @@ def main():
             cap = int(sys.argv[3]); run_step(pw, viewers, radio, f'{TAG}_soak_cap{cap}', cap, int(float(sys.argv[4]) * 60), snap_every=60)
     finally:
         radio.stop_flag = True; [setattr(v, 'stop_flag', True) for v in viewers]
-        if not pw.abort: set_cap(20000)
-        pw.stop_flag = True; time.sleep(1); log(f'done; abort={pw.abort}; cap restored to 20000')
+        set_cap(original_cap)
+        pw.stop_flag = True; time.sleep(1); log(f'done; abort={pw.abort}; cap restored to {original_cap}')
 
 
 if __name__ == '__main__':

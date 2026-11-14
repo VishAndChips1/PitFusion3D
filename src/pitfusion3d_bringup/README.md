@@ -347,6 +347,11 @@ cheap numpy gather, not extra ICP compute -- so they can be tuned up for
 a denser/better-looking view without touching the Pi's tighter compute
 budget.
 
+Since 14 Nov the default merged ceiling is 80,000 points (measured over a 20-minute soak: about
+1.5 updates/s, 7.5 Mbit/s, worst-case input current 3.1 A). Viewers on slower links ask for fewer
+points with `?n=<points>` (the page does this automatically); each level is encoded once per cloud
+and shared by all viewers.
+
 A second pass took total CPU from ~159% to ~103%: every publisher and
 subscriber pipeline-wide was switched from ROS2's default `RELIABLE` QoS
 to `BEST_EFFORT` (`rclpy.qos.qos_profile_sensor_data`) -- correct for a

@@ -52,6 +52,10 @@ Running the production code and config files on the same data gives 83.7 % (in-s
 4. Indoor scene, low-contrast board. This is not a field validation.
 5. The RGB-to-thermal offset in `extrinsics.yaml` was set relative to the old LiDAR frame and has not been re-derived here.
 
+## Lens-model reach (second audit)
+The boards only covered a horizontal band of the image (corners seen at x 65-1248, y 124-401). Two equally good lens fits (0.104 and 0.109 px) differ by a nearly uniform 25-30 px everywhere, corners included. That is the principal point (cx, cy) trading off against the LiDAR rotation when every board faces the sensors; the extrinsic was solved with the chosen model, so it absorbs that offset where the boards were. Corner and top/bottom alignment has not been checked independently. The tilted-board recording below, with boards placed near the image corners and at top and bottom, would settle it.
+Also fixed: the projection now ignores points more than about 76 degrees off-axis, so extreme points cannot overflow.
+
 ## To tighten it further (needs 10 minutes with the board)
 Record a second set with the board tilted about 30 deg left/right and up/down at 2-3 m. That adds the missing rotation information, and I can rerun everything with `results/*.py`.
 

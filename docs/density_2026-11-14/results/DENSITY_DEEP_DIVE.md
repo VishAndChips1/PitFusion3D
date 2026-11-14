@@ -46,12 +46,21 @@ Without the change, a high cap would have blanked the viewer on a weak link (the
 2. `viewer.html`: adaptive quality (steps down quickly, up slowly), 8 s abort instead of 4 s, point discs sized to the density, and two new HUD lines (quality level; download / decode ms) to read on a real device.
 3. `test_streamer_tiers.py`: 6 new tests (levels, caching, sequence numbers, HTTP 200/304/404). The page's controller code passes 11 logic tests in a JavaScript engine; decoding 80,000 points takes about 20 ms there.
 
+## Second audit (same day) and what it fixed
+A line-by-line review after the first write-up found and fixed four things, all covered by tests (33 pass):
+1. The page counted cached "unchanged" replies as fast downloads, so it would have climbed back to a heavy level too eagerly after a slow link. Only a newly received cloud now moves the level (the simulator already behaved this way).
+2. A runtime change of the ceiling could reuse a sequence number. Each encoded payload now gets its own increasing number, and the latest cloud is stored as one object so readers never see a mixed pair.
+3. The lens-distortion maths now ignores points more than about 76 degrees off-axis, so an extreme point can never overflow into a valid-looking pixel.
+4. My test harness reset the live cap to a fixed 20,000 when it finished. It now restores whatever value it found, and the production cap was put back to 80,000 and checked (the stream serves 80,000 points).
+Re-verified after the fixes: live 80,000-point run at 1.54 updates/s, 7.4 Mbit/s, zero aborts, worst-case input current 2.4 A, 74 C.
+
 ## Limits (read before quoting)
 - No real WiFi client was connected. The viewer ran on the Pi, so I generated real radio traffic to the router out of wlan0, matching the viewer's byte rate (confirmed by the wlan0 transmit counter, e.g. 7.79 Mbit/s sent vs 7.71 measured). In the 3-viewer run the radio only carried about 9 of 15.7 Mbit/s. A final check with a real phone or laptop is still worth doing.
 - Browser rendering on a real device was not measured. 80,000 points is small for any GPU, but check smoothness on your device; the new HUD line shows download and decode time.
 - One indoor scene. Scenes with close objects merge more duplicates and provide fewer points, so the cap may not be reached.
 - Current is estimated from the PMIC rails (conservative figure) at about 31 Hz, not measured at the input.
 - Streamer CPU at 80k was 24% in the soak vs 28% in the earlier ladder, consistent with the live-stream saving but not isolated.
+- The Pi's clock was stepped once by +0.3 s by network time during the testing (the restamp node reset itself as designed). The Pi has no battery clock and corrects by steps, so an occasional step is normal.
 - The 11 Nov sweep's suggestion of 60,000 is superseded by these results.
 
 ## Files

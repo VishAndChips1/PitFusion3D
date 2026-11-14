@@ -68,6 +68,13 @@ def test_projection_with_lens_distortion_matches_opencv():
     assert np.abs(ui[valid] - ref[valid, 0]).max() <= 1 and np.abs(vi[valid] - ref[valid, 1]).max() <= 1
 
 
+def test_projection_survives_near_sideways_points_with_distortion():
+    pts = np.array([[0.06, 5.0, 0.0], [0.06, -5.0, 3.0], [0.05001, 80.0, -80.0], [2.0, 0.0, 0.0]], dtype=np.float32)
+    ui, vi, valid = fusion.project_to_pixels(pts, 1330.0, 1330.0, 617.0, 369.0, 1280, 720, (-0.476, 0.223, 0.0, 0.0, 0.0))
+    assert not valid[:3].any()          # far outside the lens' view: never a wrapped-around "valid" pixel
+    assert valid[3] and abs(ui[3] - 617) <= 1 and abs(vi[3] - 369) <= 1
+
+
 def test_projection_without_distortion_is_unchanged():
     pts = np.array([[2.0, 0.3, -0.2]], dtype=np.float32)
     plain = fusion.project_to_pixels(pts, 1000.0, 1000.0, 640.0, 360.0, 1280, 720)

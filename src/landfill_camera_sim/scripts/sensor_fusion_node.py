@@ -121,6 +121,10 @@ def project_to_pixels(points_camera_frame, fx, fy, cx, cy, width, height, dist=N
     np.divide(1.0, x, out=inv_x, where=in_front)
     xn = -y * inv_x   # normalised image coordinates (right, down)
     yn = -z * inv_x
+    # Beyond ~76 deg off-axis a point is outside any lens' view; zeroing it keeps the polynomial (and the int cast) finite.
+    in_front &= (np.abs(xn) < 4.0) & (np.abs(yn) < 4.0)
+    xn = np.where(in_front, xn, 0.0)
+    yn = np.where(in_front, yn, 0.0)
     if dist is not None and any(dist):
         k1, k2, p1, p2, k3 = dist
         r2 = xn * xn + yn * yn
