@@ -11,6 +11,7 @@ hotspot where no CDN is reachable.
 
 import gzip
 import http.server
+import json
 import os
 import socketserver
 import struct
@@ -57,10 +58,11 @@ class _StreamState:
     def __init__(self):
         self.encode_lock = threading.Lock()
         self.latest = (0, None)     # (cloud id, message), replaced as one object so readers never see a mixed pair
-        self.encoder = None         # encoder(msg, max_points) -> (n_points, payload bytes)
+        self.encoder = None         # encoder(msg, max_points) -> (n_points, payload bytes), format 1
+        self.encoder_v2 = None      # the same for the compact format 2
         self.max_points = 20000     # the server-side ceiling (the max_points_* parameter)
         self.last_request = 0.0     # monotonic time of the last client request
-        self._cache = {}            # level -> (gzipped payload, seq, capture stamp) for cloud _cache_id
+        self._cache = {}            # (level, format) -> (gzipped payload, seq, capture stamp) for cloud _cache_id
         self._cache_id = 0
         self._seq = 0               # increases with every payload encoded, so a payload is never mistaken for another
         self._empty = (gzip.compress(struct.pack('<II', 0, 0), compresslevel=6), 0, 0.0)
@@ -73,14 +75,15 @@ class _StreamState:
         """List the selectable point counts, ending at the server ceiling."""
         return [t for t in TIERS if t < self.max_points] + [self.max_points]
 
-    def get(self, requested=None):
+    def get(self, requested=None, fmt=1):
         """Return (gzipped payload, seq, stamp) of the newest cloud at the largest level not above `requested`."""
         self.last_request = time.monotonic()
         levels = self.levels()
         idx = len(levels) - 1
         if requested is not None:
             idx = max([i for i, t in enumerate(levels) if t <= requested], default=0)
-        if self.encoder is None:
+        encoder = self.encoder_v2 if fmt == 2 else self.encoder
+        if encoder is None:
             return self._empty
         with self.encode_lock:
             lid, msg = self.latest
@@ -88,22 +91,48 @@ class _StreamState:
                 return self._empty
             if lid != self._cache_id:
                 self._cache, self._cache_id = {}, lid
-            entry = self._cache.get(levels[idx])
+            entry = self._cache.get((levels[idx], fmt))
             if entry is None:
-                n, payload = self.encoder(msg, levels[idx])
+                n, payload = encoder(msg, levels[idx])
                 self._seq += 1
-                body = gzip.compress(struct.pack('<II', n, self._seq) + payload, compresslevel=6)
+                # Format 2 is already delta-coded: level 1 is 5x faster than 6 for about 2 % more bytes.
+                body = gzip.compress(struct.pack('<II', n, self._seq) + payload, compresslevel=1 if fmt == 2 else 6)
                 stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-                entry = self._cache[levels[idx]] = (body, self._seq, stamp)
+                entry = self._cache[(levels[idx], fmt)] = (body, self._seq, stamp)
             return entry
 
 
+class _Counters:
+    """What the server saw, so a failed frame on the viewer's side can be explained from the Pi's side."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.started = time.time()
+        self.c = {'requests': 0, 'sent_200': 0, 'not_modified_304': 0, 'aborted_by_client': 0, 'bytes_sent': 0,
+                  'write_seconds': 0.0, 'write_seconds_max': 0.0, 'format2': 0}
+
+    def add(self, **kw):
+        with self.lock:
+            for k, v in kw.items():
+                self.c[k] = max(self.c[k], v) if k.endswith('_max') else self.c[k] + v
+
+    def snapshot(self):
+        with self.lock:
+            out = dict(self.c)
+        out['uptime_s'] = round(time.time() - self.started)
+        sent = max(out['sent_200'], 1)
+        out['mean_write_s'] = round(out['write_seconds'] / sent, 3)
+        out['abort_pct'] = round(100.0 * out['aborted_by_client'] / max(out['sent_200'] + out['aborted_by_client'], 1), 1)
+        return out
+
+
 class _SharedState:
-    """The two cloud sources the server can serve."""
+    """The two cloud sources the server can serve, plus the request counters."""
 
     def __init__(self):
         self.merged = _StreamState()
         self.live = _StreamState()
+        self.counters = _Counters()
 
 
 class _Handler(http.server.BaseHTTPRequestHandler):
@@ -130,10 +159,12 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass  # client (flaky WiFi, closed tab) disconnected mid-write
 
-    def _serve_cloud(self, stream_state, requested=None):
+    def _serve_cloud(self, stream_state, requested=None, fmt=1):
         """Serve a cloud as gzip, or a bodyless 304 if the client already has this sequence number."""
+        counters = self.shared_state.counters
+        counters.add(requests=1)
         try:
-            body, seq, stamp = stream_state.get(requested)
+            body, seq, stamp = stream_state.get(requested, fmt)
         except Exception:
             body, seq, stamp = stream_state._empty   # serve an empty cloud rather than fail the request
         etag = f'"{seq}"'
@@ -142,6 +173,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             self.send_header('ETag', etag)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
+            counters.add(not_modified_304=1)
             return
         self.send_response(200)
         self.send_header('Content-Type', 'application/octet-stream')
@@ -150,29 +182,41 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Cache-Control', 'no-cache')
         self.send_header('ETag', etag)
+        # The point counts a client may ask for with ?n= (an adaptive client reads this; older clients ignore it).
+        self.send_header('X-Quality-Levels', ','.join(str(n) for n in stream_state.levels()))
+        self.send_header('X-Formats', '1,2' if stream_state.encoder_v2 is not None else '1')   # ?fmt=2 asks for the compact format
         # Data age = X-Server-Time - X-Cloud-Stamp (both from the Pi's clock).
         self.send_header('X-Cloud-Stamp', f'{stamp:.3f}')
         self.send_header('X-Server-Time', f'{time.time():.3f}')
         self.send_header('Access-Control-Expose-Headers', 'X-Cloud-Stamp, X-Server-Time')
         self.end_headers()
+        t0 = time.monotonic()
         try:
             self.wfile.write(body)
-        except (BrokenPipeError, ConnectionResetError):
-            pass  # client (flaky WiFi, closed tab) disconnected mid-write
+        except (BrokenPipeError, ConnectionResetError, TimeoutError):
+            counters.add(aborted_by_client=1)   # client (flaky WiFi, closed tab) went away mid-write
+            self.close_connection = True
+            return
+        took = time.monotonic() - t0
+        counters.add(sent_200=1, bytes_sent=len(body), write_seconds=took, write_seconds_max=took, format2=1 if fmt == 2 else 0)
 
     def do_GET(self):
         """Route: page, merged/live clouds (merged takes ?n=<points>), static scripts, else 404."""
         path, _, query = self.path.partition('?')
-        requested = None
+        requested, fmt = None, 1
         for part in query.split('&'):
             if part.startswith('n=') and part[2:].isdigit():
                 requested = int(part[2:])
+            elif part == 'fmt=2':
+                fmt = 2
         if path in ('/', '/index.html'):
             self._serve_bytes(self.page_html, 'text/html; charset=utf-8')
         elif path in ('/merged.bin', '/latest.bin'):
-            self._serve_cloud(self.shared_state.merged, requested)
+            self._serve_cloud(self.shared_state.merged, requested, fmt)
         elif path == '/live.bin':
-            self._serve_cloud(self.shared_state.live)
+            self._serve_cloud(self.shared_state.live, None, fmt)
+        elif path == '/stats':
+            self._serve_bytes(json.dumps(self.shared_state.counters.snapshot()).encode(), 'application/json')
         elif self.static_assets and path in self.static_assets:
             body, content_type = self.static_assets[path]
             self._serve_bytes(body, content_type)
@@ -229,6 +273,64 @@ def _encode_cloud(msg, max_points, rng):
     return n, header + point_data.tobytes()
 
 
+V2_MIN_QUANTUM = 0.0025    # m: position grid of the compact format (LiDAR noise is ~20 mm, so 2.5 mm loses nothing visible)
+
+
+def _morton_keys(q):
+    """Z-order key of integer grid coordinates (each < 2**21): points close in space get close keys."""
+    def spread(v):
+        v = v.astype(np.uint64) & np.uint64(0x1FFFFF)
+        v = (v | (v << np.uint64(32))) & np.uint64(0x1F00000000FFFF)
+        v = (v | (v << np.uint64(16))) & np.uint64(0x1F0000FF0000FF)
+        v = (v | (v << np.uint64(8))) & np.uint64(0x100F00F00F00F00F)
+        v = (v | (v << np.uint64(4))) & np.uint64(0x10C30C30C30C30C3)
+        v = (v | (v << np.uint64(2))) & np.uint64(0x1249249249249249)
+        return v
+    return spread(q[:, 0]) | (spread(q[:, 1]) << np.uint64(1)) | (spread(q[:, 2]) << np.uint64(2))
+
+
+def _encode_cloud_v2(msg, max_points, rng):
+    """Pack a cloud into the compact wire format (v2): about half the bytes of v1 and several times faster to build.
+
+    Points are sorted along a space-filling curve and each coordinate is sent as the difference from the previous
+    point (neighbours are close, so the differences are small and compress well). Layout after the 8-byte n/seq
+    header added by the caller: origin xyz and grid size (4 x float32), flags (uint32: bit 0 = thermal present),
+    then n x int16 for each of dx, dy, dz, [n x int16 thermal in 0.01 units], then n x uint8 for each of dr, dg, db
+    (differences taken modulo 256, so a running sum reproduces the colours exactly).
+    Returns (number of points, payload bytes).
+    """
+    points = pc2.read_points_numpy(msg, field_names=['x', 'y', 'z', 'rgb', 'thermal'])
+    if points.size == 0:
+        return 0, struct.pack('<ffffI', 0.0, 0.0, 0.0, 1.0, 0)
+    n = points.shape[0]
+    if n > max_points:
+        points = points[rng.choice(n, size=max_points, replace=False)]
+        n = points.shape[0]
+    xyz = points[:, 0:3].astype(np.float64)
+    mins = xyz.min(axis=0)
+    quantum = max(float((xyz.max(axis=0) - mins).max()) / 32000.0, V2_MIN_QUANTUM)
+    grid = np.round((xyz - mins) / quantum).astype(np.int64)
+    order = np.argsort(_morton_keys(grid))
+    points, grid = points[order], grid[order]
+
+    deltas = np.diff(grid, axis=0, prepend=np.zeros((1, 3), np.int64)).astype('<i2')
+    packed = points[:, 3].astype(np.float32).view(np.uint32)
+    colour = np.stack([(packed >> 16) & 0xFF, (packed >> 8) & 0xFF, packed & 0xFF], axis=1).astype(np.int16)
+    colour_delta = (np.diff(colour, axis=0, prepend=np.zeros((1, 3), np.int16)) & 0xFF).astype(np.uint8)
+    thermal = points[:, 4].astype(np.float32)
+    finite = np.isfinite(thermal)
+    has_thermal = bool(finite.any())
+
+    parts = [struct.pack('<ffffI', mins[0], mins[1], mins[2], quantum, 1 if has_thermal else 0)]
+    parts += [deltas[:, i].tobytes() for i in range(3)]
+    if has_thermal:
+        t_q = np.full(n, _THERMAL_SENTINEL, dtype=np.int16)
+        t_q[finite] = np.clip(np.round(thermal[finite] * 100.0), -32767, 32767).astype(np.int16)
+        parts.append(t_q.tobytes())
+    parts += [colour_delta[:, i].tobytes() for i in range(3)]
+    return n, b''.join(parts)
+
+
 _WEB_ASSETS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'web_assets')
 
 
@@ -273,6 +375,8 @@ class FusionWebStreamer(Node):
         self._state.live.max_points = int(self.get_parameter('max_points_live').value)
         self._state.merged.encoder = lambda m, n: _encode_cloud(m, n, _rng_merged)
         self._state.live.encoder = lambda m, n: _encode_cloud(m, n, _rng_live)
+        self._state.merged.encoder_v2 = lambda m, n: _encode_cloud_v2(m, n, _rng_merged)
+        self._state.live.encoder_v2 = lambda m, n: _encode_cloud_v2(m, n, _rng_live)
         page_html, static_assets = _load_web_assets()
         handler = type(
             'BoundHandler', (_Handler,),

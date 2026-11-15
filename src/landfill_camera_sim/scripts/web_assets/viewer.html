@@ -212,15 +212,16 @@ async function poll() {
   const timeoutId = setTimeout(() => controller.abort(), 8000);
   const fetchStart = performance.now();
   try {
-    const path = source === 'merged' ? '/merged.bin?n=' + TierController.requested() : '/live.bin';
+    const path = source === 'merged' ? '/merged.bin?fmt=2&n=' + TierController.requested() : '/live.bin?fmt=2';
     // 'no-cache' revalidates every time, so an unchanged cloud costs only a small 304 reply.
     const res = await fetch(path, {cache:'no-cache', signal: controller.signal});
     if (res.ok) {
       const buf = await res.arrayBuffer();
       const downloadMs = performance.now() - fetchStart;
-      // Wire format: 24-byte header (n, seq, origin xyz, scale), then 11 bytes per point:
-      // int16 xyz (origin + value * scale), uint8 rgb, int16 thermal / 100 (-32768 = none).
-      if (buf.byteLength >= 24) {
+      // Wire format 2: 8-byte header (n, seq), origin xyz + grid size (4 x float32), flags (uint32, bit 0 = thermal),
+      // then n x int16 each of dx, dy, dz (differences between neighbouring points), [n x int16 thermal / 100],
+      // then n x uint8 each of dr, dg, db (differences mod 256). Running sums rebuild positions and colours.
+      if (buf.byteLength >= 28) {
         const dv = new DataView(buf);
         const n = dv.getUint32(0, true);
         const seq = dv.getUint32(4, true);
@@ -231,22 +232,28 @@ async function poll() {
           const ox = dv.getFloat32(8, true);
           const oy = dv.getFloat32(12, true);
           const oz = dv.getFloat32(16, true);
-          const scale = dv.getFloat32(20, true);
+          const q = dv.getFloat32(20, true);
+          const flags = dv.getUint32(24, true);
           const decodeStart = performance.now();
+          let off = 28;
+          const dx = new Int16Array(buf, off, n); off += 2 * n;
+          const dy = new Int16Array(buf, off, n); off += 2 * n;
+          const dz = new Int16Array(buf, off, n); off += 2 * n;
+          let tq = null;
+          if (flags & 1) { tq = new Int16Array(buf, off, n); off += 2 * n; }
+          const dr = new Uint8Array(buf, off, n); off += n;
+          const dg = new Uint8Array(buf, off, n); off += n;
+          const db = new Uint8Array(buf, off, n);
           const xyz = new Float32Array(n * 3);
           const rgb = new Float32Array(n * 3);
           const thermal = new Float32Array(n);
-          let p = 24;
+          let ix = 0, iy = 0, iz = 0, r = 0, g = 0, b = 0;
           for (let i = 0; i < n; i++) {
-            xyz[i*3]   = ox + dv.getInt16(p, true) * scale;
-            xyz[i*3+1] = oy + dv.getInt16(p + 2, true) * scale;
-            xyz[i*3+2] = oz + dv.getInt16(p + 4, true) * scale;
-            rgb[i*3]   = dv.getUint8(p + 6) / 255;
-            rgb[i*3+1] = dv.getUint8(p + 7) / 255;
-            rgb[i*3+2] = dv.getUint8(p + 8) / 255;
-            const tq = dv.getInt16(p + 9, true);
-            thermal[i] = (tq === -32768) ? NaN : tq / 100;
-            p += 11;
+            ix += dx[i]; iy += dy[i]; iz += dz[i];
+            xyz[i*3] = ox + ix * q; xyz[i*3+1] = oy + iy * q; xyz[i*3+2] = oz + iz * q;
+            r = (r + dr[i]) & 255; g = (g + dg[i]) & 255; b = (b + db[i]) & 255;
+            rgb[i*3] = r / 255; rgb[i*3+1] = g / 255; rgb[i*3+2] = b / 255;
+            thermal[i] = (tq === null || tq[i] === -32768) ? NaN : tq[i] / 100;
           }
           const decodeMs = performance.now() - decodeStart;
           lastXYZ = xyz; lastRGB = rgb; lastThermal = thermal;

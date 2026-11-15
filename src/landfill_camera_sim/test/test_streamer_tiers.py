@@ -1,6 +1,7 @@
 """Tests for the streamer's per-client point-count levels, shared encode cache and HTTP behaviour."""
 import gzip
 import http.client
+import json
 import os
 import struct
 import sys
@@ -14,9 +15,17 @@ import fusion_web_streamer as streamer  # noqa: E402
 from sensor_msgs.msg import PointCloud2, PointField  # noqa: E402
 
 
-def make_msg(n, sec=100):
-    rng = np.random.default_rng(0)
-    pts = np.column_stack([rng.uniform(0, 5, n), rng.uniform(-2, 2, n), rng.uniform(0, 2, n), np.zeros(n), np.full(n, np.nan)]).astype(np.float32)
+def make_msg(n, sec=100, thermal=False, seed=0):
+    """Build a structured cloud (a floor and a wall with noise and varied colours), like a real scene, not random dust."""
+    rng = np.random.default_rng(seed)
+    half = n // 2
+    floor = np.column_stack([rng.uniform(0, 8, half), rng.uniform(-3, 3, half), rng.normal(0, 0.01, half)])
+    wall = np.column_stack([rng.normal(8, 0.01, n - half), rng.uniform(-3, 3, n - half), rng.uniform(0, 3, n - half)])
+    xyz = np.vstack([floor, wall])
+    rgb = (rng.integers(0, 256, size=(n, 3)) // 8 * 8 + (xyz[:, :1] * 10 % 8)).astype(np.uint32) & 0xFF
+    packed = ((rgb[:, 0] << 16) | (rgb[:, 1] << 8) | rgb[:, 2]).astype(np.uint32).view(np.float32)
+    temp = rng.uniform(280, 310, n) if thermal else np.full(n, np.nan)
+    pts = np.column_stack([xyz, packed, temp]).astype(np.float32)
     msg = PointCloud2()
     msg.height, msg.width = 1, n
     msg.fields = [PointField(name=k, offset=4 * i, datatype=PointField.FLOAT32, count=1) for i, k in enumerate(['x', 'y', 'z', 'rgb', 'thermal'])]
@@ -30,7 +39,32 @@ def make_state(ceiling=80000):
     rng = np.random.default_rng(1)
     state.max_points = ceiling
     state.encoder = lambda m, n: streamer._encode_cloud(m, n, rng)
+    state.encoder_v2 = lambda m, n: streamer._encode_cloud_v2(m, n, rng)
     return state
+
+
+def decode_v2(body):
+    """Decode format 2 the way the viewer and the base station do (reference implementation)."""
+    raw = gzip.decompress(body)
+    n, seq = struct.unpack_from('<II', raw, 0)
+    ox, oy, oz, quantum, flags = struct.unpack_from('<ffffI', raw, 8)
+    off = 28
+    sections = []
+    for _ in range(3):
+        sections.append(np.frombuffer(raw, '<i2', n, off).astype(np.int64))
+        off += 2 * n
+    thermal = None
+    if flags & 1:
+        thermal = np.frombuffer(raw, '<i2', n, off)
+        off += 2 * n
+    colour = []
+    for _ in range(3):
+        colour.append(np.frombuffer(raw, np.uint8, n, off).astype(np.int64))
+        off += n
+    assert off == len(raw)                                    # no stray bytes
+    xyz = np.stack([np.cumsum(c) for c in sections], axis=1) * quantum + np.array([ox, oy, oz])
+    rgb = np.stack([np.cumsum(c) & 0xFF for c in colour], axis=1)
+    return n, xyz, rgb, thermal, quantum
 
 
 def header(body):
@@ -82,6 +116,47 @@ def test_changing_the_ceiling_never_reuses_a_sequence_number():
     assert after[1] != before[1] and header(after[0])[0] == 50000
 
 
+def test_format2_round_trips_positions_colours_and_thermal():
+    from scipy.spatial import cKDTree
+    for thermal in (False, True):
+        msg = make_msg(30000, thermal=thermal)
+        state = make_state(80000)
+        state.offer(msg)
+        n, xyz, rgb, t, quantum = decode_v2(state.get(None, fmt=2)[0])
+        assert n == 30000 and (t is not None) == thermal
+        orig = np.frombuffer(msg.data, np.float32).reshape(-1, 5)
+        dist, idx = cKDTree(orig[:, :3].astype(np.float64)).query(xyz)
+        assert dist.max() <= quantum * 0.87 + 1e-4              # every decoded point is within half a grid cell of a real one
+        packed = orig[:, 3].view(np.uint32)
+        expect = np.stack([(packed >> 16) & 0xFF, (packed >> 8) & 0xFF, packed & 0xFF], axis=1)
+        # Nearest-neighbour matching is ambiguous for points closer together than the grid, so compare the full set of
+        # colours (and thermal values): every original colour must come back exactly, once.
+        assert sorted(map(tuple, rgb.tolist())) == sorted(map(tuple, expect.tolist()))
+        if thermal:
+            assert np.allclose(np.sort(t / 100.0), np.sort(orig[:, 4].astype(np.float64)), atol=0.0051)   # stored in 0.01 steps
+
+
+def test_format2_is_much_smaller_than_format1_on_a_scene_like_cloud():
+    state = make_state(80000)
+    state.offer(make_msg(60000))
+    v1, v2 = len(state.get(None, fmt=1)[0]), len(state.get(None, fmt=2)[0])
+    assert v2 < 0.8 * v1
+
+
+def test_format2_sequence_numbers_never_collide_with_format1():
+    state = make_state(80000)
+    state.offer(make_msg(10000))
+    assert state.get(None, fmt=1)[1] != state.get(None, fmt=2)[1]
+    assert state.get(None, fmt=2)[0] is state.get(None, fmt=2)[0]
+
+
+def test_format2_handles_empty_and_tiny_clouds():
+    state = make_state(80000)
+    state.offer(make_msg(1))
+    n, xyz, rgb, t, q = decode_v2(state.get(None, fmt=2)[0])
+    assert n == 1 and xyz.shape == (1, 3)
+
+
 def test_no_cloud_yet_serves_an_empty_payload_and_records_the_request():
     state = make_state()
     assert header(state.get(None)[0])[0] == 0
@@ -102,6 +177,7 @@ def test_http_levels_etag_and_304():
         r = conn.getresponse()
         body, etag = r.read(), r.getheader('ETag')
         assert r.status == 200 and header(body)[0] == 20000 and float(r.getheader('X-Cloud-Stamp')) == 100.0
+        assert r.getheader('X-Quality-Levels') == '8000,20000,40000,60000'
         conn.request('GET', '/merged.bin?n=20000', headers={'If-None-Match': etag})
         r = conn.getresponse()
         r.read()
@@ -113,6 +189,16 @@ def test_http_levels_etag_and_304():
         conn.request('GET', '/merged.bin')
         r = conn.getresponse()
         assert header(r.read())[0] == 60000                 # no ?n=: the ceiling
+        conn.request('GET', '/merged.bin?n=20000&fmt=2')
+        r = conn.getresponse()
+        body2 = r.read()
+        assert r.status == 200 and r.getheader('X-Formats') == '1,2'
+        assert decode_v2(body2)[0] == 20000
+        conn.request('GET', '/stats')
+        r = conn.getresponse()
+        stats = json.loads(r.read())
+        assert r.status == 200 and stats['sent_200'] >= 4 and stats['not_modified_304'] == 1 and stats['format2'] == 1
+        assert stats['aborted_by_client'] == 0 and stats['bytes_sent'] > 0
         conn.request('GET', '/nothing')
         r = conn.getresponse()
         r.read()
