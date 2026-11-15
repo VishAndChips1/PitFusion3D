@@ -21,12 +21,17 @@ import time
 
 import numpy as np
 
+try:
+    import cv2
+except ImportError:                     # the focus page is optional
+    cv2 = None
+
 import rclpy
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import Image, PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 
 
@@ -102,6 +107,71 @@ class _StreamState:
             return entry
 
 
+FOCUS_IDLE_S = 20.0           # stop receiving RGB frames this long after the last /focus request
+FOCUS_MAX_FPS = 5.0
+FOCUS_PAGE = (b'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">'
+              b'<title>RGB focus</title><body style="margin:0;background:#0b0f14;color:#e6edf3;font-family:sans-serif">'
+              b'<img src="/focus.mjpg" style="width:100%;display:block">'
+              b'<p style="padding:8px 14px;font-size:14px;color:#9aa7b4">Turn the focus ring until the <b>sharpness</b> number is as '
+              b'high as it will go (compare with the <b>peak</b>, which remembers the best of the last 20 s). Point at something '
+              b'with fine detail, at the distance you will use. Higher = sharper; the number depends on the scene, so compare '
+              b'only while pointing at the same thing.</p>')
+
+
+class _FocusState:
+    """Latest RGB frame as a JPEG with a sharpness reading, built only while someone is looking at /focus."""
+
+    def __init__(self):
+        self.cond = threading.Condition()
+        self.jpeg = b''
+        self.seq = 0
+        self.last_request = 0.0
+        self._last_made = 0.0
+        self._recent = []                 # (time, sharpness) for the peak-hold
+
+    def render(self, rgb):
+        """Return (annotated JPEG bytes, sharpness) for an (H, W, 3) uint8 RGB frame."""
+        h, w = rgb.shape[:2]
+        gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+        y0, y1, x0, x1 = h // 2 - h // 4, h // 2 + h // 4, w // 2 - w // 4, w // 2 + w // 4
+        sharp = float(cv2.Laplacian(gray[y0:y1, x0:x1], cv2.CV_64F).var())
+        now = time.monotonic()
+        self._recent = [(t, v) for t, v in self._recent if now - t < 20.0] + [(now, sharp)]
+        peak = max(v for _, v in self._recent)
+        view = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        zoom = cv2.resize(view[h // 2 - 45:h // 2 + 45, w // 2 - 80:w // 2 + 80], (480, 270), interpolation=cv2.INTER_NEAREST)
+        cv2.rectangle(view, (x0, y0), (x1, y1), (255, 255, 0), 2)                 # the area the number is measured on
+        cv2.rectangle(view, (w // 2 - 80, h // 2 - 45), (w // 2 + 80, h // 2 + 45), (0, 255, 255), 1)
+        view[10:280, w - 490:w - 10] = zoom                                       # centre, magnified 3x
+        cv2.rectangle(view, (w - 490, 10), (w - 10, 280), (0, 255, 255), 2)
+        cv2.rectangle(view, (0, 0), (520, 150), (0, 0, 0), -1)
+        cv2.putText(view, 'sharpness %.0f' % sharp, (14, 62), cv2.FONT_HERSHEY_SIMPLEX, 1.9, (0, 255, 0), 4)
+        cv2.putText(view, 'peak (20 s) %.0f' % peak, (14, 120), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (255, 255, 255), 3)
+        view = cv2.resize(view, (960, int(960 * h / w)))
+        ok, buf = cv2.imencode('.jpg', view, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        return (buf.tobytes() if ok else b''), sharp
+
+    def offer(self, msg):
+        """Process a frame from the ROS callback, at most FOCUS_MAX_FPS times a second."""
+        now = time.monotonic()
+        if cv2 is None or msg.encoding != 'rgb8' or now - self._last_made < 1.0 / FOCUS_MAX_FPS:
+            return
+        self._last_made = now
+        rgb = np.frombuffer(msg.data, np.uint8)[:msg.height * msg.step].reshape(msg.height, msg.step)[:, :msg.width * 3].reshape(msg.height, msg.width, 3)
+        jpeg, _ = self.render(rgb)
+        with self.cond:
+            self.jpeg, self.seq = jpeg, self.seq + 1
+            self.cond.notify_all()
+
+    def wait_for_new(self, last_seq, timeout=3.0):
+        """Block until a frame newer than last_seq exists; return (jpeg, seq) or None on timeout."""
+        with self.cond:
+            self.last_request = time.monotonic()
+            if self.seq == last_seq:
+                self.cond.wait(timeout)
+            return (self.jpeg, self.seq) if self.seq != last_seq else None
+
+
 class _Counters:
     """What the server saw, so a failed frame on the viewer's side can be explained from the Pi's side."""
 
@@ -133,6 +203,7 @@ class _SharedState:
         self.merged = _StreamState()
         self.live = _StreamState()
         self.counters = _Counters()
+        self.focus = _FocusState()
 
 
 class _Handler(http.server.BaseHTTPRequestHandler):
@@ -200,6 +271,25 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         took = time.monotonic() - t0
         counters.add(sent_200=1, bytes_sent=len(body), write_seconds=took, write_seconds_max=took, format2=1 if fmt == 2 else 0)
 
+    def _serve_focus_stream(self):
+        """Stream the annotated RGB frames as multipart JPEG (shown by a plain <img> tag); ends after 30 minutes."""
+        focus = self.shared_state.focus
+        self.send_response(200)
+        self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=frame')
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.close_connection = True
+        seq, deadline = 0, time.monotonic() + 1800
+        try:
+            while time.monotonic() < deadline:
+                got = focus.wait_for_new(seq)
+                if got is None:
+                    continue
+                jpeg, seq = got
+                self.wfile.write(b'--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n' % len(jpeg) + jpeg + b'\r\n')
+        except (BrokenPipeError, ConnectionResetError, TimeoutError):
+            pass
+
     def do_GET(self):
         """Route: page, merged/live clouds (merged takes ?n=<points>), static scripts, else 404."""
         path, _, query = self.path.partition('?')
@@ -215,6 +305,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             self._serve_cloud(self.shared_state.merged, requested, fmt)
         elif path == '/live.bin':
             self._serve_cloud(self.shared_state.live, None, fmt)
+        elif path == '/focus':
+            self._serve_bytes(FOCUS_PAGE, 'text/html; charset=utf-8')
+        elif path == '/focus.mjpg':
+            self._serve_focus_stream()
         elif path == '/stats':
             self._serve_bytes(json.dumps(self.shared_state.counters.snapshot()).encode(), 'application/json')
         elif self.static_assets and path in self.static_assets:
@@ -399,7 +493,9 @@ class FusionWebStreamer(Node):
         # The live cloud (10 Hz) is only received while a client is asking for it: merged-only viewing then costs no live work.
         self._live_topic = live_topic
         self._live_sub = None
+        self._focus_sub = None
         self.create_timer(1.0, self._manage_live_subscription)
+        self.create_timer(1.0, self._manage_focus_subscription)
 
         self.get_logger().info(
             'Serving merged=%s (max %d pts) + live=%s (max %d pts) at http://0.0.0.0:%d/ (keep-alive: %s)'
@@ -429,6 +525,16 @@ class FusionWebStreamer(Node):
             self.destroy_subscription(self._live_sub)
             self._live_sub = None
             self._state.live.latest = (self._state.live.latest[0], None)
+
+    def _manage_focus_subscription(self):
+        """Receive RGB frames only while /focus is being looked at (a 1280x720 stream costs real CPU)."""
+        focus = self._state.focus
+        wanted = focus.last_request > 0 and time.monotonic() - focus.last_request < FOCUS_IDLE_S
+        if wanted and self._focus_sub is None and cv2 is not None:
+            self._focus_sub = self.create_subscription(Image, '/landfill/rgb/image_raw', self._state.focus.offer, qos_profile_sensor_data)
+        elif not wanted and self._focus_sub is not None:
+            self.destroy_subscription(self._focus_sub)
+            self._focus_sub = None
 
     def _on_merged(self, msg):
         """Keep the newest merged cloud."""

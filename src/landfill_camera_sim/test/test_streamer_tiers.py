@@ -205,3 +205,62 @@ def test_http_levels_etag_and_304():
         assert r.status == 404
     finally:
         server.shutdown()
+
+
+def make_rgb_msg(blur=0):
+    """Build a 1280x720 rgb8 image of fine detail (a checker pattern with noise), optionally blurred."""
+    import cv2
+    from sensor_msgs.msg import Image
+    rng = np.random.default_rng(3)
+    img = (((np.indices((720, 1280)).sum(axis=0) // 6) % 2) * 200 + rng.integers(0, 40, (720, 1280))).astype(np.uint8)
+    img = np.stack([img] * 3, axis=2)
+    if blur:
+        img = cv2.GaussianBlur(img, (0, 0), blur)
+    msg = Image()
+    msg.height, msg.width, msg.encoding, msg.step = 720, 1280, 'rgb8', 1280 * 3
+    msg.data = img.tobytes()
+    return msg
+
+
+def test_focus_sharpness_ranks_a_sharp_image_above_a_blurred_one_and_the_jpeg_decodes():
+    import cv2
+    focus = streamer._FocusState()
+    sharp_img = np.frombuffer(make_rgb_msg().data, np.uint8).reshape(720, 1280, 3)
+    blur_img = np.frombuffer(make_rgb_msg(blur=3).data, np.uint8).reshape(720, 1280, 3)
+    jpeg, sharp = focus.render(sharp_img)
+    _, blurred = focus.render(blur_img)
+    assert sharp > 5 * blurred
+    decoded = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+    assert decoded.shape == (540, 960, 3)
+
+
+def test_focus_frames_are_rate_limited_and_waiters_are_woken():
+    focus = streamer._FocusState()
+    focus.offer(make_rgb_msg())
+    first = focus.wait_for_new(0, timeout=1.0)
+    assert first is not None and first[1] == 1
+    focus.offer(make_rgb_msg())                                   # immediately again: over the frame-rate cap, ignored
+    assert focus.wait_for_new(1, timeout=0.05) is None
+
+
+def test_focus_page_and_stream_over_http():
+    state = streamer._SharedState()
+    state.focus.offer(make_rgb_msg())
+    handler = type('H', (streamer._Handler,), {'shared_state': state, 'static_assets': {}, 'page_html': b''})
+    server = streamer._ReusableThreadingTCPServer(('127.0.0.1', 0), handler)
+    server.daemon_threads = True
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        conn = http.client.HTTPConnection('127.0.0.1', server.server_address[1], timeout=10)
+        conn.request('GET', '/focus')
+        r = conn.getresponse()
+        assert r.status == 200 and b'/focus.mjpg' in r.read()
+        conn2 = http.client.HTTPConnection('127.0.0.1', server.server_address[1], timeout=10)
+        conn2.request('GET', '/focus.mjpg')
+        r2 = conn2.getresponse()
+        assert r2.status == 200 and 'multipart/x-mixed-replace' in r2.getheader('Content-Type')
+        part = r2.fp.read(400)
+        assert part.startswith(b'--frame') and b'image/jpeg' in part
+        conn2.close()
+    finally:
+        server.shutdown()
