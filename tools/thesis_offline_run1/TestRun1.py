@@ -114,9 +114,18 @@ def numx(key, value, unit='', source='', note=''):
     T.num(key, value, unit or NEW_KEYS.get(key, ('', ''))[0], source, note or NEW_KEYS.get(key, ('', ''))[1])
 
 
+def thermal_usb_present():
+    return bool(re.search('Thermal', T.sh('ls /dev/v4l/by-id 2>&1', 5)[1], re.I))
+
+
+def thermal_label():
+    st, hz = T.thermal_status()
+    return f"camera {'connected (USB device present)' if thermal_usb_present() else 'not connected'}; data stream {st} ({hz} Hz); thermal content is not used or reported in Run 1"
+
+
 def cond(t0, t1):
     c = T.conditions(t0, t1)
-    c['thermal'] = 'not connected'
+    c['thermal'] = thermal_label()
     c['thermal_status_probe'] = c.pop('thermal_status', '')
     c['ambient_from_site_notes'] = read_site().get('AMBIENT_C') or 'not supplied'
     c['ap_stations_now'] = S.ap_clients
@@ -128,7 +137,7 @@ def finish(section, sub, summary, readme_title, readme_lines, t0):
     summary['conditions'] = cond(t0, time.time())
     T.jwrite(d / 'summary.json', summary)
     with open(d / 'README.md', 'a') as fh:
-        fh.write(f'## {readme_title}\n\n' + '\n'.join(readme_lines) + '\n\nConditions: thermal camera not connected; see summary.json for temperatures, throttle flags and hotspot state.\n\n')
+        fh.write(f'## {readme_title}\n\n' + '\n'.join(readme_lines) + f'\n\nConditions: thermal {thermal_label()}; see summary.json for temperatures, throttle flags and hotspot state.\n\n')
     S.summaries[readme_title] = summary
     return summary
 
@@ -163,11 +172,11 @@ def phase_inventory():
     usb = T.sh('lsusb', 10)[1]
     v4l = T.sh('ls -l /dev/v4l/by-id 2>&1; ls /dev/video* 2>&1', 10)[1]
     present = bool(re.search(r'Thermal', v4l + usb, re.I))
-    th = {'confirmed_absent': not present, 'lsusb': usb, 'v4l_by_id': v4l, 'time': time.strftime('%Y-%m-%dT%H:%M:%S'),
-          'note': 'Run 1 is made with the thermal camera USB cable unplugged. No phase reads or reports thermal data.'}
-    T.jwrite(P('00_meta', 'thermal_not_connected.json'), th)
-    if present:
-        log('WARNING: a thermal USB device IS present although Run 1 requires it to be unplugged; this is recorded in the report')
+    st_th, hz_th = T.thermal_status()
+    th = {'usb_device_present': present, 'stream_status_probe': st_th, 'stream_hz_10s': hz_th, 'lsusb': usb, 'v4l_by_id': v4l, 'time': time.strftime('%Y-%m-%dT%H:%M:%S'),
+          'note': 'Thermal camera state as found at the start of Run 1 (USB device present or not, and whether it was streaming). Run 1 results do not use or report thermal image content.'}
+    T.jwrite(P('00_meta', 'thermal_state.json'), th)
+    log(f'thermal camera: USB device present={present}, stream status {st_th} ({hz_th} Hz): recorded')
     extra = {}
     for repo in (HOME / 'PitFusion3D_repo', HOME / 'ros2_ws/src', HERE):
         extra[repo.name] = T.sh(f'git -C {repo} rev-parse HEAD 2>/dev/null; git -C {repo} branch --show-current 2>/dev/null', 10)[1]
@@ -175,8 +184,8 @@ def phase_inventory():
     extra['hotspot'] = S.hotspot
     T.jwrite(P('00_meta', 'run1_inventory.json'), extra)
     T.num('ambient_c', float(site['AMBIENT_C']) if site.get('AMBIENT_C') else None, 'C', '00_meta/site_notes.env', 'from site notes' if site.get('AMBIENT_C') else 'not supplied')
-    finish('00_meta', '', {'thermal_confirmed_absent': not present, 'site_notes': site, 'ap_hotspot': S.hotspot.get('status')}, 'Run 1 inventory',
-           ['system_inventory.json, node_parameters.json, calibration and launch files in use, git hashes, USB list (thermal absent check), site notes, hotspot status.'], t0)
+    finish('00_meta', '', {'thermal_usb_present': present, 'thermal_stream_status': st_th, 'site_notes': site, 'ap_hotspot': S.hotspot.get('status')}, 'Run 1 inventory',
+           ['system_inventory.json, node_parameters.json, calibration and launch files in use, git hashes, USB list and thermal camera state, site notes, hotspot status.'], t0)
 
 
 # ================================================================== P2 scene snapshots and images
@@ -317,7 +326,7 @@ def phase_rates():
     t1 = time.time()
     RS.d['windows']['rates'] = [t0, t1]
     RS.save()
-    keys = ('lidar_raw', 'lidar_restamped', 'rgb', 'fused', 'merged')
+    keys = ('lidar_raw', 'lidar_restamped', 'rgb', 'thermal', 'fused', 'merged')
     rows, summ = rate_block(t0, t1, keys)
     T.write_csv(P('02_rates', 'rates.csv'), ['topic', 'hz_mean', 'interval_p50_ms', 'interval_p95_ms', 'interval_std_ms', 'n', 'points_per_msg_median', 'kbytes_per_msg_median'], rows)
     for key in ('lidar_raw', 'rgb', 'fused', 'merged'):
@@ -331,10 +340,10 @@ def phase_rates():
         summ['lidar_gaps_over_150ms'] = int(np.sum(np.diff(lr[:, 0]) > 0.15))
     for key, src in (('rate_lidar_hz', 'lidar_raw'), ('rate_rgb_fps', 'rgb'), ('rate_fused_hz', 'fused'), ('rate_merged_hz', 'merged')):
         hz = summ[src].get('hz_mean')
-        T.num(key, round(hz, 3) if hz is not None else None, 'Hz', '02_rates/rates.csv', 'no viewer connected; thermal camera not connected')
+        T.num(key, round(hz, 3) if hz is not None else None, 'Hz', '02_rates/rates.csv', 'no viewer connected')
     T.num('lidar_scans_lost_pct', loss, '%', '02_rates/rates.csv')
     T.num('merged_points_before_cap', summ['merged'].get('points_per_msg_median'), 'points', '02_rates/rates.csv', 'median of the merged topic (before the viewer cap)')
-    T.num('rate_thermal_fps', None, 'Hz', '', 'thermal camera not connected in Run 1')
+    T.num('rate_thermal_fps', round(summ['thermal'].get('hz_mean', 0.0), 3), 'Hz', '02_rates/rates.csv', 'rate of the thermal topic only (' + thermal_label() + ')')
     summ['window'] = [t0, t1]
     finish('02_rates', '', summ, 'Rates (P3)', ['rates.csv: rate and interval statistics from independent raw subscribers over the window; rate_series_10s_*.csv: rate per 10 s; topic_*.csv: every message for the whole run.'], t0)
 
@@ -424,8 +433,8 @@ def phase_combinations():
     res = {}
     if 'rates' in RS.d['windows']:
         a, b = RS.d['windows']['rates']
-        res['deployed_thermal_not_connected'] = window_metrics(a, b)
-        res['deployed_thermal_not_connected']['note'] = ('deployed pipeline as it runs with the USB cable unplugged (thermal node and watchdog still running and retrying); '
+        res['deployed_pipeline'] = window_metrics(a, b)
+        res['deployed_pipeline']['note'] = ('deployed pipeline as it runs, with the thermal node and watchdog running (' + thermal_label() + '); '
                                                           'P3 window, no viewer')
     proc = None
     try:
@@ -469,9 +478,9 @@ def phase_combinations():
         log(f'service restored; rates {chk}')
     cols = ['configuration', 'lidar_raw_hz', 'rgb_hz', 'fused_hz', 'merged_hz', 'fused_age_p50_ms', 'merged_age_p50_ms', 'pipeline_cpu_pct_of_core', 'cpu0_pct', 'cpu1_pct', 'cpu2_pct', 'cpu3_pct',
             'coloured_pct', 'power_est_input_a_mean', 'power_est_input_a_max', 'soc_rise_c']
-    rows = [[k] + [res[k].get(c, '') for c in cols[1:]] for k in ('lidar_only', 'lidar_rgb', 'deployed_thermal_not_connected') if k in res]
+    rows = [[k] + [res[k].get(c, '') for c in cols[1:]] for k in ('lidar_only', 'lidar_rgb', 'deployed_pipeline') if k in res]
     T.write_csv(d / 'combinations.csv', cols, rows)
-    per_proc = [[k] + [res[k].get(f'{n}_cpu_pct', '') for n in T.PIPE_PROCS] for k in ('lidar_only', 'lidar_rgb', 'deployed_thermal_not_connected') if k in res]
+    per_proc = [[k] + [res[k].get(f'{n}_cpu_pct', '') for n in T.PIPE_PROCS] for k in ('lidar_only', 'lidar_rgb', 'deployed_pipeline') if k in res]
     T.write_csv(d / 'combinations_cpu_per_process.csv', ['configuration'] + T.PIPE_PROCS, per_proc)
     lo, lr = res.get('lidar_only', {}), res.get('lidar_rgb', {})
     numx('combo_lidar_only_cpu_pct_of_core', lo.get('pipeline_cpu_pct_of_core'), '%', '15_fusion_info/combinations/combinations.csv')
@@ -603,8 +612,8 @@ def phase_cpu_mem():
             'pipeline_rss_mb_mean': float(np.nanmean(rss)), 'rss_slope_mb_per_min': slope, 'busiest_thread_pct_mean': float(np.nanmean(bt)), 'busiest_thread_pct_max': float(np.nanmax(bt)),
             'busiest_thread_process_most_often': top, 'mem_available_mb_min': float(np.nanmin(s['mem_available_mb'])), 'swap_used_mb_max': float(np.nanmax(s['swap_used_mb'])),
             'soc_c_min': float(np.nanmin(s['soc_c'])), 'soc_c_max': float(np.nanmax(s['soc_c'])), 'cpu_total_pct_mean': float(np.nanmean(s['cpu_total_pct'])),
-            'note': 'baseline without any viewer; thermal camera not connected (thermal node and watchdog still running and retrying)', 'window': [t0, t1]}
-    T.num('pipeline_cpu_pct_of_core', round(summ['pipeline_cpu_pct_of_core_mean'], 1), '% of one core', '05_cpu_memory/cpu_per_process.csv', 'no viewer; thermal camera not connected')
+            'note': 'baseline without any viewer; thermal node and watchdog running (' + thermal_label() + ')', 'window': [t0, t1]}
+    T.num('pipeline_cpu_pct_of_core', round(summ['pipeline_cpu_pct_of_core_mean'], 1), '% of one core', '05_cpu_memory/cpu_per_process.csv', 'no viewer; thermal node running')
     T.num('pipeline_mem_mb', round(summ['pipeline_rss_mb_mean'], 0), 'MB', '05_cpu_memory/cpu_per_process.csv')
     T.num('soak_mem_slope_mb_per_min', round(slope, 4) if slope is not None else None, 'MB/min', '00_meta/system_1hz.csv', f'{(t1 - t0) / 60:.0f} min window')
     finish('05_cpu_memory', '', summ, 'CPU, threads, memory (P6)', ['cpu_per_process.csv, cpu_per_core.csv from system_1hz.csv over the window (1 Hz samples); busiest-thread CPU is the largest single-thread load among pipeline processes.'], t0)
@@ -947,9 +956,7 @@ def main():
         os.environ['PROBE_RGB_EVERY'] = str(max(60.0 * S.scale, 5.0) if args.profile == 'quick' else 60.0)
         T.start_probe()
         time.sleep(15)
-        if re.search('Thermal', T.sh('ls /dev/v4l/by-id 2>&1', 5)[1], re.I):
-            log('WARNING: the thermal camera USB device is still plugged in; Run 1 expects it unplugged (recorded in the report)')
-        log(f'thermal status seen by the probe at start: {T.thermal_status()} (Run 1 expects absent)')
+        log('thermal camera at start: ' + thermal_label())
         T.settle_gate()
         for name in ORDER:
             if RS.d['phases'].get(name):

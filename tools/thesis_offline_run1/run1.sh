@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start Run 1 (thermal camera NOT connected) as a detached background job. No arming, no reboot needed.
+# Start Run 1 (thermal camera may stay plugged in: its presence and stream status are recorded) as a detached background job. No arming, no reboot needed.
 #   ./run1.sh              start a new run: 2 minute countdown, then the hotspot-served tests (~1.2 h), reports at the end
 #   ./run1.sh --resume     continue the latest unfinished run (after a power loss) without repeating the countdown
 #   ./run1.sh --force      start even if a thermal camera USB device is detected (it will be recorded in the report)
@@ -8,9 +8,7 @@ ROOT="$HOME/thesis_tests"; mkdir -p "$ROOT"
 FORCE=0; RESUME=0
 for a in "$@"; do [ "$a" = "--force" ] && FORCE=1; [ "$a" = "--resume" ] && RESUME=1; done
 if systemctl --user is-active --quiet thesis-run1.service; then echo "Run 1 is already running (touch $ROOT/STOP to stop it early)."; exit 1; fi
-if ls /dev/v4l/by-id 2>/dev/null | grep -qi thermal && [ $FORCE = 0 ]; then
-  echo "The thermal camera is still plugged in. Unplug its USB cable, then run this again (or add --force)."; exit 1
-fi
+if ls /dev/v4l/by-id 2>/dev/null | grep -qi thermal; then echo "Thermal camera USB device detected: it stays plugged in and is recorded in the results."; else echo "No thermal camera USB device detected: recorded as not connected."; fi
 if [ ! -f "$ROOT/site_notes.env" ]; then
 cat > "$ROOT/site_notes.env" <<'NOTES'
 # Optional. Fill in BEFORE starting; the test reads this when it starts. Blank = reported as "not supplied" (never guessed).

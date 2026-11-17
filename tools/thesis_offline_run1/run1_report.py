@@ -225,9 +225,9 @@ def build_figures(R):
         T.log(f'figure F07: {exc!r}')
     try:
         rows = rows_of(run / '15_fusion_info' / 'combinations' / 'combinations.csv')
-        rows = [r for r in rows if r['configuration'] in ('lidar_only', 'lidar_rgb', 'deployed_thermal_not_connected')]
-        names = ['LiDAR only', 'LiDAR + RGB', 'deployed (thermal absent)']
-        lab = {'lidar_only': 0, 'lidar_rgb': 1, 'deployed_thermal_not_connected': 2}
+        rows = [r for r in rows if r['configuration'] in ('lidar_only', 'lidar_rgb', 'deployed_pipeline')]
+        names = ['LiDAR only', 'LiDAR + RGB', 'deployed pipeline']
+        lab = {'lidar_only': 0, 'lidar_rgb': 1, 'deployed_pipeline': 2}
         fig, axs = plt.subplots(1, 4, figsize=(W, 2.6))
         spec = [('fused_hz', 'fused rate (Hz)'), ('pipeline_cpu_pct_of_core', 'pipeline CPU (% of a core)'), ('coloured_pct', 'points coloured (%)'), ('power_est_input_a_mean', 'est. current (A)')]
         out = []
@@ -356,8 +356,8 @@ def build_tables(R):
             return
         header = cols or list(rows[0].keys())
         R.table(name, header, [[r.get(h, '') for h in header] for r in rows], caption)
-    add('T01_rates', '02_rates/rates.csv', 'Message rates and intervals per topic over the rates window (no viewer, thermal camera not connected).')
-    add('T02_sensor_combinations', '15_fusion_info/combinations/combinations.csv', 'Sensor combinations: LiDAR only, LiDAR + RGB, and the deployed pipeline with the thermal camera not connected.')
+    add('T01_rates', '02_rates/rates.csv', 'Message rates and intervals per topic over the rates window (no viewer).')
+    add('T02_sensor_combinations', '15_fusion_info/combinations/combinations.csv', 'Sensor combinations: LiDAR only, LiDAR + RGB, and the deployed pipeline as it runs (thermal node running).')
     add('T03_combination_cpu_per_process', '15_fusion_info/combinations/combinations_cpu_per_process.csv', 'CPU per process (% of one core) for each configuration.')
     add('T04_cpu_per_process', '05_cpu_memory/cpu_per_process.csv', 'Per-process CPU, resident memory and threads over the CPU window.')
     add('T05_cpu_per_core', '05_cpu_memory/cpu_per_core.csv', 'Per-core load over the CPU window.')
@@ -413,7 +413,7 @@ REGISTRY = [
     ('00_meta/gate_events.jsonl', 'safety gates', 'safety gate trips (reason, phase)', 'event'),
     ('00_meta/top_processes.log', 'status thread', 'busiest processes every 30 s', '30 s'),
     ('00_meta/system_inventory.json', 'P1', 'system, software, git hashes, WiFi/power-saving state', 'once'),
-    ('00_meta/thermal_not_connected.json', 'P1', 'evidence that the thermal USB device was absent', 'once'),
+    ('00_meta/thermal_state.json', 'P1', 'thermal camera state at the start: USB device present, stream status', 'once'),
     ('02_rates/topic_*.csv', 'probe (whole run)', 'every message: t_arrival (Unix s), stamp (s), n (points or pixels), nbytes', 'per message'),
     ('02_rates/rates.csv', 'P3', 'rate and interval statistics per topic (Hz, ms)', 'window'),
     ('02_rates/rate_series_10s_*.csv', 'P3', 'rate per 10 s bin (Hz)', '0.1 Hz'),
@@ -437,7 +437,7 @@ REGISTRY = [
 
 def build_dictionary(R):
     run = R.run
-    lines = ['# Data dictionary (Run 1)\n', 'Thermal camera not connected for this run. Times are Unix seconds unless stated. Sampling/producing phase from the registry below; columns read from the file headers.\n']
+    lines = ['# Data dictionary (Run 1)\n', 'Thermal camera state is recorded in 00_meta/thermal_state.json; thermal content is not used in Run 1. Times are Unix seconds unless stated. Sampling/producing phase from the registry below; columns read from the file headers.\n']
     seen = set()
     for pattern, phase, desc, rate in REGISTRY:
         for f in sorted(glob.glob(str(run / pattern))):
@@ -495,7 +495,7 @@ def numbers_dump(run):
             out[k] = v
         else:
             out[k] = {'value': None, 'unit': (v or {}).get('unit', ''), 'previous': T.PREVIOUS.get(k), 'source_file': '', 'status': 'not measured in Run 1',
-                      'note': 'thermal camera not connected in Run 1' if 'thermal' in k else 'not part of Run 1 (see section 7 of the brief)'}
+                      'note': 'thermal content is not used in Run 1' if 'thermal' in k else 'not part of Run 1 (see section 7 of the brief)'}
     json.dump(out, open(Path(run) / 'thesis_numbers.json', 'w'), indent=1)
     return out
 
@@ -503,11 +503,12 @@ def numbers_dump(run):
 def build_results(R, nums, args=None):
     run = R.run
     st = jload(run / 'state.json', {})
-    lines = ['# RESULTS: Run 1 (thermal camera not connected)', '',
+    lines = ['# RESULTS: Run 1 (thermal content not used)', '',
              f'Generated {time.strftime("%Y-%m-%d %H:%M")} from the files in this folder. Boots: {len(st.get("boots", []))}. All numbers trace to the source file shown.', '', '## Phase status', '',
              md_table(['phase', 'status', 'minutes', 'note'], [[PHASE_LABEL.get(p['phase'], p['phase']), p['status'], p.get('minutes', ''), p.get('detail', '')] for p in R.phases])]
-    th = jload(run / '00_meta' / 'thermal_not_connected.json', {})
-    lines += ['## Thermal camera', '', f'Thermal USB device confirmed absent at the start: **{th.get("confirmed_absent")}**. No phase reads or reports thermal data. All thermal-related items are therefore not measured in this run.', '']
+    th = jload(run / '00_meta' / 'thermal_state.json', {})
+    lines += ['## Thermal camera', '', f'At the start of Run 1 the thermal camera USB device was **{"present (connected)" if th.get("usb_device_present") else "absent (not connected)"}** and its data stream was **{th.get("stream_status_probe", "unknown")}** ({th.get("stream_hz_10s", "?")} Hz over 10 s). '
+              'Presence and stream rate are recorded, but no thermal image content is used or reported in any Run 1 result; thermal-content items are therefore not measured here.', '']
     hs = jload(run / '14_wireless' / 'hotspot_status.json', {})
     ap = rows_of(run / '14_wireless' / 'wifi_link.csv')
     ap_n = col(ap, 'ap_stations')
