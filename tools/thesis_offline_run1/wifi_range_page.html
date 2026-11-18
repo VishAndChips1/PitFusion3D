@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hotspot range test</title>
+<style>
+  body{font:16px/1.4 system-ui,sans-serif;margin:16px auto;max-width:960px;padding:0 12px;color:#1c2330;background:#fff}
+  h2{margin:0 0 4px} .sub{color:#5a6577;margin-bottom:14px}
+  label{display:block;margin:10px 0 4px;font-weight:600}
+  input{font:inherit;padding:8px 10px;width:100%;box-sizing:border-box;border:1px solid #b9c3d3;border-radius:6px}
+  button{font:inherit;padding:12px 22px;margin:14px 8px 8px 0;border:0;border-radius:8px;background:#4A5D7A;color:#fff;cursor:pointer}
+  button:disabled{background:#9aa7bb;cursor:wait}
+  #bar{height:10px;background:#e4e8ef;border-radius:5px;overflow:hidden;margin:8px 0} #fill{height:100%;width:0;background:#B5532A;transition:width .3s}
+  pre{background:#f4f6f9;padding:10px;border-radius:6px;max-height:220px;overflow:auto;font-size:13px;white-space:pre-wrap}
+  table{border-collapse:collapse;font-size:13px;width:100%} th,td{border:1px solid #d5dbe5;padding:4px 6px;text-align:right} th{background:#eef1f6}
+  td:first-child,th:first-child{text-align:left} .wrap{overflow-x:auto}
+  @media (prefers-color-scheme:dark){body{background:#12161d;color:#e6eaf1} input{background:#1b212c;color:#e6eaf1;border-color:#3a4558} pre{background:#1b212c} th{background:#1b212c} th,td{border-color:#2d3646}}
+</style>
+</head>
+<body>
+<h2>Hotspot range test</h2>
+<div class="sub">Open this page on the laptop (or phone) joined to the PitFusion3D WiFi. Stand at the position, hold the device still, press Start. About 2 minutes per run. Keep this tab in the foreground.</div>
+<label for="pos">Position</label>
+<input id="pos" value="1 m" placeholder="1 m, 5 m, 10 m, through wall ...">
+<label for="notes">Notes (distance measured with tape; for a wall: type and thickness)</label>
+<input id="notes" placeholder="e.g. brick wall about 20 cm, 10 m from the Pi">
+<button id="go">Start test</button>
+<span id="state"></span>
+<div id="bar"><div id="fill"></div></div>
+<pre id="log"></pre>
+<h3>Results so far</h3>
+<div class="wrap" id="table">none yet</div>
+<p><a href="/results.csv">results.csv</a> &middot; <a href="/results.md">table (markdown)</a> &middot; <a href="/logs.zip">all logs (zip)</a> &middot; <a href="/finish" onclick="return confirm('Stop the test server on the Pi? (the hotspot stays on)')">finish and stop the Pi side</a></p>
+<script>
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const now = () => performance.now();
+function pct(a, q){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y); const k=(s.length-1)*q/100, lo=Math.floor(k), hi=Math.min(lo+1,s.length-1); return s[lo]+(s[hi]-s[lo])*(k-lo); }
+const med = a => pct(a, 50);
+function log(m){ $('log').textContent += m + '\n'; $('log').scrollTop = 1e9; }
+let done = 0, total = 1;
+function progress(){ $('fill').style.width = Math.min(100, 100*done/total) + '%'; }
+
+async function pingTest(secs){
+  const rtts = []; let lost = 0, i = 0; const end = now() + secs*1000;
+  while(now() < end){
+    const t = now();
+    try{ const c = new AbortController(); const to = setTimeout(()=>c.abort(), 2000);
+      await (await fetch('/ping?i='+(i++), {cache:'no-store', signal:c.signal})).text(); clearTimeout(to); rtts.push(now()-t); }
+    catch(e){ lost++; }
+    done += 0.1; progress();
+    await sleep(Math.max(0, 100-(now()-t)));
+  }
+  return {rtts, lost};
+}
+async function downTest(secs){
+  const start = now(); let bytes = 0, tickBytes = 0, nextTick = start+1000; const ticks = []; const c = new AbortController();
+  setTimeout(()=>c.abort(), secs*1000+3000);
+  try{
+    while(now()-start < secs*1000){
+      const r = await fetch('/blob?mb=4&x='+Math.random(), {cache:'no-store', signal:c.signal});
+      const rd = r.body.getReader();
+      while(true){
+        const {done:d, value} = await rd.read(); if(d) break;
+        bytes += value.length; tickBytes += value.length; const t = now();
+        if(t >= nextTick){ ticks.push(tickBytes*8/1e6); tickBytes = 0; nextTick += 1000; done += 1; progress(); }
+        if(t-start >= secs*1000){ c.abort(); break; }
+      }
+    }
+  }catch(e){}
+  return {mbps: bytes*8/1e6/((now()-start)/1000), ticks};
+}
+async function upTest(secs){
+  const blob = new Blob([new Uint8Array(1<<20)]); const start = now(); let bytes = 0; const posts = [];
+  while(now()-start < secs*1000){
+    const t = now();
+    try{ await (await fetch('/sink', {method:'POST', body:blob, cache:'no-store'})).text(); bytes += blob.size; posts.push(now()-t); }catch(e){ break; }
+    done += (now()-t)/1000; progress();
+  }
+  return {mbps: bytes*8/1e6/((now()-start)/1000), posts};
+}
+async function pollLoop(path, secs, rows, st){
+  let etag = null; const end = now() + secs*1000;
+  while(now() < end){
+    const t = now();
+    try{
+      const h = {}; if(etag) h['If-None-Match'] = etag;
+      const r = await fetch('/app'+path, {headers:h, cache:'no-store'});
+      const buf = await r.arrayBuffer(); const d = now(); st.polls++;
+      if(r.status === 200){ etag = r.headers.get('ETag'); rows.push([t, d, d-t, buf.byteLength, parseFloat(r.headers.get('X-Cloud-Stamp')||'0')]); }
+      else if(r.status !== 304){ st.errors++; }
+    }catch(e){ st.errors++; etag = null; await sleep(200); }
+    await sleep(Math.max(0, 20-(now()-t)));
+  }
+}
+function appStats(rows, st, secs){
+  const o = {polls: st.polls, errors: st.errors, new_frames: rows.length, update_rate_hz: rows.length/secs};
+  if(rows.length >= 2){
+    const iv = []; for(let i=0;i<rows.length-1;i++) iv.push((rows[i+1][1]-rows[i][1])/1000);
+    o.interval_p50_s = med(iv); o.interval_p95_s = pct(iv,95); o.interval_max_s = Math.max(...iv);
+    o.stalls_over_1s = iv.filter(x=>x>1).length; o.stalls_over_2s = iv.filter(x=>x>2).length;
+    const stamps = rows.map(r=>r[4]).filter(x=>x>1e9);
+    if(stamps.length >= 3){ const d=[]; for(let i=0;i<stamps.length-1;i++) d.push(stamps[i+1]-stamps[i]);
+      const nominal = med(d), span = stamps[stamps.length-1]-stamps[0];
+      if(nominal>0 && span>0){ o.frames_delivered_pct = 100*(stamps.length-1)/(span/nominal); o.server_frame_interval_s = nominal; } }
+  }
+  o.frame_response_ms_p50 = med(rows.map(r=>r[2])); o.frame_response_ms_p95 = pct(rows.map(r=>r[2]),95);
+  o.frame_response_ms_max = rows.length ? Math.max(...rows.map(r=>r[2])) : null;
+  o.kbytes_per_frame = med(rows.map(r=>r[3]/1000));
+  o.goodput_mbit_s = rows.reduce((a,r)=>a+r[3],0)*8/1e6/secs;
+  return o;
+}
+async function appSuite(summary, raw){
+  const plan = [['merged_fmt1', [['/merged.bin','m']], 20], ['merged_fmt2', [['/merged.bin?fmt=2','m']], 20],
+                ['live_fmt2', [['/live.bin?fmt=2','l']], 15], ['merged_and_live_fmt2', [['/merged.bin?fmt=2','m'], ['/live.bin?fmt=2','l']], 25]];
+  for(const [name, paths, secs] of plan){
+    log('  application traffic: ' + name + ' (' + secs + ' s)');
+    const jobs = paths.map(([p,tag]) => { const rows=[], st={polls:0,errors:0}; return {tag, rows, st, run: pollLoop(p, secs, rows, st)}; });
+    const tick = setInterval(()=>{ done += 1; progress(); }, 1000);
+    await Promise.all(jobs.map(j=>j.run)); clearInterval(tick);
+    raw.app[name] = {};
+    for(const j of jobs){
+      const s = appStats(j.rows, j.st, secs);
+      for(const k in s) summary['app_'+name+'_'+j.tag+'_'+k] = s[k];
+      raw.app[name][j.tag] = j.rows;
+    }
+  }
+}
+async function runAll(){
+  const label = $('pos').value.trim() || 'position', notes = $('notes').value.trim();
+  $('go').disabled = true; $('log').textContent = ''; done = 0; total = 15 + 10 + 10 + 80 + 4; progress();
+  $('state').textContent = 'running... hold still';
+  try{
+    const b = await (await fetch('/begin?label='+encodeURIComponent(label))).json();
+    const summary = {}, raw = {app:{}};
+    log('round-trip time (15 s)'); const p = await pingTest(15);
+    summary.http_rtt_ms_p50 = med(p.rtts); summary.http_rtt_ms_p95 = pct(p.rtts,95); summary.http_rtt_ms_max = p.rtts.length?Math.max(...p.rtts):null;
+    summary.http_ping_loss_pct = 100*p.lost/Math.max(1,p.rtts.length+p.lost); summary.http_pings = p.rtts.length+p.lost; raw.ping = p.rtts;
+    log('  RTT p50 ' + (summary.http_rtt_ms_p50||0).toFixed(1) + ' ms, p95 ' + (summary.http_rtt_ms_p95||0).toFixed(1) + ' ms, lost ' + p.lost);
+    log('download throughput, Pi to this device (10 s)'); const d = await downTest(10);
+    summary.tcp_down_mbps = d.mbps; summary.tcp_down_mbps_p5_per_s = pct(d.ticks,5); raw.down_ticks = d.ticks; log('  ' + d.mbps.toFixed(1) + ' Mbit/s');
+    log('upload throughput, this device to Pi (10 s)'); const u = await upTest(10);
+    summary.tcp_up_mbps = u.mbps; raw.up_post_ms = u.posts; log('  ' + u.mbps.toFixed(1) + ' Mbit/s');
+    await appSuite(summary, raw);
+    log('saving ...');
+    const r = await fetch('/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({label, notes, t0:b.t, summary, raw, user_agent:navigator.userAgent})});
+    const out = await r.json();
+    log('done: merged ' + (summary.app_merged_fmt2_m_update_rate_hz||0).toFixed(2) + ' Hz, live ' + (summary.app_live_fmt2_l_update_rate_hz||0).toFixed(2) + ' Hz, TCP down ' + summary.tcp_down_mbps.toFixed(1) + ' Mbit/s'
+        + (out.ap_signal_dbm !== null && out.ap_signal_dbm !== undefined ? ', signal at the Pi ' + out.ap_signal_dbm + ' dBm' : ''));
+    $('state').textContent = 'finished: move to the next position and run again';
+  }catch(e){ log('error: ' + e); $('state').textContent = 'error (see log)'; }
+  $('go').disabled = false; done = total; progress(); loadTable();
+}
+async function loadTable(){
+  try{
+    const rows = await (await fetch('/results.json')).json();
+    if(!rows.length){ $('table').textContent = 'none yet'; return; }
+    const cols = [['position','position'],['repeat','rep'],['pi_ap_signal_dbm_median','signal at Pi (dBm)'],['pi_ap_tx_bitrate_median','AP tx rate (Mbit/s)'],['http_rtt_ms_p50','RTT p50 (ms)'],['http_rtt_ms_p95','RTT p95 (ms)'],
+      ['http_ping_loss_pct','ping loss (%)'],['tcp_down_mbps','down (Mbit/s)'],['tcp_up_mbps','up (Mbit/s)'],['app_merged_fmt2_m_update_rate_hz','merged Hz (fmt2)'],['app_merged_fmt2_m_stalls_over_1s','merged stalls>1s'],
+      ['app_live_fmt2_l_update_rate_hz','live Hz'],['app_live_fmt2_l_stalls_over_1s','live stalls>1s'],['pi_tcp8082_retrans','TCP retrans (Pi)']];
+    const f = v => v===null||v===undefined||v==='' ? '' : (typeof v==='number' ? (Math.abs(v)>=100?v.toFixed(0):v.toFixed(2)) : v);
+    $('table').innerHTML = '<table><tr>' + cols.map(c=>'<th>'+c[1]+'</th>').join('') + '</tr>' + rows.map(r=>'<tr>'+cols.map(c=>'<td>'+f(r[c[0]])+'</td>').join('')+'</tr>').join('') + '</table>';
+  }catch(e){}
+}
+$('go').onclick = runAll; loadTable();
+</script>
+</body>
+</html>

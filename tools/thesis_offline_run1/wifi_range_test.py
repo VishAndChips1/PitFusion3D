@@ -365,7 +365,7 @@ def write_tables(rows, outdir):
         w = csv.DictWriter(fh, fieldnames=keys)
         w.writeheader()
         w.writerows(rows)
-    cols = [('position', 'position'), ('repeat', 'rep'), ('client_signal_dbm_est_median', 'signal (dBm, est.)'), ('client_signal_pct_median', 'signal (%)'), ('client_rx_rate_mbps_median', 'link rate rx (Mbit/s)'),
+    cols = [('position', 'position'), ('repeat', 'rep'), ('pi_ap_signal_dbm_median', 'signal at the Pi (dBm)'), ('pi_ap_tx_bitrate_median', 'AP tx rate (Mbit/s)'), ('pi_tcp8082_retrans', 'TCP retransmits (Pi)'), ('client_signal_dbm_est_median', 'signal (dBm, est.)'), ('client_signal_pct_median', 'signal (%)'), ('client_rx_rate_mbps_median', 'link rate rx (Mbit/s)'),
             ('client_channel', 'channel'), ('http_rtt_ms_p50', 'RTT p50 (ms)'), ('http_rtt_ms_p95', 'RTT p95 (ms)'), ('http_ping_loss_pct', 'ping loss (%)'),
             ('tcp_down_mbps', 'TCP down (Mbit/s)'), ('tcp_up_mbps', 'TCP up (Mbit/s)'), ('udp5_loss_pct', 'UDP 5M loss (%)'), ('udp5_jitter_ms', 'UDP 5M jitter (ms)'),
             ('udp20_loss_pct', 'UDP 20M loss (%)'), ('app_merged_fmt2_m_update_rate_hz', 'merged update rate fmt2 (Hz)'), ('app_merged_fmt2_m_interval_p95_s', 'merged interval p95 (s)'),
