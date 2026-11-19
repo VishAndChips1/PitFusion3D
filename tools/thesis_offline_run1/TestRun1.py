@@ -5,7 +5,7 @@ Reuses the samplers, probe, safety gates, hotspot logic and benchmark of TestWit
 inventory, scene (snapshots + images), rates, combinations (LiDAR only / LiDAR + RGB), range_accuracy, cpu_mem, stage_timing,
 freshness, alignment (indirect RGB/LiDAR sweep) and repo_extract. Resumable (state.json), safe to kill, never repeats the countdown.
 
-Started by thesis-offline.service (see arm.sh) or by hand:  python3 TestRun1.py --profile quick --countdown 20 --run-dir DIR --no-hotspot
+Started by run1.sh, or by hand:  python3 TestRun1.py --profile quick --countdown 20 --run-dir DIR --no-hotspot
 """
 import argparse
 import csv
@@ -43,7 +43,6 @@ HOME = Path.home()
 ROOT = HOME / 'thesis_tests'
 HERE = Path(__file__).resolve().parent
 SITE_FILE = ROOT / 'site_notes.env'
-ARMED = ROOT / 'ARMED_1'
 STOP_FILE = ROOT / 'STOP'
 
 ORDER = ['inventory', 'scene', 'rates', 'combinations', 'range_accuracy', 'cpu_mem', 'stage_timing', 'freshness', 'alignment', 'repo_extract']
@@ -864,9 +863,6 @@ def finalize_run(args):
     T.jwrite(S.out / 'DONE.json', {'finished': time.time(), 'iso': time.strftime('%Y-%m-%dT%H:%M:%S'), 'hotspot_left_running': S.hotspot.get('status') == 'up', 'phases': RS.d['phases']})
     RS.d['finalized'] = True
     RS.save()
-    if not args.dry_run:
-        ARMED.unlink(missing_ok=True)
-        T.sh(['systemctl', '--user', 'disable', 'thesis-offline.service'], 20)
     log('Run 1 finished: results in ' + str(S.out))
 
 
@@ -875,21 +871,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--profile', choices=['full', 'quick'], default='full')
     ap.add_argument('--countdown', type=int, default=120)
-    ap.add_argument('--run-dir', default='')
+    ap.add_argument('--run-dir', default='', help='run folder (created if needed); required unless --report-only')
     ap.add_argument('--no-hotspot', action='store_true')
-    ap.add_argument('--dry-run', action='store_true', help='do not touch the ARMED flag or the service')
     ap.add_argument('--report-only', default='', help='rebuild reports for an existing run directory and exit')
     args = ap.parse_args()
     if args.report_only:
         import run1_report
         run1_report.build_all(Path(args.report_only), args)
         return
-    run_dir = Path(args.run_dir) if args.run_dir else Path(ARMED.read_text().strip())
+    if not args.run_dir:
+        ap.error('--run-dir is required (run1.sh sets it)')
+    run_dir = Path(args.run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     RS = RunState(run_dir / 'state.json')
     if RS.d.get('finalized'):
-        if not args.dry_run:
-            ARMED.unlink(missing_ok=True)
         print('this run is already finished')
         return
     site = read_site()
@@ -899,11 +894,11 @@ def main():
     S.stop_reason = ''
     ns = SimpleNamespace(profile=args.profile, countdown=args.countdown, no_hotspot=args.no_hotspot, return_home=False, battery_run=False, only='', skip='',
                          ambient=float(site['AMBIENT_C']) if site.get('AMBIENT_C') else None, enclosure=('closed, clear lid' if site.get('LID_FITTED', 'yes').lower().startswith('y') else site.get('LID_FITTED', 'not supplied')),
-                         power_source='Anker 737 via PD trigger + 52Pi', cold_wait_min=0.0, ap_band='', ap_channel='', run_id=run_dir.name, dry_run=args.dry_run)
+                         power_source='Anker 737 via PD trigger + 52Pi', cold_wait_min=0.0, ap_band='', ap_channel='', run_id=run_dir.name)
     S.args = ns
     for dname in ('00_meta', '02_rates', '03_timing_stages', '04_freshness', '05_cpu_memory', '06_tradeoffs', '08_accuracy', '09_power', '14_wireless', '15_fusion_info', '16_human_tests', 'scripts', 'images', 'figures', 'tables'):
         P(dname)
-    for f in ('TestRun1.py', 'run1_geo.py', 'run1_report.py', 'auto_report.py', 'TestWithLidV1.py', 'probe.py', 'bench.py', 'arm.sh'):
+    for f in ('TestRun1.py', 'run1_geo.py', 'run1_report.py', 'auto_report.py', 'TestWithLidV1.py', 'probe.py', 'bench.py', 'run1.sh'):
         if (HERE / f).exists():
             shutil.copy(HERE / f, run_dir / 'scripts' / f)
     if (run_dir / 'phase_status.json').exists():

@@ -65,6 +65,10 @@ package's README for the deployment notes and hardware/networking issues
 resolved along the way (NIC troubleshooting, ROS2 discovery vs. a
 changing WiFi subnet, running the viewer with zero internet dependency).
 
+**Demo mode.** With `~/wifi_mode hotspot` the Pi creates its own WiFi (`PitFusion3D`) at power-on and
+starts streaming; the viewer is always at `http://10.42.0.1:8080/` (fixed address). See
+[`tools/hotspot_autostart`](tools/hotspot_autostart).
+
 ## The sensor truck
 
 The platform is a works truck: cab, open refuse body, tandem rear axles, and a

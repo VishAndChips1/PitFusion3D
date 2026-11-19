@@ -1,0 +1,12 @@
+[Unit]
+Description=PitFusion3D hotspot (own WiFi network 10.42.0.1) brought up before the pipeline
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/vish/.local/share/pitfusion3d-hotspot/hotspot_boot.sh
+TimeoutStartSec=420
+
+[Install]
+WantedBy=default.target

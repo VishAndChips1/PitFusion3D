@@ -1,0 +1,41 @@
+#!/bin/bash
+# Choose how the Pi's WiFi behaves at power-on.
+#   wifi_mode status          show the current mode, connection and viewer address
+#   wifi_mode hotspot [--now] power-on = own hotspot "PitFusion3D" at http://10.42.0.1:8080/ (the demo mode); --now also switches immediately
+#   wifi_mode home [--now]    power-on = join the saved home WiFi (Patelnet) as before; --now also switches immediately
+#   wifi_mode band 2.4|5      hotspot band (2.4 GHz channel 11 is the default; 5 GHz uses channel 149)
+# Never turns the WiFi radio off.
+CONF="$HOME/.config/pitfusion3d"; SAVE="$CONF/wifi_profiles_saved.txt"; AP="PitFusion3D-AP"; HOME_PROFILE="Patelnet"
+mkdir -p "$CONF"
+wifi_profiles() { nmcli -t -f NAME,TYPE connection show | awk -F: '$2=="802-11-wireless"{print $1}'; }
+show() {
+  echo "mode at power-on : $(cat $CONF/wifi_mode 2>/dev/null || echo hotspot)"
+  echo "active WiFi      : $(nmcli -g GENERAL.CONNECTION device show wlan0)  ($(ip -4 -br addr show wlan0 | awk '{print $3}'))"
+  [ -f "$CONF/hotspot.conf" ] && echo "hotspot band     : $(grep -E '^BAND' $CONF/hotspot.conf) $(grep -E '^CHANNEL' $CONF/hotspot.conf)"
+  echo "viewer (hotspot) : http://10.42.0.1:8080/    base station address: 10.42.0.1"
+  [ -f "$HOME/.local/share/pitfusion3d-hotspot/status.json" ] && echo "last boot result : $(cat $HOME/.local/share/pitfusion3d-hotspot/status.json)"
+}
+case "$1" in
+  status|"") show ;;
+  band)
+    case "$2" in 5) printf 'BAND=a\nCHANNEL=149\n' > "$CONF/hotspot.conf" ;; 2.4) printf 'BAND=bg\nCHANNEL=11\n' > "$CONF/hotspot.conf" ;; *) echo "use: wifi_mode band 2.4|5"; exit 1 ;; esac
+    echo "hotspot band set ($(tr '\n' ' ' < $CONF/hotspot.conf)); takes effect the next time the hotspot starts" ;;
+  hotspot)
+    if [ ! -f "$SAVE" ]; then wifi_profiles | while read -r p; do [ "$p" != "$AP" ] && echo "$p|$(nmcli -g connection.autoconnect connection show "$p")|$(nmcli -g connection.autoconnect-priority connection show "$p")"; done > "$SAVE"; fi
+    echo hotspot > "$CONF/wifi_mode"
+    [ -f "$CONF/hotspot.conf" ] || printf 'BAND=bg\nCHANNEL=11\n' > "$CONF/hotspot.conf"
+    wifi_profiles | while read -r p; do [ "$p" != "$AP" ] && nmcli connection modify "$p" connection.autoconnect no; done
+    nmcli connection modify "$AP" connection.autoconnect yes connection.autoconnect-priority 200 802-11-wireless.powersave 2
+    systemctl --user disable --now pitfusion3d-wifi.service 2>/dev/null
+    systemctl --user enable pitfusion3d-hotspot.service 2>/dev/null
+    echo "Power-on mode: HOTSPOT (SSID PitFusion3D, viewer http://10.42.0.1:8080/). Home WiFi will not connect by itself any more: use '$0 home' to go back."
+    [ "$2" = "--now" ] && { systemctl --user restart pitfusion3d-hotspot.service; systemctl --user restart pitfusion3d.service; show; } ;;
+  home)
+    echo home > "$CONF/wifi_mode"
+    nmcli connection modify "$AP" connection.autoconnect no
+    if [ -f "$SAVE" ]; then while IFS='|' read -r p ac pr; do nmcli connection modify "$p" connection.autoconnect "$ac" connection.autoconnect-priority "$pr" 2>/dev/null; done < "$SAVE"; else nmcli connection modify "$HOME_PROFILE" connection.autoconnect yes connection.autoconnect-priority 100; fi
+    systemctl --user enable --now pitfusion3d-wifi.service 2>/dev/null
+    echo "Power-on mode: HOME WiFi ($HOME_PROFILE)."
+    [ "$2" = "--now" ] && { nmcli connection up "$HOME_PROFILE"; sleep 5; systemctl --user restart pitfusion3d.service; show; } ;;
+  *) echo "usage: wifi_mode status | hotspot [--now] | home [--now] | band 2.4|5"; exit 1 ;;
+esac

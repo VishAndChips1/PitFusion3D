@@ -2,7 +2,7 @@
 """Rebuild every report from whatever data exists (figures, tables, images captions, data dictionary,
 RESULTS_RUN1.md, thesis_numbers.json, PAPER_MAP.md, results_bundle.zip).
 
-    python3 auto_report.py [run_dir]        (default: the armed run, else the newest ~/thesis_tests/*_run1)
+    python3 auto_report.py [run_dir]        (default: the newest ~/thesis_tests/*_run1)
 """
 import sys
 from pathlib import Path
@@ -14,9 +14,6 @@ ROOT = Path.home() / 'thesis_tests'
 def pick():
     if len(sys.argv) > 1:
         return Path(sys.argv[1])
-    flag = ROOT / 'ARMED_1'
-    if flag.exists():
-        return Path(flag.read_text().strip())
     runs = sorted(ROOT.glob('*_run1'))
     if not runs:
         sys.exit('no run folder found')
